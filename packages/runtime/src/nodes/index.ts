@@ -51,6 +51,8 @@ export interface RuntimeState {
   builtPrompt?: string;
   llmResponse?: LLMResponse;
   toolResults?: Array<{ toolCallId: string; result: string }>;
+  inputModality?: 'text' | 'voice';
+  outputModality?: 'text' | 'voice';
 }
 
 /** Handler type for the Pregel executor – returns a NodeResult. */
