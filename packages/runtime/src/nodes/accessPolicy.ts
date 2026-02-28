@@ -21,7 +21,7 @@ export const accessPolicyNode = defineNode<RuntimeState, RuntimeEngineContext>(a
       'This agent is currently restricted to a single configured user.'
     );
     return {
-      stateDiff: { access: { allowed: false, reason: 'single_user_mismatch' } },
+      stateDiff: {},
       nextTasks: [] // exit graph
     };
   }
@@ -35,7 +35,7 @@ export const accessPolicyNode = defineNode<RuntimeState, RuntimeEngineContext>(a
   }
 
   return {
-    stateDiff: { access: { allowed: true }, user },
+    stateDiff: { user },
     nextTasks: ['session_attach']
   };
 });

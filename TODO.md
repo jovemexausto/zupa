@@ -8,8 +8,8 @@
 - [X] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
 - [X] Implement Phase 1 of Production Readiness RFC: Create and apply universal `withTimeout` wrapper for LLM/STT/TTS calls.
 - [X] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
-- [ ] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
-- [ ] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
+- [X] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
+- [X] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
 - [ ] Document capabilities and aspects of the runtime and engine, features, opinions, design choices, etc for future reference of the project ideology
 - [ ] Replace any console.(log|warn|error) with proper production ready loggin (pino) and ensure it is used consistently across the codebase, also certify we position telemetry and logs at strategic points. This maybe will require refining current approach or imagine a batter solution for cross cutting concerns.
 - [ ] Implement Phase 2 of Production Readiness RFC: Implement `sessionIdleTimeoutMinutes` in `session_attach` — auto-finalize expired/zombie sessions.

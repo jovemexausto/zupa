@@ -28,7 +28,6 @@ import { telemetryEmitNode } from './telemetryEmit';
  * Defines the shared state schema for the Zupa agent runtime graph.
  */
 export interface RuntimeState {
-  access?: { allowed: boolean; reason?: string };
   session?: Session | ActiveSession;
   user?: User;
   replyTarget?: string;
