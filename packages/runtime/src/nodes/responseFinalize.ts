@@ -1,11 +1,11 @@
 import { defineNode } from '@zupa/engine';
-import { finalizeResponse, type RuntimeKernelContext } from '@zupa/core';
+import { finalizeResponse, type RuntimeEngineContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
  * response_finalize
  */
-export const responseFinalizeNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, state, config } = context;
   const llmResponse = state.llmResponse;
 

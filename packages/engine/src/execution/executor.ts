@@ -10,7 +10,7 @@ import type { ChannelReducer } from '../models/checkpoint';
 /**
  * Defines the structure and reducer behavior of the execution graph.
  */
-export interface KernelGraphSpec<TState extends object, TContext = unknown> {
+export interface EngineGraphSpec<TState extends object, TContext = unknown> {
     /** Map of state channels to their respective reducers. */
     channels: { [K in keyof TState]: ChannelReducer<TState[K]> };
 
@@ -25,14 +25,14 @@ export class GraphInterrupt extends Error {
     }
 }
 
-export interface KernelExecutorConfig<TState = Record<string, unknown>> {
+export interface EngineExecutorConfig<TState = Record<string, unknown>> {
     threadId: string;
     saver: CheckpointSaver<TState> & LedgerWriter;
     entrypoint?: string;
 }
 
-export class KernelExecutor<TState extends object, TContext = unknown> {
-    constructor(private readonly graph: KernelGraphSpec<TState, TContext>) { }
+export class EngineExecutor<TState extends object, TContext = unknown> {
+    constructor(private readonly graph: EngineGraphSpec<TState, TContext>) { }
 
     /**
      * Invokes the execution graph for a given thread.
@@ -41,7 +41,7 @@ export class KernelExecutor<TState extends object, TContext = unknown> {
     public async invoke(
         input: Partial<TState>,
         context: TContext,
-        config: KernelExecutorConfig<TState>
+        config: EngineExecutorConfig<TState>
     ): Promise<StateSnapshot<TState>> {
         const { threadId, saver } = config;
         let checkpoint = await saver.getCheckpoint(threadId) as StateSnapshot<TState> | null;
@@ -161,7 +161,7 @@ export class KernelExecutor<TState extends object, TContext = unknown> {
     public async resume(
         payload: Partial<TState>,
         context: TContext,
-        config: KernelExecutorConfig<TState>
+        config: EngineExecutorConfig<TState>
     ): Promise<StateSnapshot<TState>> {
         const { threadId, saver } = config;
         const checkpoint = await saver.getCheckpoint(threadId);

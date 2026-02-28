@@ -1,7 +1,7 @@
 import { RuntimeResource } from "../lifecycle";
 
 // TODO: Right now telemetry events are collected in a buffer and bulk-emitted 
-//       (in a loop) from a later kernel node.
+//       (in a loop) from a later engine node.
 //
 // GOAL: Move to truly async Telemetry Sinks that:
 //       - manage their own internal queue

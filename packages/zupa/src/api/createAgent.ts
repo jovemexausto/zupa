@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import {
   type AgentContext,
-  type RuntimeKernelResources,
+  type RuntimeEngineResources,
   type Tool,
   type CommandDefinition,
   resolveLanguage
@@ -15,7 +15,7 @@ import { createLocalResources } from './resources';
 
 type WithReply = { reply: string };
 
-export type AgentProvidersConfig = Partial<RuntimeKernelResources>;
+export type AgentProvidersConfig = Partial<RuntimeEngineResources>;
 
 export interface AgentUIConfig {
   enabled?: boolean;
@@ -169,7 +169,7 @@ function validateRuntimeConfig<T>(_config: RuntimeConfig<T>): void {
   }
 }
 
-function applyDefaultProviders(resources: AgentProvidersConfig): RuntimeKernelResources {
+function applyDefaultProviders(resources: AgentProvidersConfig): RuntimeEngineResources {
   const defaults = createLocalResources();
   return {
     transport: resources.transport ?? defaults.transport,

@@ -1,11 +1,11 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeKernelContext } from '@zupa/core';
+import { type RuntimeEngineContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
  * content_resolution
  */
-export const contentResolutionNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const contentResolutionNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, inbound, config } = context;
 
   let body = inbound.body;

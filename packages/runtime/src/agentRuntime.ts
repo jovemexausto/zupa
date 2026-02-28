@@ -4,9 +4,9 @@ import { randomUUID } from 'node:crypto';
 import {
   RuntimeConfig,
   RuntimeResource,
-  RuntimeKernelResources,
-  RuntimeKernelContext,
-  KernelNodeName,
+  RuntimeEngineResources,
+  RuntimeEngineContext,
+  EngineNodeName,
   InboundMessage,
   StateSnapshot,
   CheckpointSaver,
@@ -16,8 +16,8 @@ import {
 } from '@zupa/core';
 
 import {
-  KernelExecutor,
-  type KernelGraphSpec,
+  EngineExecutor,
+  type EngineGraphSpec,
   CanonicalChannels,
   lastWriteWinsReducer,
   createInitialRuntimeContext,
@@ -60,11 +60,11 @@ class EphemeralCheckpointSaver implements CheckpointSaver<RuntimeState>, LedgerW
 }
 
 // ---------------------------------------------------------------------------
-// Build a KernelGraphSpec from the node handlers
+// Build a EngineGraphSpec from the node handlers
 // ---------------------------------------------------------------------------
-function buildKernelGraphSpec<T = unknown>(
+function buildEngineGraphSpec<T = unknown>(
   handlers: RuntimeNodeHandlerMap<T>
-): KernelGraphSpec<RuntimeState, RuntimeKernelContext<T>> {
+): EngineGraphSpec<RuntimeState, RuntimeEngineContext<T>> {
   const channels: { [K in keyof RuntimeState]: ChannelReducer<RuntimeState[K]> } = {
     access: lastWriteWinsReducer(),
     session: lastWriteWinsReducer(),
@@ -92,15 +92,15 @@ function buildKernelGraphSpec<T = unknown>(
 // ---------------------------------------------------------------------------
 interface AgentRuntimeInput<T = unknown> {
   runtimeConfig: RuntimeConfig<T>;
-  runtimeResources: RuntimeKernelResources;
+  runtimeResources: RuntimeEngineResources;
   handlers?: RuntimeNodeHandlerMap<T>;
 }
 
 export class AgentRuntime<T = unknown> {
   private readonly emitter = new EventEmitter();
   private readonly runtimeConfig: RuntimeConfig<T>;
-  private readonly runtimeResources: RuntimeKernelResources;
-  private readonly executor: KernelExecutor<RuntimeState, RuntimeKernelContext<T>>;
+  private readonly runtimeResources: RuntimeEngineResources;
+  private readonly executor: EngineExecutor<RuntimeState, RuntimeEngineContext<T>>;
   private stopInboundBridge: (() => void) | null = null;
   private stopAuthBridge: (() => void) | null = null;
   private lifecycleResources: RuntimeResource[] = [];
@@ -111,8 +111,8 @@ export class AgentRuntime<T = unknown> {
     this.runtimeResources = input.runtimeResources;
 
     const handlers = input.handlers ?? buildDefaultNodeHandlers<T>();
-    const graph = buildKernelGraphSpec<T>(handlers);
-    this.executor = new KernelExecutor(graph);
+    const graph = buildEngineGraphSpec<T>(handlers);
+    this.executor = new EngineExecutor(graph);
 
     const ui = input.runtimeConfig.ui;
     this.uiServer =
@@ -152,7 +152,7 @@ export class AgentRuntime<T = unknown> {
     this.stopInboundBridge = bindTransportInbound({
       transport: this.runtimeResources.transport,
       maxConcurrent: this.runtimeConfig.maxInboundConcurrency ?? 32,
-      runInboundKernel: async (inbound) => {
+      runInboundEngine: async (inbound) => {
         await this.runInbound(inbound);
       },
       onOverload: async (inbound) => {
@@ -190,7 +190,7 @@ export class AgentRuntime<T = unknown> {
     return this;
   }
 
-  public async runInbound(inbound: InboundMessage): Promise<RuntimeKernelContext<T>> {
+  public async runInbound(inbound: InboundMessage): Promise<RuntimeEngineContext<T>> {
     this.emitRuntimeEvent('inbound:received', { inbound });
 
     const requestId = randomUUID();

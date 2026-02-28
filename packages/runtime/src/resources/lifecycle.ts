@@ -1,7 +1,7 @@
-import { RuntimeKernelResources, RuntimeResource } from "@zupa/core";
+import { RuntimeEngineResources, RuntimeResource } from "@zupa/core";
 
 
-export function collectLifecycleResources(resources: RuntimeKernelResources): RuntimeResource[] {
+export function collectLifecycleResources(resources: RuntimeEngineResources): RuntimeResource[] {
   const ordered: Array<RuntimeResource | undefined> = [
     resources.database,
     resources.storage,

@@ -2,7 +2,7 @@ import { InboundMessage, MessagingTransportPort } from "@zupa/core";
 
 interface BindTransportInboundInput {
   transport: MessagingTransportPort;
-  runInboundKernel(inbound: InboundMessage): Promise<void>;
+  runInboundEngine(inbound: InboundMessage): Promise<void>;
   onError?(error: unknown, inbound: InboundMessage): void;
   maxConcurrent?: number;
   onOverload?(inbound: InboundMessage): Promise<void> | void;
@@ -30,7 +30,7 @@ export function bindTransportInbound(input: BindTransportInboundInput): () => vo
 
     inFlight += 1;
     try {
-      await input.runInboundKernel(inbound);
+      await input.runInboundEngine(inbound);
     } catch (error) {
       input.onError?.(error, inbound);
     } finally {

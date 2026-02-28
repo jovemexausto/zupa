@@ -14,7 +14,7 @@ import { UserRecord } from '../entities/user';
 import { SessionWithKV } from '../entities/session';
 import { AgentLanguage } from '../entities/agent';
 
-export type KernelNodeName =
+export type EngineNodeName =
     | 'access_policy'
     | 'session_attach'
     | 'command_dispatch_gate'
@@ -33,22 +33,22 @@ export interface RuntimeContextMeta {
 }
 
 export interface RuntimeTelemetryContext {
-    nodeDurationsMs: Partial<Record<KernelNodeName, number>>;
+    nodeDurationsMs: Partial<Record<EngineNodeName, number>>;
 }
 
-export interface RuntimeKernelContext<T = unknown> {
+export interface RuntimeEngineContext<T = unknown> {
     meta: RuntimeContextMeta;
     config: RuntimeConfig<T>;
     inbound: InboundMessage;
     user?: UserRecord;
     session?: SessionWithKV;
     transport: MessagingTransportPort;
-    resources: RuntimeKernelResources;
+    resources: RuntimeEngineResources;
     state: Record<string, unknown>;
     telemetry: RuntimeTelemetryContext;
 }
 
-export interface RuntimeKernelResources {
+export interface RuntimeEngineResources {
     transport: MessagingTransportPort;
     llm: LLMProviderPort;
     stt: STTProviderPort;
@@ -65,7 +65,7 @@ export interface AgentContext<T = unknown> {
     inbound: InboundMessage;
     language: AgentLanguage;
     replyTarget: string;
-    resources: RuntimeKernelResources;
+    resources: RuntimeEngineResources;
     config: RuntimeConfig;
     endSession(): Promise<void>;
 }

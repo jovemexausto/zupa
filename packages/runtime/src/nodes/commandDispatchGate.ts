@@ -2,7 +2,7 @@ import { defineNode } from '@zupa/engine';
 import {
   buildCommandRegistry,
   dispatchCommandIfPresent,
-  type RuntimeKernelContext,
+  type RuntimeEngineContext,
   type SessionWithKV
 } from '@zupa/core';
 import { type RuntimeState } from './index';
@@ -10,7 +10,7 @@ import { type RuntimeState } from './index';
 /**
  * command_dispatch_gate
  */
-export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { state, config, resources, inbound } = context;
   const access = state.access;
 

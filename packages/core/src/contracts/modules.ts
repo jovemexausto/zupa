@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { AgentContext } from './kernel';
+import { AgentContext } from './engine';
 export { AgentContext };
 
 export interface ChatMessage {

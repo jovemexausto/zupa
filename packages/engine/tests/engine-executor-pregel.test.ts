@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { KernelExecutor, createInitialRuntimeContext } from '../src/index';
+import { EngineExecutor, createInitialRuntimeContext } from '../src/index';
 import { createFakeRuntimeDeps, createFakeRuntimeConfig } from '@zupa/testing';
 import { type StateSnapshot, type CheckpointSaver, type LedgerWriter, type LedgerEvent } from '@zupa/core';
 
@@ -11,10 +11,10 @@ const createMockSaver = (): CheckpointSaver<any> & LedgerWriter => ({
     appendLedgerEvent: vi.fn(async () => { })
 });
 
-describe('KernelExecutor (Pregel)', () => {
+describe('EngineExecutor (Pregel)', () => {
     it('should execute the graph correctly', async () => {
         const deps = createFakeRuntimeDeps();
-        const executor = new KernelExecutor({
+        const executor = new EngineExecutor({
             channels: {
                 ok: (prev: boolean | undefined, update: boolean) => update
             },

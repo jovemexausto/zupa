@@ -1,7 +1,7 @@
 import type {
-  KernelNodeName,
-  RuntimeKernelContext,
-  RuntimeKernelResources,
+  EngineNodeName,
+  RuntimeEngineContext,
+  RuntimeEngineResources,
   InboundMessage,
   RuntimeConfig,
   NodeResult
@@ -12,23 +12,23 @@ export interface CreateInitialRuntimeContextInput {
   startedAt: Date;
   inbound: InboundMessage;
   runtimeConfig: RuntimeConfig;
-  runtimeResources: RuntimeKernelResources;
+  runtimeResources: RuntimeEngineResources;
 }
 
 /** Legacy mutation-based node interface. */
-export interface RuntimeKernelLegacyNode {
-  name: KernelNodeName;
-  run(context: RuntimeKernelContext): Promise<void>;
+export interface RuntimeEngineLegacyNode {
+  name: EngineNodeName;
+  run(context: RuntimeEngineContext): Promise<void>;
 }
 
 /** Pregel-native graph node contract. */
-export interface RuntimeKernelNode {
-  name: KernelNodeName;
-  run(context: RuntimeKernelContext): Promise<NodeResult>;
+export interface RuntimeEngineNode {
+  name: EngineNodeName;
+  run(context: RuntimeEngineContext): Promise<NodeResult>;
 }
 
-export interface RuntimeKernelNodeHooks {
-  onNodeStart?(event: { node: KernelNodeName; context: RuntimeKernelContext }): void;
-  onNodeEnd?(event: { node: KernelNodeName; context: RuntimeKernelContext; durationMs: number }): void;
-  onNodeError?(event: { node: KernelNodeName; context: RuntimeKernelContext; error: unknown }): void;
+export interface RuntimeEngineNodeHooks {
+  onNodeStart?(event: { node: EngineNodeName; context: RuntimeEngineContext }): void;
+  onNodeEnd?(event: { node: EngineNodeName; context: RuntimeEngineContext; durationMs: number }): void;
+  onNodeError?(event: { node: EngineNodeName; context: RuntimeEngineContext; error: unknown }): void;
 }

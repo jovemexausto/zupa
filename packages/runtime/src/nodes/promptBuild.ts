@@ -1,12 +1,12 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeKernelContext, applyLengthPreference, type AgentContext, type SessionWithKV } from '@zupa/core';
+import { type RuntimeEngineContext, applyLengthPreference, type AgentContext, type SessionWithKV } from '@zupa/core';
 import nunjucks from 'nunjucks';
 import { type RuntimeState } from './index';
 
 /**
  * prompt_build
  */
-export const promptBuildNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const promptBuildNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { config, state } = context;
   const template = config.prompt;
 

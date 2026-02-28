@@ -3,7 +3,7 @@ export * from './entities/agent';
 export * from './entities/user';
 export * from './entities/session';
 export * from './entities/message';
-export * from './contracts/kernel';
+export * from './contracts/engine';
 export * from './contracts/node';
 export * from './contracts/checkpoint';
 export * from './contracts/ledger';
