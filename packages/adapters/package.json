@@ -1,0 +1,32 @@
+{
+    "name": "@zupa/adapters",
+    "version": "0.1.0",
+    "description": "External Integrations and Adapters for Zupa",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "dependencies": {
+        "@zupa/core": "workspace:*",
+        "openai": "^6.22.0",
+        "qrcode": "^1.5.4",
+        "whatsapp-web.js": "^1.34.1",
+        "zod": "^4.1.11"
+    },
+    "devDependencies": {
+        "@types/node": "^24.4.0",
+        "@zupa/testing": "workspace:*",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
+    }
+}

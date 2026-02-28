@@ -1,0 +1,32 @@
+{
+    "name": "@zupa/runtime",
+    "version": "0.1.0",
+    "description": "Agent Orchestration and Nodes for Zupa",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "dependencies": {
+        "@zupa/core": "workspace:*",
+        "@zupa/engine": "workspace:*",
+        "nunjucks": "^3.2.4",
+        "zod": "^4.1.11"
+    },
+    "devDependencies": {
+        "@types/node": "^24.4.0",
+        "@zupa/testing": "workspace:*",
+        "@types/nunjucks": "^3.2.6",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
+    }
+}

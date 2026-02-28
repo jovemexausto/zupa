@@ -1,16 +1,15 @@
-# RFC: Durable Runtime Foundation for Long-Running Orchestration (v0.1)
+# RFC: Durable Runtime Foundation for Long-Running Orchestration (v0.1 - Streamlined)
 
 - **Date:** 2026-02-28
-- **Status:** Research Draft (Spec-Only)
+- **Status:** Research Draft (Pregel-Streamlined)
 - **Target:** Zupa v1.x kernel + orchestration foundation track
 - **Normative source for:** durability, checkpointing, wait/resume, and outbox semantics
 - **Related umbrella RFC:** `docs/rfcs/2026-02-28-unified-multiflow-hitl-v0.2.md`
 - **Related lifecycle RFC:** `docs/rfcs/2026-02-28-response-lifecycle-policy-hooks-v0.1.md`
 - **Related scheduling RFC:** `docs/rfcs/2026-02-28-scheduled-flows-autonomous-v0.1.md`
-- **External references (non-normative):**
-  - https://useworkflow.dev/docs/how-it-works
-  - https://docs.useworkflow.dev/llms-full.txt
-  - https://github.com/WorkflowDev/useworkflow
+- **External references (normative inspiration):**
+  - LangGraph PregelLoop architecture
+  - Bulk Synchronous Parallel (BSP) model
 
 ## 1. Problem Statement
 
@@ -28,13 +27,13 @@ Without a durability foundation, feature implementations risk:
 - fragile timeout and resume behavior,
 - scheduler and HITL race-condition drift.
 
-This RFC defines the base architecture that must exist before implementing higher-level features.
+This RFC defines the base architecture that must exist before implementing higher-level features, taking deep architectural inspiration from LangGraph's Pregel execution runtime.
 
 ## 2. Current Baseline and Readiness Assessment
 
 ### 2.1 Strengths in current codebase
 
-1. Deterministic phase pipeline is established (`access_policy` -> `telemetry_emit`).
+1. Deterministic node pipeline is established (`access_policy` -> `telemetry_emit`).
 2. Inbound dedup baseline exists via `claimInboundEvent(...)`.
 3. Runtime has bounded ingress concurrency and overload shedding.
 4. LLM/STT/TTS/tool operations already have timeout + bounded retry primitives.
@@ -42,283 +41,194 @@ This RFC defines the base architecture that must exist before implementing highe
 
 Code grounding:
 - `packages/zupa/src/core/kernel/context.ts`
-- `packages/zupa/src/core/kernel/phases/sessionAttach.ts`
+- `packages/zupa/src/core/kernel/nodes/sessionAttach.ts`
 - `packages/zupa/src/core/runtime/inbound/transportBridge.ts`
 - `packages/zupa/src/core/utils/timeout.ts`
 - `packages/zupa/src/core/utils/retry.ts`
-- `packages/zupa/src/core/kernel/phase.ts`
+- `packages/zupa/src/core/kernel/node.ts`
 
 ### 2.2 Gaps against RFC feature set
 
 1. Outbound send occurs before durable persistence completion (send-first model).
-2. No flow checkpoint store or resumable frame model exists yet.
-3. No wait registry for HITL/scheduler/proxy timeout resumption.
-4. No durable outbox/inbox ledger for exactly-once effect progression.
-5. No scheduler execution store in runtime contracts.
-6. Local default integrations still use fake in-memory database.
-
-Code grounding:
-- `packages/zupa/src/core/kernel/phases/responseFinalize.ts`
-- `packages/zupa/src/capabilities/chat/finalizeResponse.ts`
-- `packages/zupa/src/core/kernel/phases/persistenceHooks.ts`
-- `packages/zupa/src/integrations/index.ts`
+2. Phase mutations are by-reference on a shared `context.state`, creating data races and losing diff auditability.
+3. The `agenticLoop` mixes LLM and Tool Execution into a single synchronous turn. A crash in a tool loses the entire LLM generation context.
+4. No flow checkpoint store or resumable frame model exists yet.
+5. Local default integrations still use fake in-memory database.
 
 ## 3. Goals and Non-Goals
 
 ### Goals
 
-1. Define durability contracts required by multiflow/HITL/scheduled features.
-2. Preserve existing deterministic kernel mental model.
+1. Adopt a super-step / checkpoint execution model for bulletproof durability.
+2. Define durability contracts required by multiflow/HITL/scheduled features.
 3. Guarantee replayable and auditable state transitions.
 4. Guarantee bounded, deterministic timeout and retry behavior.
-5. Maintain compatibility for agents not using new features.
+5. Eliminate the need for disparate parallel tracking tables (like a separate `WaitRegistry`).
 
 ### Non-Goals
 
-1. No runtime implementation in this RFC cycle.
-2. No immediate replacement of existing kernel phase architecture.
-3. No generic middleware/plugin chain as primary extension mechanism.
-4. No mandatory external workflow engine dependency for all users.
+1. No generic middleware/plugin chain as primary extension mechanism.
+2. No mandatory external workflow engine dependency; we build the BSP/Pregel primitives natively into Zupa's kernel.
 
 ## 4. Architectural Decision (Locked)
 
-### 4.1 Core direction
+Zupa will transition its kernel from a linear pipeline to a **Bulk Synchronous Parallel (BSP) / Pregel-inspired executor loop**. This means state is managed in channels, execution is grouped into atomic super-steps, and checkpoints are the universal source of truth for both pauses (waits) and failures.
 
-Zupa keeps its deterministic turn kernel and adds a durable orchestration substrate under it.
+## 5. Durable Runtime Model (Pregel-Inspired)
 
-### 4.2 Integration strategy
+To achieve true resumable orchestration, Zupa's kernel concepts evolve as follows:
 
-A hybrid approach is locked:
-1. Native Zupa durability contracts are canonical.
-2. Optional adapter may map those contracts to an external workflow engine.
-3. Full runtime replacement with external engine is out of scope for v0.1.
+### 5.1 Super-step Execution
+Each interaction is processed as a sequence of **super-steps**:
+- **Plan Phase:** Nodes/nodes that have new data in their input channels are scheduled for execution.
+- **Execution:** Nodes run (potentially concurrently if independent) and produce pure state diffs ("writes"). They do *not* mutate shared state directly.
+- **Barrier Commit:** Execution pauses until all scheduled nodes finish. Their writes are applied to state channels via reducers deterministically. A checkpoint is then saved to the database.
+- **Repeat:** The loop continues until no nodes are runnable (e.g., waiting for external input or end of flow).
 
-### 4.3 Middleware decision
+### 5.2 State Channels & Reducers
+Instead of a single mutable `context.state`, runtime state is partitioned into **Channels** (e.g., `messages`, `toolResults`, `intents`, `flowFrame`).
+Each channel defines a **Reducer** (e.g., `append`, `override`). Nodes take a read-only snapshot of channels and return pure payloads. Reducers resolve data races naturally.
 
-Zupa does **not** adopt a generic `agent.use(...)` middleware pipeline as the core architecture.  
-Instead, durability is exposed through explicit capability ports and policy hooks.
+### 5.3 Checkpoints (The Universal Source of Truth)
+A checkpoint is an immutable, versioned snapshot of all channels at a barrier commit.
+Snapshots MUST include:
+- `versions_seen`: Tracking which inputs each node has already processed.
+- `state_values`: The reduced value of all channels.
+- `pending_tasks`: Which nodes/nodes to run on the next super-step (e.g., which tool to invoke next).
 
-## 5. Durable Runtime Model
+### 5.4 Wait/Interrupt Model (Checkpoints as Waits)
+**There is no dedicated `WaitRegistry` database table or schema.**
+A wait is simply the state of a checkpoint resulting from a `GraphInterrupt` or an early exit waiting on a specific input channel (e.g., `hitl_resolution`).
+- **Timeouts** are handled by a background sweeper that identifies paused checkpoints containing timeout deadlines, and simply injects a `TimeoutCommand` as a state update, resuming the loop.
+- **HITL/Proxy** inputs trigger `resume(threadId, payload)` by loading the paused checkpoint, appending the payload to the input channel, and executing the next super-step.
 
-### 5.1 Turn envelope
+### 5.5 Outbox Model (State Channel)
+Outbound communication is modeled as an `intents` state channel.
+- Nodes (like `responseFinalize`) return writes: `{ intents: [{ type: 'send_text', payload: ... }] }`.
+- The barrier commit saves this to the checkpoint.
+- A background or post-commit **Dispatcher worker** reads intents from the checkpoint, sends them via transport, and updates the checkpoint status, keeping I/O strictly decoupled from the deterministic state transition.
 
-Each inbound/synthetic trigger is processed as a durable turn:
-- claim input identity,
-- load snapshot/checkpoint,
-- execute deterministic kernel branch,
-- commit state transition and outbound intents atomically,
-- dispatch outbound intents via outbox worker.
+### 5.6 Working Memory IS the Checkpoint (Dual-Write Ledger)
+Zupa currently queries the DB (`getRecentMessages` with `LIMIT 20`) on every turn to bootstrap the LLM's working memory (`packages/zupa/src/core/kernel/nodes/contextAssembly.ts`). **In a Durable Checkpoint model, this is an anti-pattern.** The Checkpoint MUST be the authoritative source of execution state.
 
-### 5.2 Checkpoint model
+1. **Working Memory as a Channel:** The "Working Memory" is simply a state channel (e.g., `messages`) inside the Checkpoint. The engine does not query the DB; it reads the channel.
+2. **Preventing Overflow:** To prevent the `messages` channel from overflowing the LLM context (and bloating the Checkpoint blob), its Reducer is strictly bounded (e.g., a rolling window that keeps only the last N messages).
+3. **The Dual-Write Ledger (Full History):** While the Checkpoint deliberately forgets old messages, the application UI and analytics still need the full history. We solve this via the **Dual-Write Ledger**. Nodes that generate new messages return a pure `ledgerEvents` payload alongside their channel writes.
+4. **The Barrier Commit:** The Checkpointer transactionally saves the small, bounded Checkpoint blob *and* executes the SQL/relational `ledgerEvents` (e.g., `INSERT INTO messages`). This guarantees the query-rich backend retains infinite history, while the orchestration engine maintains strict, bounded, and authoritative execution state without mid-turn DB reads.
+5. **Sub-flow Isolation:** When Zupa introduces multi-flow sub-graphing (as per the multiflow RFC), a sub-flow's checkpoint can natively inherit a pure copy of its parent's working memory channel. It can iterate locally (e.g., a massive internal tree-of-thought search) managing its own channel bounds, and only flush the final result back to the parent and the Dual-Write Ledger when returning.
 
-Checkpoint snapshot MUST include (minimum):
-- active flow identity,
-- flow frame/program counter,
-- pending ask/wait descriptors,
-- HITL mode and escalation/proxy correlation ids,
-- last processed inbound/event identity.
+## 6. Proposed Foundation Contracts (Pregel-aligned)
 
-### 5.3 Wait/interrupt model
-
-All long waits MUST be represented as durable wait records:
-- wait type (`confirm`, `admin_resolution`, `proxy_input`, `timeout`, `scheduler`),
-- correlation keys (`sessionId`, `flowId`, `escalationId`, `proxyId`, `scheduleId`),
-- deadline/timeout policy,
-- resume payload schema/version.
-
-### 5.4 Outbox model
-
-Outbound communication MUST be produced as durable intents, not direct side effects in core turn transaction:
-- intent persisted first,
-- dispatcher sends,
-- delivery status persisted.
-
-## 6. Proposed Foundation Contracts (Experimental)
-
-### 6.1 DurableStore
+### 6.1 CheckpointSaver (DurableStore)
 
 ```ts
-type DurableStore = {
-  claimInbound(inputKey: string): Promise<'claimed' | 'duplicate'>;
-  loadSessionSnapshot(sessionId: string): Promise<SessionSnapshot | null>;
-  beginTurn(txInput: TurnTxInput): Promise<TurnTransaction>;
-};
+interface StateSnapshot {
+  values: Record<string, unknown>; // current state channels
+  metadata: {
+    source: string;
+    step: number;
+    writes: Record<string, unknown>; // node diff outputs
+  };
+  createdAt: Date;
+  nextTasks: string[]; // nodes ready to run
+}
 
-type TurnTransaction = {
-  appendEvent(event: DurableEvent): Promise<void>;
-  upsertCheckpoint(checkpoint: FlowCheckpoint): Promise<void>;
-  upsertWait(wait: WaitRecord): Promise<void>;
-  enqueueOutbox(intent: OutboxIntent): Promise<void>;
-  complete(result: TurnResult): Promise<void>;
-  fail(error: DurableFailure): Promise<void>;
-};
+interface CheckpointSaver {
+  put(threadId: string, checkpoint: StateSnapshot): Promise<void>;
+  get(threadId: string): Promise<StateSnapshot | null>;
+  getHistory(threadId: string): Promise<StateSnapshot[]>;
+}
 ```
 
-### 6.2 WaitRegistry
-
+### 6.2 Phase Contract Evolution
+Nodes will evolve from mutating `context.state` to returning `Partial<RuntimeStateDiff>`:
 ```ts
-type WaitRegistry = {
-  register(wait: WaitRecord): Promise<void>;
-  resolve(waitId: string, payload: unknown): Promise<void>;
-  timeoutDue(now: Date, limit: number): Promise<WaitRecord[]>;
-};
+interface PhaseContractSpec<TRequires, TProvides> {
+  name: string;
+  run(snapshot: SnapshotFor<TRequires>): Promise<Partial<TProvides>>;
+}
 ```
 
-### 6.3 OutboxDispatcher
-
+### 6.3 Kernel Executor
 ```ts
-type OutboxDispatcher = {
-  claim(limit: number): Promise<OutboxIntent[]>;
-  markSent(intentId: string, metadata?: Record<string, unknown>): Promise<void>;
-  markFailed(intentId: string, reason: string, retryAt?: Date): Promise<void>;
-};
+interface KernelExecutor {
+  invoke(threadId: string, input: unknown): Promise<StateSnapshot>;
+  resume(threadId: string, payload: unknown): Promise<StateSnapshot>;
+}
 ```
 
-### 6.4 Scheduler foundation linkage
+## 7. Execution Order (Super-step Unrolling)
 
-Scheduler contracts from the scheduling RFC remain authoritative; this RFC adds the requirement that schedule claims/runs share the same durability guarantees and correlation model as inbound turns.
+Currently, the `KERNEL_PHASE_ORDER` is a static linear list. Under the new model, this is unrolled into distinct super-steps:
 
-## 7. Normative Execution Order
-
-For durable turns, runtime MUST follow:
-1. input dedup claim (`inbound.id` / synthetic id).
-2. command gate.
-3. pre-inference policy (`beforeLLM`) if configured.
-4. flow resume/router/classic selection.
-5. response candidate + pre-send policy (`beforeResponse`).
-6. durable commit of state transition + outbox intents.
-7. outbox dispatch send/cancel path.
-8. persistence finalization.
-9. post-send side effects (`onResponse`).
+1. input dedup claim (`inbound.id`).
+2. **Super-step 1:** Evaluate command gate, access policies. Barrier Commit.
+3. **Super-step 2:** Run `agenticLoop` Phase 1 (LLM Inference). Barrier Commit.
+4. **Super-step 3..N:** If LLM returns tool calls, run tools as separate sub-nodes/tasks. Barrier Commit per tool completion. This ensures that if a tool crashes, the LLM prompt does not need to be regenerated.
+5. **Super-step N+1:** Re-run LLM with tool outputs. Barrier Commit.
+6. **Super-step N+2:** Generate response intents (`responseFinalize`). Barrier Commit.
+7. **Post-Commit Dispatch:** Outbox worker picks up intents and executes external I/O (TTS, send).
 
 Important:
-- `onResponse` remains post-send/post-persist side-effect hook.
+- `onResponse` side effects attach to the post-commit dispatcher.
 - `reply` remains required-by-default in structured mode.
-- hook failure fallback remains deterministic (`continue` + telemetry).
 
 ## 8. Reliability and Exactly-Once Guarantees
 
-1. Duplicate inbound keys MUST not advance checkpoints or emit duplicate outbox intents.
-2. Outbox intents MUST have idempotency keys and claim semantics.
-3. Recovery after crash MUST resume from last committed checkpoint/wait/outbox state.
-4. Timeout resumes MUST be deterministic and auditable.
-5. Campaign fan-out dedup identity MUST include recipient dimension.
+1. Duplicate inbound keys MUST not produce new input events for the channels.
+2. Outbox intents MUST have idempotency keys derived from the super-step.
+3. Recovery after crash MUST simply resume `invoke()` from the last committed checkpoint.
+4. Timeout resumes MUST be deterministic channel injections.
 
 ## 9. Security and Audit Requirements
 
-1. Privileged HITL actions MUST pass resolver checks (`resolveActor` + `can`).
-2. Admin proxy inputs MUST be authorized before becoming resumable flow input.
-3. All resolver denials and privileged actions MUST emit auditable events.
-4. Scheduler tool scope enforcement MUST remain server-side and not trust model arguments.
+1. Checkpoints inherently provide perfect auditability (state values + writes metadata).
+2. Privileged HITL actions MUST pass resolver checks before injecting their payload into a paused checkpoint.
+3. Scheduler tool scope enforcement MUST remain server-side.
 
-## 10. Middleware and Plugin Positioning
+## 10. External Workflow Engine Assessment (`useworkflow.dev`)
 
-### 10.1 Not required now
+### 10.1 Posture Shift
+By adopting the BSP/Pregel executor pattern internally, Zupa no longer strictly *needs* an external workflow engine to achieve its goals. 
+The internal semantic primitives (Checkpoints, Channels, Super-steps) are far more robust than polling a custom `WaitRegistry`.
 
-A generic middleware chain is not a prerequisite for these RFC features.
+### 10.2 Future Integration
+We will focus purely on Native Zupa checkpoints. If an external system like `useworkflow` or `Temporal` is desired later, it can implement the `CheckpointSaver` and `KernelExecutor` interfaces.
 
-### 10.2 What is required now
+## 11. Rollout Plan
 
-Capability-specific extension ports:
-- durability store,
-- wait registry,
-- outbox dispatcher,
-- scheduler store/executor,
-- admin auth resolver,
-- response policy hooks.
-
-### 10.3 Future plugin path
-
-A plugin framework MAY be introduced later for packaging cross-cutting policies, but only after durability state contracts are stable.
-
-## 11. External Workflow Engine Assessment (`useworkflow.dev`)
-
-### 11.1 Potential gains
-
-Based on public docs/repo material, workflow engines provide:
-- execution context + persistent snapshots,
-- wait/until primitives with timeout and resume,
-- queue-backed durable execution,
-- lifecycle hooks and tracing.
-
-These map well to Zupa needs for flow/HITL/scheduler orchestration.
-
-### 11.2 Risks
-
-1. Semantic mismatch with Zupa kernel phase contracts.
-2. Operational lock-in if external model becomes canonical too early.
-3. Harder migration/control if auth/transport semantics are coupled into engine-specific APIs.
-
-### 11.3 Locked integration posture
-
-Hybrid adapter path is the baseline:
-- define Zupa-native durability contracts first,
-- optionally implement an adapter over external workflow engines,
-- keep feature semantics independent of any single engine.
-
-## 12. Rollout Plan
-
-### Phase A — Foundation Contracts
-
+### Phase A — State & Checkpoint Primitives
 MUST deliver:
-- durable store interfaces and canonical state shapes,
-- wait registry/outbox contracts,
-- correlation and event taxonomy,
-- compatibility policy for non-flow agents.
+- Pure node refactoring (`context.state` mutability removed).
+- `CheckpointSaver` interfaces and database tables.
+- Channel and Reducer definitions for core arrays (e.g. `messages`, `intents`).
 
-### Phase B — Runtime Wiring
-
+### Phase B — Subgraphing the Agentic Loop
 MUST deliver:
-- transactional checkpoint + outbox commit path,
-- dispatcher workers and timeout processors,
-- flow/HITL/scheduler branch integration onto foundation.
+- Unrolling `agenticLoop.ts` into discrete Tool execution super-steps.
+- Introducing `GraphInterrupt` throw/catch loop mechanics.
+- The `resume(threadId, payload)` API surface.
 
-### Phase C — Hardening
-
+### Phase C — Outbox Isolation Hookup
 MUST deliver:
-- replay tooling and audit completeness checks,
-- external engine adapter (optional),
-- SLO metrics and operational runbooks.
+- `responseFinalize` refactored to emit intents.
+- Outbox post-commit dispatcher worker.
 
-## 13. Validation Matrix
+## 12. Validation Matrix
 
-### 13.1 Compatibility
-- agents without flows/HITL/schedules behave unchanged.
-- existing two-arg `onResponse` remains valid.
+### 12.1 Durability correctness
+- crash during tool execution resumes exactly before the tool, preserving LLM output.
+- restart resumes from last committed checkpoint seamlessly.
 
-### 13.2 Durability correctness
-- crash between commit and send does not lose or duplicate outbox intent.
-- restart resumes from last committed checkpoint/wait state.
-
-### 13.3 Reliability
-- duplicate inbound ids do not double-advance flow/wait/proxy states.
-- timeout resume paths are deterministic under same snapshot.
-
-### 13.4 Security
-- unauthorized resolver actions are denied and auditable.
-- scheduler tool cannot escape current-session user scope.
-
-### 13.5 Observability
-- every state transition carries correlation ids:
-  `requestId`, `sessionId`, `flowId?`, `escalationId?`, `proxyId?`, `scheduleId?`.
-- lifecycle/policy/hitl/scheduler events remain cross-RFC consistent.
-
-## 14. Open Questions (v0.2+)
-
-1. Should outbox become mandatory for all outbound channels in first implementation wave?
-2. Should wait processing be in-kernel or split into dedicated worker service by default?
-3. What minimum adapter contract is needed to support `useworkflow` without leaking engine-specific abstractions into app code?
-4. Should campaign fan-out batching and throttling be part of foundation or scheduler phase hardening?
+### 12.2 Reliability
+- duplicate inbound ids do not double-advance checkpoint state.
+- outbox intents are skipped if already dispatched during a previous half-crash.
 
 ## Sync Contract (Cross-RFC Alignment)
 
 This RFC, `docs/rfcs/2026-02-28-unified-multiflow-hitl-v0.2.md`,
 `docs/rfcs/2026-02-28-response-lifecycle-policy-hooks-v0.1.md`, and
 `docs/rfcs/2026-02-28-scheduled-flows-autonomous-v0.1.md` MUST remain aligned on:
-1. command-first ordering.
-2. flow-only router decision scope.
-3. policy hooks apply to classic + flow + scheduled outputs.
-4. `reply` required-by-default posture.
-5. `onResponse` as post-send/post-persist side-effect hook.
-6. scheduler control-plane vs agent tool-plane split.
-7. HITL/proxy/schedule transitions are durable, replayable, and auditable.
+1. wait = paused checkpoint.
+2. outbox = state channel + background dispatcher.
+3. tools = discrete execution nodes.
