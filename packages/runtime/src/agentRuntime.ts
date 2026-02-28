@@ -12,7 +12,6 @@ import {
 
 import { EngineExecutor, createInitialRuntimeContext } from "@zupa/engine";
 
-import { EphemeralCheckpointSaver } from "./engine/ephemeralSaver";
 import { buildEngineGraphSpec } from "./engine/graph";
 
 import {
@@ -227,7 +226,17 @@ export class AgentRuntime<T = unknown> {
     context.state = {
       ...context.state,
       user,
-      session
+      session,
+      inbound, // Ensure the new inbound is in the state immediately
+      inboundDuplicate: undefined,
+      commandHandled: undefined,
+      resolvedContent: undefined,
+      assembledContext: undefined,
+      builtPrompt: undefined,
+      llmResponse: undefined,
+      toolResults: undefined,
+      inputModality: undefined,
+      outputModality: undefined,
     };
 
     const threadId = session.id;
