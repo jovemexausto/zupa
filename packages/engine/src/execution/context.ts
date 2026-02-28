@@ -23,7 +23,6 @@ export interface CreateInitialRuntimeContextInput<T = any> {
  */
 export const ENGINE_NODE_ORDER: readonly EngineNodeName[] = [
   'access_policy',
-  'session_attach',
   'command_dispatch_gate',
   'content_resolution',
   'context_assembly',
