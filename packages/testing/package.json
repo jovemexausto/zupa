@@ -14,12 +14,12 @@
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "@zupa/core": "workspace:*",
-        "@zupa/adapters": "workspace:*",
         "zod": "^4.1.11"
     },
     "devDependencies": {
         "@types/node": "^24.4.0",
+        "@zupa/adapters": "workspace:*",
+        "@zupa/core": "workspace:*",
         "tsup": "^8.5.0",
         "typescript": "^5.9.2"
     }

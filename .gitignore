@@ -11,3 +11,4 @@ examples/english-buddy/.wwebjs_auth_docker/
 examples/english-buddy/data/
 tasks/
 .worktrees/
+.turbo
