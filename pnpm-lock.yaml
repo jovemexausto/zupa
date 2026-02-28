@@ -139,9 +139,6 @@ importers:
       '@zupa/engine':
         specifier: workspace:*
         version: link:../engine
-      get-port-please:
-        specifier: ^3.2.0
-        version: 3.2.0
       nunjucks:
         specifier: ^3.2.4
         version: 3.2.4
@@ -1340,9 +1337,6 @@ packages:
   get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
-
-  get-port-please@3.2.0:
-    resolution: {integrity: sha512-I9QVvBw5U/hw3RmWpYKRumUeaDgxTPd401x364rLmWBJcOQ753eov1eTgzDqRG9bqFIfDc7gfzcQEWrUri3o1A==}
 
   get-stream@5.2.0:
     resolution: {integrity: sha512-nBF+F1rAZVCu/p7rjzgA+Yb4lfYXrpl7a6VmJrU8wF9I1CKvP/QwPNZHnOlwbTkY6dvtFIzFMSyQXbLoTQPRpA==}
@@ -3078,8 +3072,6 @@ snapshots:
     optional: true
 
   get-caller-file@2.0.5: {}
-
-  get-port-please@3.2.0: {}
 
   get-stream@5.2.0:
     dependencies:
