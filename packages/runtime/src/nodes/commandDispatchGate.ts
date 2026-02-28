@@ -12,11 +12,6 @@ import { type RuntimeState } from './index';
  */
 export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { state, config, resources, inbound } = context;
-  const access = state.access;
-
-  if (access?.allowed === false) {
-    return { stateDiff: { commandHandled: true }, nextTasks: [] };
-  }
 
   if (typeof state.commandHandled === 'boolean') {
     return { stateDiff: {}, nextTasks: ['response_finalize'] };

@@ -6,13 +6,11 @@ import {
   RuntimeResource,
   RuntimeEngineResources,
   RuntimeEngineContext,
-  EngineNodeName,
   InboundMessage,
   StateSnapshot,
   CheckpointSaver,
   LedgerEvent,
-  LedgerWriter,
-  NodeResult
+  LedgerWriter
 } from '@zupa/core';
 
 import {
@@ -66,7 +64,6 @@ function buildEngineGraphSpec<T = unknown>(
   handlers: RuntimeNodeHandlerMap<T>
 ): EngineGraphSpec<RuntimeState, RuntimeEngineContext<T>> {
   const channels: { [K in keyof RuntimeState]: ChannelReducer<RuntimeState[K]> } = {
-    access: lastWriteWinsReducer(),
     session: lastWriteWinsReducer(),
     user: lastWriteWinsReducer(),
     replyTarget: lastWriteWinsReducer(),
