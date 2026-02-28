@@ -3,20 +3,13 @@ import {
   createFakeRuntimeDeps,
   DEFAULT_SESSION
 } from '@zupa/testing';
-import { SessionKVStore, endSessionWithKvHandoff } from '../src/index';
+import { MemoryStateProvider } from '@zupa/core';
+import { endSessionWithKvHandoff } from '../src/index';
 
 describe('session capability slice', () => {
-  it('persists kv immediately on write/delete operations', async () => {
-    const writes: Array<Record<string, unknown>> = [];
-    const kv = new SessionKVStore(
-      DEFAULT_SESSION.id,
-      {
-        updateSessionKV: async (_sessionId: string, snapshot: any) => {
-          writes.push({ ...snapshot });
-        }
-      } as any,
-      {}
-    );
+  it('memory state provider gets, sets and deletes cleanly', async () => {
+    const provider = new MemoryStateProvider();
+    const kv = provider.attach(DEFAULT_SESSION.id);
 
     await kv.set('name', 'voxpal');
     await kv.set('count', 2);
@@ -24,7 +17,6 @@ describe('session capability slice', () => {
 
     expect(await kv.get('count')).toBe(2);
     expect(await kv.all()).toEqual({ count: 2 });
-    expect(writes).toEqual([{ name: 'voxpal' }, { name: 'voxpal', count: 2 }, { count: 2 }]);
   });
 
   it('hands off kv snapshot when ending the active session', async () => {
@@ -45,8 +37,10 @@ describe('session capability slice', () => {
       }
     });
 
-    expect(endSessionWithSummary).toHaveBeenCalledWith(DEFAULT_SESSION.id, new Date('2026-02-24T00:00:00.000Z'), {
-      correctionCount: 3
-    });
+    expect(endSessionWithSummary).toHaveBeenCalledWith(
+      DEFAULT_SESSION.id,
+      new Date('2026-02-24T00:00:00.000Z'),
+      JSON.stringify({ correctionCount: 3 })
+    );
   });
 });

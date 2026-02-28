@@ -5,8 +5,7 @@ import {
   FakeTTSProvider,
   FakeMessagingTransport,
   FakeDatabaseBackend,
-  FakeFileStorage,
-  FakeVectorStore
+  FakeStateProvider
 } from '../src/index';
 
 describe('fake adapters', () => {
@@ -59,8 +58,9 @@ describe('fake adapters', () => {
     expect(messaging.sentVoice).toEqual([{ to: 'u1', audioPath: '/tmp/out.ogg' }]);
   });
 
-  it('stores and retrieves users/messages/session kv in fake db', async () => {
+  it('stores and retrieves users/messages in fake db and kv in state provider', async () => {
     const db = new FakeDatabaseBackend();
+    const state = new FakeStateProvider();
 
     const user = await db.createUser({ externalUserId: '+15550000000', displayName: 'Test User' });
     const session = await db.createSession(user.id);
@@ -76,15 +76,16 @@ describe('fake adapters', () => {
       latencyMs: 0
     });
 
-    await db.updateSessionKV(session.id, { correctionCount: 1 });
+    const kv = state.attach(session.id);
+    await kv.set('correctionCount', 1);
 
     const found = await db.findUser('+15550000000');
     const recent = await db.getRecentMessages(session.id, 5);
-    const kv = await db.getSessionKV(session.id);
+    const kvAll = await kv.all();
 
     expect(found?.id).toBe(user.id);
     expect(recent).toHaveLength(1);
-    expect(kv).toEqual({ correctionCount: 1 });
+    expect(kvAll).toEqual({ correctionCount: 1 });
   });
 
   it('claims inbound events once and marks duplicates', async () => {
