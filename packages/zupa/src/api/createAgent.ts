@@ -6,6 +6,8 @@ import {
 import { AgentRuntime, buildDefaultNodeHandlers } from "@zupa/runtime";
 import { PinoLogger } from "@zupa/adapters";
 import { createLocalResources } from "./resources";
+import { getPort } from "get-port-please";
+import { UI_DEFAULTS, LOGGING_DEFAULTS } from "../constants";
 
 type WithReply = { reply: string };
 
@@ -32,10 +34,10 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
     handler: (...args: unknown[]) => void;
   }> = [];
 
-  const ensureRuntime = (): AgentRuntime<T> => {
+  const ensureRuntime = async (): Promise<AgentRuntime<T>> => {
     if (runtime) return runtime;
 
-    const runtimeConfig = resolveRuntimeConfig<T>(config);
+    const runtimeConfig = await resolveRuntimeConfig<T>(config);
     validateRuntimeConfig<T>(runtimeConfig);
 
     const resources = applyDefaultProviders(config.providers || {});
@@ -55,7 +57,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
 
   const agent = {
     async start(): Promise<void> {
-      await ensureRuntime().start();
+      await (await ensureRuntime()).start();
     },
 
     async stop(): Promise<void> {
@@ -80,9 +82,9 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   return agent;
 }
 
-function resolveRuntimeConfig<T extends WithReply>(
+async function resolveRuntimeConfig<T extends WithReply>(
   config: AgentConfig<T>,
-): RuntimeConfig<T> {
+): Promise<RuntimeConfig<T>> {
   const language = resolveLanguage(config.language);
 
   // Build RuntimeConfig from AgentConfig, excluding the providers field
@@ -94,23 +96,32 @@ function resolveRuntimeConfig<T extends WithReply>(
     language,
   };
 
-  // Apply UI defaults if not explicitly provided
+  // Apply UI defaults and resolve port
   if (config.ui === false) {
     resolved.ui = { enabled: false };
   } else if (!config.ui) {
+    const port = await getPort({ ports: [...UI_DEFAULTS.PREFERRED_PORTS] });
     resolved.ui = {
-      enabled: true,
-      host: "127.0.0.1",
-      port: 5557,
-      sseHeartbeatMs: 15_000,
+      enabled: UI_DEFAULTS.ENABLED,
+      host: UI_DEFAULTS.HOST,
+      port,
+      sseHeartbeatMs: UI_DEFAULTS.SSE_HEARTBEAT_MS,
     };
   } else {
+    // Find available port if specified, otherwise use the preferred ports
+    const port = config.ui.port
+      ? await getPort({
+          port: config.ui.port,
+          ports: [...UI_DEFAULTS.PREFERRED_PORTS],
+        })
+      : await getPort({ ports: [...UI_DEFAULTS.PREFERRED_PORTS] });
+
     // Fill in any missing UI properties with defaults
     resolved.ui = {
-      enabled: config.ui.enabled ?? true,
-      host: config.ui.host ?? "127.0.0.1",
-      port: config.ui.port ?? 5557,
-      sseHeartbeatMs: config.ui.sseHeartbeatMs ?? 15_000,
+      enabled: config.ui.enabled ?? UI_DEFAULTS.ENABLED,
+      host: config.ui.host ?? UI_DEFAULTS.HOST,
+      port,
+      sseHeartbeatMs: config.ui.sseHeartbeatMs ?? UI_DEFAULTS.SSE_HEARTBEAT_MS,
       authToken: config.ui.authToken,
       corsOrigin: config.ui.corsOrigin,
     };
@@ -142,8 +153,8 @@ function applyDefaultProviders(
     logger:
       resources.logger ??
       new PinoLogger({
-        level: "info",
-        prettyPrint: process.env.NODE_ENV !== "production",
+        level: LOGGING_DEFAULTS.LEVEL,
+        prettyPrint: LOGGING_DEFAULTS.PRETTY_PRINT,
       }),
   };
 }
