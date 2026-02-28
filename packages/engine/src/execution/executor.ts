@@ -74,6 +74,11 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
             if (Object.keys(input).length > 0) {
                 checkpoint.values = this.applyReducers(checkpoint.values, input);
             }
+            // CRITICAL: If an entrypoint is explicitly provided, we override the nextTasks
+            // to start a new execution turn from that node, while preserving values.
+            if (config.entrypoint) {
+                checkpoint.nextTasks = [config.entrypoint];
+            }
         }
 
         let currentCheckpoint = checkpoint!;
