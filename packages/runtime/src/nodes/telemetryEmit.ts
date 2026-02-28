@@ -1,11 +1,11 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeKernelContext } from '@zupa/core';
+import { type RuntimeEngineContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
  * telemetry_emit
  */
-export const telemetryEmitNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const telemetryEmitNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, telemetry, meta } = context;
 
   // Emit individual node durations

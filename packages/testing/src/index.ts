@@ -8,7 +8,7 @@ import {
     FakeVectorStore
 } from '@zupa/adapters';
 import {
-    type RuntimeKernelResources,
+    type RuntimeEngineResources,
     type UserRecord,
     type SessionRecord,
     type InboundMessage,
@@ -92,7 +92,7 @@ export function createFakeLLMResponse(overrides?: Partial<LLMResponse>): LLMResp
     };
 }
 
-export function createFakeRuntimeDeps(): RuntimeKernelResources {
+export function createFakeRuntimeDeps(): RuntimeEngineResources {
     const database = new FakeDatabaseBackend();
 
     return {

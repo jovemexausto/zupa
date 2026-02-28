@@ -1,5 +1,7 @@
 - [X] Create a @zupa/testing package for testing utilities, fixtures, etc. Move each test file to the project it really belongs to, refactoring them so use the testing utilities and fixtures / mockups.
-- [X] Fix .d.ts files being generated in the same directory as the source files and clean up the codebase
+- [X] Fix .d.ts files being generated in the same directory as the source files and clean up the codebase.
+- [X] Chose one: Engine or Kernel, we should ensure a clear semantic.
+- [ ] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
 - [ ] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
 - [ ] Unbound Session Management from KV, make the abstraction crisp and ensure right usage through the codebase
 - [ ] Resolve technical debt and ensure baseline is solid
@@ -8,6 +10,5 @@
 - [ ] Ensure that the runtime is solid and can be used for production
 - [ ] Do one more assesment pass againt CODEBASE_STATUS_ASSESSMENT.md and current codebase state to ensure we are on the right path, and write a plan to address the gaps if any.
 - [ ] Replace any console.(log|warn|error) with proper production ready loggin (pino) and ensure it is used consistently across the codebase, also certify we position telemetry and logs at strategic points. This maybe will require refining current approach or imagine a batter solution for cross cutting concerns.
-- [ ] Chose one: Engine or Kernel, we should ensure a clear semantic.
+
 - [ ] Setup turbo repo for monorepo management.
-- [ ] Streamline / improve entities definitions, names and conventions.

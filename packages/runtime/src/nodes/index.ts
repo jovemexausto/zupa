@@ -1,13 +1,13 @@
 import {
-  RuntimeKernelContext,
-  KernelNodeName,
+  RuntimeEngineContext,
+  EngineNodeName,
   NodeResult,
   SessionRecord,
   SessionWithKV,
   UserRecord,
   InboundMessage,
   LLMResponse,
-  ChatMessage,
+  MessageRecord,
   VectorSearchResult
 } from '@zupa/core';
 import { accessPolicyNode } from './accessPolicy';
@@ -36,7 +36,7 @@ export interface RuntimeState {
   inbound?: InboundMessage;
   commandHandled?: boolean;
   assembledContext?: {
-    history: ChatMessage[];
+    history: MessageRecord[];
     relevantMemories?: VectorSearchResult[];
     kv?: Record<string, unknown>;
     summaries?: string[];
@@ -48,10 +48,10 @@ export interface RuntimeState {
 
 /** Handler type for the Pregel executor – returns a NodeResult. */
 export type RuntimeNodeHandler<T = unknown> = (
-  context: RuntimeKernelContext<T> & { state: Readonly<RuntimeState> }
+  context: RuntimeEngineContext<T> & { state: Readonly<RuntimeState> }
 ) => Promise<NodeResult<Partial<RuntimeState>>>;
 
-export type RuntimeNodeHandlerMap<T = unknown> = Record<KernelNodeName, RuntimeNodeHandler<T>>;
+export type RuntimeNodeHandlerMap<T = unknown> = Record<EngineNodeName, RuntimeNodeHandler<T>>;
 
 export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T> {
   return {
@@ -69,4 +69,4 @@ export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T
   };
 }
 // TODO: Remove this
-export { RuntimeNodeHandler as KernelNodeHandler, RuntimeNodeHandlerMap as KernelNodeHandlerMap };
+export { RuntimeNodeHandler as EngineNodeHandler, RuntimeNodeHandlerMap as EngineNodeHandlerMap };

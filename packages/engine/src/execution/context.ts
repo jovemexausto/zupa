@@ -1,8 +1,8 @@
 import {
-  type KernelNodeName,
-  type RuntimeKernelContext,
+  type EngineNodeName,
+  type RuntimeEngineContext,
   type RuntimeConfig,
-  type RuntimeKernelResources,
+  type RuntimeEngineResources,
   type InboundMessage,
   normalizeExternalUserId,
   resolveReplyTarget
@@ -13,10 +13,10 @@ export interface CreateInitialRuntimeContextInput<T = any> {
   startedAt: Date;
   runtimeConfig: RuntimeConfig<T>;
   inbound: InboundMessage;
-  runtimeResources: RuntimeKernelResources;
+  runtimeResources: RuntimeEngineResources;
 }
 
-export const KERNEL_NODE_ORDER: readonly KernelNodeName[] = [
+export const ENGINE_NODE_ORDER: readonly EngineNodeName[] = [
   'access_policy',
   'session_attach',
   'command_dispatch_gate',
@@ -30,7 +30,7 @@ export const KERNEL_NODE_ORDER: readonly KernelNodeName[] = [
   'telemetry_emit'
 ] as const;
 
-export function createInitialRuntimeContext<T = any>(input: CreateInitialRuntimeContextInput<T>): RuntimeKernelContext<T> {
+export function createInitialRuntimeContext<T = any>(input: CreateInitialRuntimeContextInput<T>): RuntimeEngineContext<T> {
   return {
     meta: {
       requestId: input.requestId,

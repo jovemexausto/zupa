@@ -15,7 +15,7 @@ Most WhatsApp bot frameworks give you a message event and wish you luck. You end
 
 Zupa is what you'd build if you took that seriously.
 
-It's a runtime for conversational agents. You write the intent — the prompt, the tools, the hooks. Zupa runs a deterministic kernel pipeline that turns inbound messages into durable, observable outcomes. Sessions, memory, tool dispatch, voice, commands, scheduling — all handled. Swap any piece without touching your logic.
+It's a runtime for conversational agents. You write the intent — the prompt, the tools, the hooks. Zupa runs a deterministic engine pipeline that turns inbound messages into durable, observable outcomes. Sessions, memory, tool dispatch, voice, commands, scheduling — all handled. Swap any piece without touching your logic.
 
 Built in Brazil. Runs anywhere.
 
@@ -140,7 +140,7 @@ await agent.start()
 
 ## How it works
 
-Every inbound message moves through a deterministic kernel pipeline. No magic. No hidden control flow. You can see exactly where you are at any point.
+Every inbound message moves through a deterministic engine pipeline. No magic. No hidden control flow. You can see exactly where you are at any point.
 
 ```
 01  access_policy        decide if this sender is allowed
@@ -513,7 +513,7 @@ await agent.close()
 
 ## Telemetry
 
-Every kernel node emits a structured event. Plug in anything:
+Every engine node emits a structured event. Plug in anything:
 
 ```ts
 providers: {
@@ -560,9 +560,9 @@ packages/zupa/src/
 │   ├── createAgent.ts       composition root — validates config, assembles runtime
 │   └── defineTool.ts        typed tool factory
 ├── core/
-│   ├── kernel/
-│   │   ├── nodes/          one file per kernel node (01-10)
-│   │   ├── context.ts       KernelContext type — inbound + mutable state
+│   ├── engine/
+│   │   ├── nodes/          one file per engine node (01-10)
+│   │   ├── context.ts       EngineContext type — inbound + mutable state
 │   │   └── runner.ts        node executor with contract checks
 │   └── runtime/
 │       ├── lifecycle.ts     start/close orchestration
@@ -596,7 +596,7 @@ npm install
 npm test
 ```
 
-The codebase is organized around the kernel nodes. If you're adding a feature, it almost always belongs in one of the `capabilities/` files or a new node. If it's a new provider, add it to `integrations/` and export it from the factory in `api/integrations.ts`.
+The codebase is organized around the engine nodes. If you're adding a feature, it almost always belongs in one of the `capabilities/` files or a new node. If it's a new provider, add it to `integrations/` and export it from the factory in `api/integrations.ts`.
 
 Tests live next to the source files. Use `createFakeRuntimeDeps()` — don't write tests that require real API keys or network access.
 

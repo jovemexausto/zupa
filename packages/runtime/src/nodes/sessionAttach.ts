@@ -1,11 +1,11 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeKernelContext, type UserRecord } from '@zupa/core';
+import { type RuntimeEngineContext, type UserRecord } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
  * session_attach
  */
-export const sessionAttachNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const sessionAttachNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, state } = context;
   const user = state.user as UserRecord; // Standardized user resolution should happen here or in access policy
 

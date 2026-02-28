@@ -1,5 +1,5 @@
 import {
-    type RuntimeKernelResources
+    type RuntimeEngineResources
 } from '@zupa/core';
 import {
     OpenAILLMProvider,
@@ -15,7 +15,7 @@ import {
  * Creates a default set of resources using OpenAI and local fakes.
  * This is the high-level convenience factory for the main SDK.
  */
-export function createLocalResources(): RuntimeKernelResources {
+export function createLocalResources(): RuntimeEngineResources {
     const apiKey = process.env.OPENAI_API_KEY ?? '';
 
     return {

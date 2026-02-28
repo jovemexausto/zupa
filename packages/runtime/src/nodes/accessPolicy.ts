@@ -1,5 +1,5 @@
 import { defineNode } from '@zupa/engine';
-import { normalizeExternalUserId, resolveReplyTarget, type RuntimeKernelContext } from '@zupa/core';
+import { normalizeExternalUserId, resolveReplyTarget, type RuntimeEngineContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
@@ -8,7 +8,7 @@ import { type RuntimeState } from './index';
  * Purpose:
  * - Decide whether request is allowed to proceed.
  */
-export const accessPolicyNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const accessPolicyNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const inboundFrom = context.inbound.from;
   const inboundExternalUserId = normalizeExternalUserId(inboundFrom);
   const singleUser = context.config.singleUser;

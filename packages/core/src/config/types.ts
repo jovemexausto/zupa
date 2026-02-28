@@ -1,6 +1,6 @@
 import type { ZodType } from "zod";
 import { AgentLanguage } from "../entities/agent";
-import { AgentContext } from "../contracts/kernel";
+import { AgentContext } from "../contracts/engine";
 import { Tool } from "../contracts/modules";
 import { CommandDefinition } from "../contracts/modules";
 

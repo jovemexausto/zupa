@@ -1,6 +1,6 @@
 import { defineNode } from '@zupa/engine';
 import {
-    type RuntimeKernelContext,
+    type RuntimeEngineContext,
     type AgentContext,
     type SessionWithKV,
     dispatchToolCall
@@ -10,7 +10,7 @@ import { type RuntimeState } from './index';
 /**
  * tool_execution_node
  */
-export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
     const { resources, state, config } = context;
     const llmResponse = state.llmResponse;
     const tools = config.tools || [];

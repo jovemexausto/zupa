@@ -1,11 +1,11 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeKernelContext } from '@zupa/core';
+import { type RuntimeEngineContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
  * persistence_hooks
  */
-export const persistenceHooksNode = defineNode<RuntimeState, RuntimeKernelContext>(async (context) => {
+export const persistenceHooksNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, state } = context;
   const session = state.session;
 
