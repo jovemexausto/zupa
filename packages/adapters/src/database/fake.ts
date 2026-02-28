@@ -6,7 +6,9 @@ import {
     type User,
     type StateSnapshot,
     type LedgerEvent,
-    type SessionState
+    type SessionState,
+    type JsonValue,
+    type KVStore
 } from '@zupa/core';
 import { randomUUID } from 'node:crypto';
 
@@ -181,14 +183,14 @@ export class FakeDatabaseBackend implements DatabaseProvider {
 class FakeSessionState implements SessionState {
     public constructor(
         private readonly sessionId: string,
-        private readonly cache: Record<string, unknown>
+        private readonly cache: KVStore
     ) { }
 
-    public async get<T>(key: string): Promise<T | null> {
+    public async get<T extends JsonValue>(key: string): Promise<T | null> {
         return (this.cache[key] as T | undefined) ?? null;
     }
 
-    public async set<T>(key: string, value: T): Promise<void> {
+    public async set<T extends JsonValue>(key: string, value: T): Promise<void> {
         this.cache[key] = value;
     }
 
@@ -196,14 +198,14 @@ class FakeSessionState implements SessionState {
         delete this.cache[key];
     }
 
-    public async all(): Promise<Record<string, unknown>> {
+    public async all(): Promise<KVStore> {
         return { ...this.cache };
     }
 }
 
 export class FakeStateProvider implements StateProvider {
     readonly metadata = { name: 'fake-state-provider', version: '1.0.0' }
-    public readonly stores: Record<string, Record<string, unknown>> = {};
+    public readonly stores: Record<string, KVStore> = {};
 
     public async start(): Promise<void> { }
 

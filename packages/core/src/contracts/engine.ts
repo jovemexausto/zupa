@@ -6,8 +6,7 @@ import {
     STTProvider,
     TTSProvider,
     TelemetrySink,
-    VectorStore,
-    StateProvider
+    VectorStore
 } from '../ports';
 import { InboundMessage } from '../ports/transport';
 import { RuntimeConfig } from '../config/types';
@@ -57,7 +56,6 @@ export interface RuntimeEngineResources {
     storage: FileStorage;
     vectors: VectorStore;
     database: DatabaseProvider;
-    state: StateProvider;
     telemetry: TelemetrySink;
 }
 
