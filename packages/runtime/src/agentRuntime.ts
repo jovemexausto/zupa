@@ -204,7 +204,7 @@ export class AgentRuntime<T = unknown> {
       inbound,
     });
 
-    const saver = new EphemeralCheckpointSaver();
+    const saver = this.runtimeResources.database;
     // Resolve session identity before graph execution to establish consistent threadId
     const inboundFrom = inbound.from;
     const inboundExternalUserId = normalizeExternalUserId(inboundFrom);
