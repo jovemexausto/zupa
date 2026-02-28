@@ -1,0 +1,66 @@
+import { z } from 'zod';
+import { createAgent } from 'zupa';
+
+import { scheduleReminder, sendPronunciationClip, sendVocabCard } from './tools';
+import { getRecurringMistakes, getVocabularyHistory } from './queries';
+//
+import qrcode from 'qrcode-terminal';
+import { config } from 'dotenv';
+config()
+//
+
+const CorrectionSchema = z.object({
+  original    : z.string(),
+  corrected   : z.string(),
+  explanation : z.string(),
+  category    : z.enum(['grammar', 'vocabulary', 'preposition', 'article', 'other'])
+});
+
+const AgentReplySchema = z.object({
+  reply                : z.string(),
+  correction           : CorrectionSchema.nullable(),
+  sessionEnded         : z.boolean(),
+  vocabularyIntroduced : z.array(z.string()),
+});
+
+const agent = createAgent({
+  prompt: `
+    You are Sam, a friendly assistant in your late 20s chatting with
+    {{ user.displayName }} on WhatsApp.
+
+    {% if recurringMistakes.length %}
+    Mistakes to watch for: {{ recurringMistakes | join(', ') }}
+    {% endif %}
+
+    {% if vocabularyHistory.length %}
+    Words already introduced: {{ vocabularyHistory | join(', ') }}
+    {% endif %}
+
+    Keep replies to 2-4 sentences. Set sessionEnded only on clear goodbyes.
+  `,
+  outputSchema: AgentReplySchema,
+  tools: [scheduleReminder, sendVocabCard, sendPronunciationClip],
+  //
+  language: 'pt',
+  //
+  context: async ({ user }) => ({
+    recurringMistakes: await getRecurringMistakes(user.id),
+    vocabularyHistory: await getVocabularyHistory(user.id)
+  }),
+  //
+  onResponse: async (response, ctx) => {
+    await ctx.resources.database.updateMessageMetadata(ctx.session.id, {
+      correction: response.correction,
+      vocabularyIntroduced: response.vocabularyIntroduced
+    });
+
+    if (response.sessionEnded) {
+      await ctx.endSession();
+    }
+  },
+});
+
+agent.on('auth:qr',  (qr) => qrcode.generate(qr as string, {small: true}, console.log));
+agent.on('auth:ready', () => console.log('Sam is online'));
+
+void agent.start().catch(console.error)

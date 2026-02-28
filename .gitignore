@@ -1,0 +1,13 @@
+node_modules/
+dist/
+data/
+.wwebjs_auth/
+.wwebjs_cache/
+.env
+coverage/
+config.yaml
+litellm.config.yaml
+examples/english-buddy/.wwebjs_auth_docker/
+examples/english-buddy/data/
+tasks/
+.worktrees/

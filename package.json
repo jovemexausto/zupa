@@ -1,0 +1,19 @@
+{
+  "name": "voxpal-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Voxpal pnpm workspace",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "dev": "pnpm --filter voxpal build && pnpm --filter english-buddy dev",
+    "dev:stack": "docker compose -f examples/english-buddy/docker-compose.yml up --build",
+    "litellm:up": "docker compose -f examples/english-buddy/docker-compose.yml up -d litellm",
+    "litellm:down": "docker compose -f examples/english-buddy/docker-compose.yml stop litellm",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.26.2"
+}
