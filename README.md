@@ -40,7 +40,7 @@ const agent = createAgent({
   prompt: 'You are a practical, friendly assistant.',
 })
 
-agent.on('auth:qr', () => console.log('Open http://localhost:4200 to scan QR'))
+agent.on('auth:qr', () => console.log('Open http://localhost:5557 to scan QR'))
 await agent.start()
 ```
 
@@ -155,7 +155,7 @@ Every inbound message moves through a deterministic kernel pipeline. No magic. N
 10  telemetry_emit       emit runtime events
 ```
 
-`context.inbound` is immutable. `context.state` is the mutable workspace phases write to. You hook into the pipeline at the points Zupa exposes — `context()`, `onResponse()`, tool `before`/`after` hooks, and commands. You never touch the rest.
+`context.inbound` is immutable. `context.state` is the mutable workspace nodes write to. You hook into the pipeline at the points Zupa exposes — `context()`, `onResponse()`, tool `before`/`after` hooks, and commands. You never touch the rest.
 
 ---
 
@@ -225,7 +225,7 @@ integrations.transport.wwebjs({
 })
 ```
 
-On first run (or after disconnect), Zupa starts an HTTP server and serves the auth UI at `http://localhost:4200`. Scan the QR, you're connected. Session is persisted — you won't need to scan again unless you explicitly disconnect.
+On first run (or after disconnect), Zupa starts an HTTP server and serves the auth UI at `http://localhost:5557`. Scan the QR, you're connected. Session is persisted — you won't need to scan again unless you explicitly disconnect.
 
 ### Telegram *(coming soon)*
 
@@ -359,7 +359,7 @@ before: async (params, ctx) => {
 
 ## Commands
 
-Slash commands are intercepted in phase `03` — before the LLM sees anything. They never consume tokens.
+Slash commands are intercepted in node `03` — before the LLM sees anything. They never consume tokens.
 
 ```ts
 commands: {
@@ -409,15 +409,15 @@ Every Zupa agent ships with an embedded web UI. No separate process, no config n
 ```bash
 npm start
 # → zupa · english-buddy
-# → UI available at http://localhost:4200
+# → UI available at http://localhost:5557
 ```
 
 Open the URL and you get:
 
 - **Auth** — QR code in the browser with live connection state. No more terminal QR codes on remote servers.
 - **Scheduler** — compose messages, pick a recipient segment (all users / active last 7d / custom), set time and recurrence. Nunjucks templates with user variables. A full scheduling queue.
-- **Log** — streaming kernel event feed, filterable by phase. Latency per phase. Slow phases highlighted.
-- **Status** — message stats, active users, kernel phase breakdown for the last request.
+- **Log** — streaming kernel event feed, filterable by node. Latency per node. Slow nodes highlighted.
+- **Status** — message stats, active users, kernel node breakdown for the last request.
 - **Users** — who's talked to your agent, session count, message count, last active.
 
 Configure it:
@@ -426,7 +426,7 @@ Configure it:
 createAgent({
   prompt: '...',
   ui: {
-    port:     4200,
+    port:     5557,
     password: process.env.ZUPA_UI_PASSWORD,  // basic auth for production
   }
 })
@@ -507,20 +507,20 @@ await agent.close()
 
 ## Telemetry
 
-Every kernel phase emits a structured event. Plug in anything:
+Every kernel node emits a structured event. Plug in anything:
 
 ```ts
 providers: {
   telemetry: {
     emit: (event) => {
-      // event.phase, event.duration, event.agentId, event.sessionId, ...
-      datadog.increment(`zupa.phase.${event.phase}`, event.duration)
+      // event.node, event.duration, event.agentId, event.sessionId, ...
+      datadog.increment(`zupa.node.${event.node}`, event.duration)
     }
   }
 }
 ```
 
-Or use the built-in console emitter (default) which logs phase completions and slow phases automatically.
+Or use the built-in console emitter (default) which logs node completions and slow nodes automatically.
 
 ---
 
@@ -555,9 +555,9 @@ src/
 │   └── defineTool.ts        typed tool factory
 ├── core/
 │   ├── kernel/
-│   │   ├── phases/          one file per kernel phase (01-10)
+│   │   ├── nodes/          one file per kernel node (01-10)
 │   │   ├── context.ts       KernelContext type — inbound + mutable state
-│   │   └── runner.ts        phase executor with contract checks
+│   │   └── runner.ts        node executor with contract checks
 │   └── runtime/
 │       ├── lifecycle.ts     start/close orchestration
 │       └── bridges.ts       inbound + auth event bridges
@@ -591,7 +591,7 @@ npm install
 npm test
 ```
 
-The codebase is organized around the kernel phases. If you're adding a feature, it almost always belongs in one of the `capabilities/` files or a new phase. If it's a new provider, add it to `integrations/` and export it from the factory in `api/integrations.ts`.
+The codebase is organized around the kernel nodes. If you're adding a feature, it almost always belongs in one of the `capabilities/` files or a new node. If it's a new provider, add it to `integrations/` and export it from the factory in `api/integrations.ts`.
 
 Tests live next to the source files. Use `createFakeRuntimeDeps()` — don't write tests that require real API keys or network access.
 

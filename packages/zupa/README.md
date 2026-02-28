@@ -40,7 +40,7 @@ const agent = createAgent({
   prompt: 'You are a practical, friendly assistant.',
 })
 
-agent.on('auth:qr', () => console.log('Open http://127.0.0.1:4200/auth/qr to fetch QR payload'))
+agent.on('auth:qr', () => console.log('Open http://127.0.0.1:5557/auth/qr to fetch QR payload'))
 await agent.start()
 ```
 
@@ -155,7 +155,7 @@ Every inbound message moves through a deterministic kernel pipeline. No magic. N
 10  telemetry_emit       emit runtime events
 ```
 
-`context.inbound` is immutable. `context.state` is the mutable workspace phases write to. You hook into the pipeline at the points Zupa exposes — `context()`, `onResponse()`, tool `before`/`after` hooks, and commands. You never touch the rest.
+`context.inbound` is immutable. `context.state` is the mutable workspace nodes write to. You hook into the pipeline at the points Zupa exposes — `context()`, `onResponse()`, tool `before`/`after` hooks, and commands. You never touch the rest.
 
 ---
 
@@ -359,7 +359,7 @@ before: async (params, ctx) => {
 
 ## Commands
 
-Slash commands are intercepted in phase `03` — before the LLM sees anything. They never consume tokens.
+Slash commands are intercepted in node `03` — before the LLM sees anything. They never consume tokens.
 
 ```ts
 commands: {
@@ -408,7 +408,7 @@ Every Zupa agent ships with an in-process auth/event HTTP server (no separate pr
 
 Default bind:
 - `host`: `127.0.0.1`
-- `port`: `4200`
+- `port`: `5557`
 
 Endpoints:
 - `GET /auth/qr`
@@ -426,7 +426,7 @@ createAgent({
   prompt: '...',
   ui: {
     host:           '127.0.0.1',
-    port:           4200,
+    port:           5557,
     authToken:      process.env.ZUPA_UI_TOKEN,
     sseHeartbeatMs: 15000,
   }
@@ -513,20 +513,20 @@ await agent.close()
 
 ## Telemetry
 
-Every kernel phase emits a structured event. Plug in anything:
+Every kernel node emits a structured event. Plug in anything:
 
 ```ts
 providers: {
   telemetry: {
     emit: (event) => {
-      // event.phase, event.duration, event.agentId, event.sessionId, ...
-      datadog.increment(`zupa.phase.${event.phase}`, event.duration)
+      // event.node, event.duration, event.agentId, event.sessionId, ...
+      datadog.increment(`zupa.node.${event.node}`, event.duration)
     }
   }
 }
 ```
 
-Or use the built-in console emitter (default) which logs phase completions and slow phases automatically.
+Or use the built-in console emitter (default) which logs node completions and slow nodes automatically.
 
 ---
 
@@ -561,9 +561,9 @@ packages/zupa/src/
 │   └── defineTool.ts        typed tool factory
 ├── core/
 │   ├── kernel/
-│   │   ├── phases/          one file per kernel phase (01-10)
+│   │   ├── nodes/          one file per kernel node (01-10)
 │   │   ├── context.ts       KernelContext type — inbound + mutable state
-│   │   └── runner.ts        phase executor with contract checks
+│   │   └── runner.ts        node executor with contract checks
 │   └── runtime/
 │       ├── lifecycle.ts     start/close orchestration
 │       └── bridges.ts       inbound + auth event bridges
@@ -596,7 +596,7 @@ npm install
 npm test
 ```
 
-The codebase is organized around the kernel phases. If you're adding a feature, it almost always belongs in one of the `capabilities/` files or a new phase. If it's a new provider, add it to `integrations/` and export it from the factory in `api/integrations.ts`.
+The codebase is organized around the kernel nodes. If you're adding a feature, it almost always belongs in one of the `capabilities/` files or a new node. If it's a new provider, add it to `integrations/` and export it from the factory in `api/integrations.ts`.
 
 Tests live next to the source files. Use `createFakeRuntimeDeps()` — don't write tests that require real API keys or network access.
 

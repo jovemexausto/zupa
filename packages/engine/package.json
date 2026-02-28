@@ -1,0 +1,29 @@
+{
+    "name": "@zupa/engine",
+    "version": "0.1.0",
+    "description": "Pregel Graph Engine for Zupa",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "dependencies": {
+        "@zupa/core": "workspace:*",
+        "zod": "^4.1.11"
+    },
+    "devDependencies": {
+        "@types/node": "^24.4.0",
+        "tsup": "^8.5.0",
+        "@zupa/testing": "workspace:*",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
+    }
+}

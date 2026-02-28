@@ -1,0 +1,26 @@
+{
+    "name": "@zupa/testing",
+    "version": "0.1.0",
+    "description": "Testing utilities for Zupa",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@zupa/core": "workspace:*",
+        "@zupa/adapters": "workspace:*",
+        "zod": "^4.1.11"
+    },
+    "devDependencies": {
+        "@types/node": "^24.4.0",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.2"
+    }
+}

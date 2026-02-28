@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "noEmit": true,
     "strict": true,
     "noImplicitAny": true,
     "noUncheckedIndexedAccess": true,
@@ -9,6 +11,27 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@zupa/core": [
+        "packages/core/src"
+      ],
+      "@zupa/engine": [
+        "packages/engine/src"
+      ],
+      "@zupa/runtime": [
+        "packages/runtime/src"
+      ],
+      "@zupa/adapters": [
+        "packages/adapters/src"
+      ],
+      "@zupa/testing": [
+        "packages/testing/src"
+      ],
+      "zupa": [
+        "packages/zupa/src"
+      ]
+    }
   }
 }

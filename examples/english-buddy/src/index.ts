@@ -10,20 +10,22 @@ config()
 //
 
 const CorrectionSchema = z.object({
-  original    : z.string(),
-  corrected   : z.string(),
-  explanation : z.string(),
-  category    : z.enum(['grammar', 'vocabulary', 'preposition', 'article', 'other'])
+  original: z.string(),
+  corrected: z.string(),
+  explanation: z.string(),
+  category: z.enum(['grammar', 'vocabulary', 'preposition', 'article', 'other'])
 });
 
 const AgentReplySchema = z.object({
-  reply                : z.string(),
-  correction           : CorrectionSchema.nullable(),
-  sessionEnded         : z.boolean(),
-  vocabularyIntroduced : z.array(z.string()),
+  reply: z.string(),
+  correction: CorrectionSchema.nullable(),
+  sessionEnded: z.boolean(),
+  vocabularyIntroduced: z.array(z.string()),
 });
 
-const agent = createAgent({
+type AgentReply = z.infer<typeof AgentReplySchema>;
+
+const agent = createAgent<AgentReply>({
   prompt: `
     You are Sam, a friendly assistant in your late 20s chatting with
     {{ user.displayName }} on WhatsApp.
@@ -43,9 +45,9 @@ const agent = createAgent({
   //
   language: 'pt',
   //
-  context: async ({ user }) => ({
-    recurringMistakes: await getRecurringMistakes(user.id),
-    vocabularyHistory: await getVocabularyHistory(user.id)
+  context: async (ctx) => ({
+    recurringMistakes: await getRecurringMistakes(ctx.user.id),
+    vocabularyHistory: await getVocabularyHistory(ctx.user.id)
   }),
   //
   onResponse: async (response, ctx) => {
@@ -60,7 +62,7 @@ const agent = createAgent({
   },
 });
 
-agent.on('auth:qr',  (qr) => qrcode.generate(qr as string, {small: true}, console.log));
+agent.on('auth:qr', (qr) => qrcode.generate(qr as string, { small: true }, console.log));
 agent.on('auth:ready', () => console.log('Sam is online'));
 
 void agent.start().catch(console.error)

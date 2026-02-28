@@ -31,7 +31,7 @@ Out of scope for this version:
 ## 2. Baseline and Constraints from Current Zupa Runtime
 
 Current baseline in repository:
-- deterministic kernel phase pipeline exists,
+- deterministic kernel node pipeline exists,
 - command dispatch occurs before LLM loop,
 - tools and `onResponse` are stable event-driven extension points,
 - session KV persistence and inbound dedup are present.
@@ -610,7 +610,7 @@ MUST deliver:
 - AI no-op suppression + handback semantics,
 - adapter hardening for transport and admin channels,
 - concurrency/race-condition test coverage,
-- outbox persist-before-send response lifecycle hardening (as defined in lifecycle RFC follow-up phase),
+- outbox persist-before-send response lifecycle hardening (as defined in lifecycle RFC follow-up node),
 - external queue scheduler executor hardening.
 
 ### Phase C (GA Hardening)

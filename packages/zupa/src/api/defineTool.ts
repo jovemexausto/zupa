@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { Tool } from '../capabilities/tools/contracts';
+import { type Tool } from '@zupa/core';
 
 export function defineTool<TParameters extends z.ZodTypeAny>(tool: Tool<TParameters>): Tool<TParameters> {
   return tool;

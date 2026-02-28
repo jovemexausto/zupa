@@ -7,7 +7,7 @@
 
 ## 1. Problem Statement and DX Pain in Hook-Only Model
 
-Zupa's current developer experience is hook-oriented and phase-oriented: users define `prompt`, optional `tools`, `commands`, `context`, and `onResponse`; runtime phases execute deterministically. This model is strong for general request/response behavior, but it is awkward for conversational logic that is naturally bi-directional and stepwise.
+Zupa's current developer experience is hook-oriented and node-oriented: users define `prompt`, optional `tools`, `commands`, `context`, and `onResponse`; runtime nodes execute deterministically. This model is strong for general request/response behavior, but it is awkward for conversational logic that is naturally bi-directional and stepwise.
 
 Current pain points for advanced conversational workflows:
 - Multi-step logic is scattered across `context`, command handlers, tool hooks, and `onResponse`.
@@ -21,7 +21,7 @@ The target outcome is to add a flow-native model where execution pauses and resu
 
 Current baseline (already implemented):
 - Configuration entrypoint: `createAgent` with `prompt`, `tools`, `commands`, `context`, `onResponse`, provider overrides, runtime knobs.
-- Deterministic kernel phases in fixed order.
+- Deterministic kernel nodes in fixed order.
 - Command pre-LLM gate and tool dispatch in `agentic_loop`.
 - Session-scoped KV and persistence via database adapter.
 - Dedup guard based on inbound event identity.
@@ -232,7 +232,7 @@ Recovery guarantees:
 - Rejected: breaks current users and migration simplicity.
 
 2. **Nested flow stacks in first iteration**
-- Rejected for phase 1: harder persistence/debug/replay surface.
+- Rejected for node 1: harder persistence/debug/replay surface.
 - Deferred to follow-up RFC after single-active model validation.
 
 3. **Parallel active flows per session**

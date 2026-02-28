@@ -1,7 +1,7 @@
 # Avaliação do Estado Atual do Codebase e Metas de Produção
 
 Data: 2026-02-26  
-Escopo analisado: `packages/zupa` (runtime, kernel phases, ports, integrações, testes) e documentação raiz.
+Escopo analisado: `packages/zupa` (runtime, kernel nodes, ports, integrações, testes) e documentação raiz.
 
 ## Resumo Executivo
 
@@ -21,7 +21,7 @@ Estado atual (macro):
 | Deduplicação de eventos | Inbound é processado em callback direto, sem guarda de duplicata. | Aceitar reentrega da plataforma sem duplicar persistência/envio. | Criar fase inicial `event_dedup_gate`; registrar hash/fingerprint de evento e retornar short-circuit quando já processado. |
 | Retries seguros | Não há política transversal; falhas sobem/caem por fase, com alguns fallbacks ad hoc. | Retentar somente operações idempotentes com orçamento e jitter. | Definir `RetryPolicy` por porta (LLM/STT/TTS/transport/db), classificação de erro e circuit breaker simples. |
 | Backpressure | Processamento inbound sem fila/controlador de concorrência. | Evitar saturação e degradação em pico. | Inserir fila por tenant/usuário com limite de concorrência; resposta de overload (429 equivalente) e métricas de fila. |
-| Timeouts de ferramentas | Não há timeout global por tool call/phase. | Nenhuma tool bloquear loop indefinidamente. | `withTimeout` por tool/LLM/STT/TTS e timeout de fase; marcar erro recuperável com razão padronizada. |
+| Timeouts de ferramentas | Não há timeout global por tool call/node. | Nenhuma tool bloquear loop indefinidamente. | `withTimeout` por tool/LLM/STT/TTS e timeout de fase; marcar erro recuperável com razão padronizada. |
 | Sessões zumbis | Sessão ativa é reaproveitada sem varredura de expiração automática no runtime. | Encerrar sessões órfãs/inativas de forma previsível. | Job de housekeeping + checagem em `session_attach` para `idle_timeout`; fechamento com resumo e carimbo de motivo. |
 | Replays | Sem mecanismo formal de replay operacional. | Reprocessar eventos com segurança e rastreabilidade. | Persistir envelope de execução (input + decisão + outputs) e ferramenta de replay em modo dry-run/commit. |
 | Visibilidade | Telemetria por fase existe, mas sem correlação operacional completa. | Observabilidade por request/session/user + SLOs. | Padronizar campos (`requestId`, `sessionId`, `userId`, `eventId`, `dedupeKey`), painéis e alertas (erro, latência, fila). |
@@ -32,12 +32,12 @@ Estado atual (macro):
 
 ## Evidências Técnicas Principais
 
-- Pipeline determinístico por fases e medição de duração por fase: `core/kernel/runner.ts` e `core/kernel/phases/telemetryEmit.ts`.
+- Pipeline determinístico por fases e medição de duração por fase: `core/kernel/runner.ts` e `core/kernel/nodes/telemetryEmit.ts`.
 - Inbound processado diretamente via `onInbound` sem dedupe/backpressure: `core/runtime/inbound/transportBridge.ts` e `integrations/transport/wwebjs.ts`.
-- Rate limit por usuário já existente (parcial para controle): `core/kernel/phases/commandDispatchGate.ts`.
-- Persistência atual grava mensagens e contadores, sem ledger de idempotência/replay: `core/kernel/phases/persistenceHooks.ts` e `core/ports/database.ts`.
+- Rate limit por usuário já existente (parcial para controle): `core/kernel/nodes/commandDispatchGate.ts`.
+- Persistência atual grava mensagens e contadores, sem ledger de idempotência/replay: `core/kernel/nodes/persistenceHooks.ts` e `core/ports/database.ts`.
 - Timeouts/retries não padronizados nas portas OpenAI/tools: `integrations/llm/openai.ts`, `integrations/stt/openai.ts`, `integrations/tts/openai.ts`, `capabilities/tools/hooks.ts`.
-- Sessão finaliza via comando/hook, sem política automática robusta de expiração operacional: `core/kernel/phases/sessionAttach.ts`, `capabilities/session/sessionLifecycle.ts`.
+- Sessão finaliza via comando/hook, sem política automática robusta de expiração operacional: `core/kernel/nodes/sessionAttach.ts`, `capabilities/session/sessionLifecycle.ts`.
 
 ## Roadmap Recomendado (prioridade)
 

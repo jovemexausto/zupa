@@ -43,7 +43,7 @@ Additional baseline constraints:
 ### Non-Goals
 - No runtime code implementation in this RFC.
 - No replacement of flow/HITL interrupts with hook-level coroutines.
-- No immediate persist-before-send outbox rewrite in phase 1.
+- No immediate persist-before-send outbox rewrite in node 1.
 
 ## 4. Proposed Hook Model
 
@@ -191,9 +191,9 @@ Safety requirements:
 
 ## 11. Future Phase: Persist-Before-Send Outbox (Deferred)
 
-This RFC documents outbox as next-step architecture, not phase-1 requirement.
+This RFC documents outbox as next-step architecture, not node-1 requirement.
 
-Target future order (phase 2):
+Target future order (node 2):
 1. candidate + policy
 2. persist outbound intent (outbox)
 3. dispatch send
@@ -202,7 +202,7 @@ Target future order (phase 2):
 
 Reason for deferral:
 - larger persistence and retry contract changes,
-- should be scoped as dedicated implementation phase after phase-1 hooks/events.
+- should be scoped as dedicated implementation node after node-1 hooks/events.
 
 ## 12. Validation Matrix
 
