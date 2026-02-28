@@ -10,7 +10,7 @@ import { type RuntimeState } from './index';
  * execution graph starts with a clean slate, while preserving 
  * durable session state like 'user', 'session', and 'kv'.
  */
-export const turnSetupNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
+export const turnSetupNode = defineNode<RuntimeState, RuntimeEngineContext>(async (_context) => {
     const stateDiff: Partial<RuntimeState> = {
         inboundDuplicate: undefined,
         commandHandled: undefined,
