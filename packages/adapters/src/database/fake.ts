@@ -13,7 +13,7 @@ import {
 import { randomUUID } from 'node:crypto';
 
 export class FakeDatabaseBackend implements DatabaseProvider {
-    private readonly claimedInboundEvents = new Set<string>();
+    public readonly claimedInboundEvents = new Set<string>();
     private readonly users = new Map<string, User>();
     private readonly usersByNumber = new Map<string, string>();
     private readonly sessions = new Map<string, Session>();
