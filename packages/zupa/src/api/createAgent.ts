@@ -13,6 +13,15 @@ type WithReply = { reply: string };
 
 export type AgentProvidersConfig = Partial<RuntimeKernelResources>
 
+export interface AgentUIConfig {
+  enabled?        : boolean;
+  host?           : string;
+  port?           : number;
+  authToken?      : string;
+  corsOrigin?     : string | string[];
+  sseHeartbeatMs? : number;
+}
+
 export interface AgentConfig<T extends WithReply = WithReply> {
   prompt                    : string | ((ctx: AgentContext) => string | Promise<string>);
   singleUser?               : string;
@@ -36,14 +45,7 @@ export interface AgentConfig<T extends WithReply = WithReply> {
   audioStoragePath?         : string;
   welcomeMessage?           : string;
   fallbackReply?            : string;
-  ui?                       : false | {
-    enabled?      : boolean;
-    host?         : string;
-    port?         : number;
-    authToken?    : string;
-    corsOrigin?   : string | string[];
-    sseHeartbeatMs?: number;
-  };
+  ui?                       : false | AgentUIConfig;
   outputSchema?             : z.ZodType<T>;
   tools?                    : Tool[];
   commands?                 : Record<string, false | CommandDefinition>;
