@@ -2,11 +2,15 @@
 - [X] Fix .d.ts files being generated in the same directory as the source files and clean up the codebase.
 - [X] Chose one: Engine or Kernel, we should ensure a clear semantic.
 - [X] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
-- [ ] Setup turbo repo for monorepo management.
-- [ ] Do one more assesment pass againt CODEBASE_STATUS_ASSESSMENT.md and current codebase state to ensure we are on the right path, and write a RFC to address the gaps if any. At the end remove CODEBASE_STATUS_ASSESSMENT.md, so the RFC cover all needed aspects.
+- [X] Setup turbo repo for monorepo management.
+- [X] Do one more assesment pass againt CODEBASE_STATUS_ASSESSMENT.md and current codebase state to ensure we are on the right path, and write a RFC to address the gaps if any. Ensure that the runtime is solid and can be used for production. Plan to resolve technical debt and ensure baseline is solid. At the end remove CODEBASE_STATUS_ASSESSMENT.md, so the RFC cover all needed aspects.
+- [ ] Implement Phase 1 of Production Readiness RFC: Add `messageId` to `InboundMessage` mapping.
+- [ ] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
+- [ ] Implement Phase 1 of Production Readiness RFC: Create and apply universal `withTimeout` wrapper for LLM/STT/TTS calls.
+- [ ] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
 - [ ] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
 - [ ] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
 - [ ] Document capabilities and aspects of the runtime and engine, features, opinions, design choices, etc for future reference of the project ideology
-- [ ] Ensure that the runtime is solid and can be used for production
 - [ ] Replace any console.(log|warn|error) with proper production ready loggin (pino) and ensure it is used consistently across the codebase, also certify we position telemetry and logs at strategic points. This maybe will require refining current approach or imagine a batter solution for cross cutting concerns.
-- [ ] Resolve technical debt and ensure baseline is solid.
+- [ ] 
+
