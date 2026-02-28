@@ -11,6 +11,7 @@ import {
   type RuntimeConfig,
   buildDefaultNodeHandlers
 } from '@zupa/runtime';
+import { PinoLogger } from '@zupa/adapters';
 import { createLocalResources } from './resources';
 
 type WithReply = { reply: string };
@@ -26,6 +27,7 @@ export interface AgentUIConfig {
   sseHeartbeatMs?: number;
 }
 
+// TODO: Why we have both AgentConfig RuntimeConfig (@zupa/core/src/config/types.ts) ?
 export interface AgentConfig<T extends WithReply = WithReply> {
   prompt: string | ((ctx: AgentContext<T>) => string | Promise<string>);
   singleUser?: string;
@@ -180,5 +182,9 @@ function applyDefaultProviders(resources: AgentProvidersConfig): RuntimeEngineRe
     vectors: resources.vectors ?? defaults.vectors,
     database: resources.database ?? defaults.database,
     telemetry: resources.telemetry ?? defaults.telemetry,
+    logger: resources.logger ?? new PinoLogger({
+      level: 'info',
+      prettyPrint: process.env.NODE_ENV !== 'production'
+    })
   };
 }

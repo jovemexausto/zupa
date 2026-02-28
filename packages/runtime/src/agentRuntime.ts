@@ -79,6 +79,7 @@ export class AgentRuntime<T = unknown> {
    * @throws Error if any adapter fails to start.
    */
   public async start(): Promise<void> {
+    this.runtimeResources.logger.info({ uiEnabled: !!this.uiServer }, 'Starting AgentRuntime');
     if (this.uiServer) {
       await this.uiServer.start();
     }
@@ -134,6 +135,7 @@ export class AgentRuntime<T = unknown> {
    * Stops all underlying resources gracefully, releasing memory and active ports.
    */
   public async close(): Promise<void> {
+    this.runtimeResources.logger.info('Closing AgentRuntime');
     if (this.inboundBridge) {
       this.inboundBridge.stop();
       this.inboundBridge = null;
@@ -165,9 +167,12 @@ export class AgentRuntime<T = unknown> {
    * binds logic to consume transport messages.
    */
   public async runInbound(inbound: InboundMessage): Promise<RuntimeEngineContext<T>> {
+    const requestId = randomUUID();
+    const logger = this.runtimeResources.logger.child({ requestId });
+
+    logger.info({ inbound }, 'Inbound message received');
     this.emitRuntimeEvent('inbound:received', { inbound });
 
-    const requestId = randomUUID();
     const startedAt = new Date();
 
     const context = createInitialRuntimeContext<T>({
@@ -191,8 +196,11 @@ export class AgentRuntime<T = unknown> {
           entrypoint: 'event_dedup_gate'
         }
       );
+
+      logger.info({ from: inbound.from }, 'Inbound message processed');
       this.emitRuntimeEvent('inbound:processed', { requestId, from: inbound.from });
     } catch (error) {
+      logger.error({ error: String(error), inbound }, 'Inbound message failed');
       this.emitRuntimeEvent('inbound:failed', { requestId, error: String(error), inbound });
       throw error;
     }

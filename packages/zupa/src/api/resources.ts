@@ -8,7 +8,8 @@ import {
     createWWebJSTransport,
     FakeFileStorage,
     FakeVectorStore,
-    FakeDatabaseBackend
+    FakeDatabaseBackend,
+    PinoLogger
 } from '@zupa/adapters';
 
 /**
@@ -17,6 +18,10 @@ import {
  */
 export function createLocalResources(): RuntimeEngineResources {
     const apiKey = process.env.OPENAI_API_KEY ?? '';
+    const logger = new PinoLogger({
+        level: 'info',
+        prettyPrint: process.env.NODE_ENV !== 'production'
+    });
 
     return {
         llm: new OpenAILLMProvider({
@@ -29,15 +34,16 @@ export function createLocalResources(): RuntimeEngineResources {
         tts: new OpenAITTSProvider({
             apiKey
         }),
+        logger,
         transport: createWWebJSTransport(),
         storage: new FakeFileStorage(),
         vectors: new FakeVectorStore(),
         database: new FakeDatabaseBackend(),
         telemetry: {
             emit(e) {
-                // Default telemetry just logs to console for now
+                // Default telemetry just logs to console via Pino for now
                 if (process.env.NODE_ENV !== 'test') {
-                    console.log(`[Telemetry] ${e.node}: ${e.durationMs}ms`);
+                    logger.debug({ durationMs: e.durationMs }, `[Telemetry] ${e.node}`);
                 }
             }
         }

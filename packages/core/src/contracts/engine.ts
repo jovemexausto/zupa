@@ -1,6 +1,7 @@
 import {
     FileStorage,
     LLMProvider,
+    Logger,
     MessagingTransport,
     DatabaseProvider,
     STTProvider,
@@ -58,6 +59,7 @@ export interface RuntimeEngineResources {
     vectors: VectorStore;
     database: DatabaseProvider;
     telemetry: TelemetrySink;
+    logger: Logger;
 }
 
 export interface AgentContext<T = unknown> {

@@ -47,6 +47,13 @@ export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineConte
                 run: () => dispatchToolCall({ toolCall, tools, context: agentContext })
             })
         });
+
+        resources.logger.debug({
+            toolCallId: toolCall.id,
+            toolName: toolCall.name,
+            status: result.status
+        }, 'Tool execution completed');
+
         toolResults.push({
             toolCallId: toolCall.id,
             result: result.status === 'ok' ? result.result : result.formatted
