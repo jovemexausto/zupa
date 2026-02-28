@@ -1,5 +1,3 @@
-import path from 'node:path';
-import { mkdir, writeFile } from 'node:fs/promises';
 import OpenAI from 'openai';
 import { type TTSProvider } from '@zupa/core';
 
@@ -28,16 +26,14 @@ export class OpenAITTSProvider implements TTSProvider {
     public async synthesize(options: {
         text: string;
         voice?: string;
-        outputPath: string;
         language: string;
     }): Promise<{
-        audioPath: string;
+        audio: Buffer;
+        format: string;
         durationSeconds: number;
         latencyMs: number;
     }> {
         const startedAt = Date.now();
-        await mkdir(path.dirname(options.outputPath), { recursive: true });
-
         const response = await this.client.audio.speech.create({
             model: this.model,
             voice: (options.voice || this.voice) as OpenAI.Audio.SpeechCreateParams['voice'],
@@ -45,10 +41,10 @@ export class OpenAITTSProvider implements TTSProvider {
         });
 
         const audio = Buffer.from(await response.arrayBuffer());
-        await writeFile(options.outputPath, audio);
 
         return {
-            audioPath: options.outputPath,
+            audio,
+            format: 'audio/mpeg',
             durationSeconds: 0,
             latencyMs: Math.max(0, Date.now() - startedAt)
         };

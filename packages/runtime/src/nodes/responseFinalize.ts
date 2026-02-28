@@ -28,7 +28,6 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
         ttsProvider: resources.tts,
         messaging: resources.transport,
         config: {
-          audioStoragePath: config.audioStoragePath || './data/audio',
           ttsVoice: config.ttsVoice || 'alloy',
           agentLanguage: config.language || 'en',
           ...(config.ttsTimeoutMs !== undefined && { ttsTimeoutMs: config.ttsTimeoutMs }),

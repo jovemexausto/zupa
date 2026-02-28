@@ -1,6 +1,5 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
 import WhatsAppWeb, { type Client as WhatsAppClient, type ClientOptions } from 'whatsapp-web.js';
 import { type InboundMessage, type MessagingTransport } from '@zupa/core';
 
@@ -113,16 +112,14 @@ export class WWebJSMessagingTransport implements MessagingTransport {
         await this.client.sendMessage(toChatId(to), text);
     }
 
-    public async sendVoice(to: string, audioPath: string): Promise<void> {
-        const audioBytes = await readFile(audioPath);
-        const media = new MessageMedia('audio/ogg; codecs=opus', audioBytes.toString('base64'), path.basename(audioPath));
-        await this.client.sendMessage(toChatId(to), media, { sendAudioAsVoice: true });
+    public async sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void> {
+        const messageMedia = new MessageMedia(media.mimetype, media.buffer.toString('base64'), 'voice.ogg');
+        await this.client.sendMessage(toChatId(to), messageMedia, { sendAudioAsVoice: true });
     }
 
-    public async sendMedia(to: string, mediaPath: string, caption?: string): Promise<void> {
-        const mediaBytes = await readFile(mediaPath);
-        const media = new MessageMedia('application/octet-stream', mediaBytes.toString('base64'), path.basename(mediaPath));
-        await this.client.sendMessage(toChatId(to), media, caption ? { caption } : undefined);
+    public async sendMedia(to: string, media: { buffer: Buffer; mimetype: string; filename?: string }, caption?: string): Promise<void> {
+        const messageMedia = new MessageMedia(media.mimetype, media.buffer.toString('base64'), media.filename || 'media.bin');
+        await this.client.sendMessage(toChatId(to), messageMedia, caption ? { caption } : undefined);
     }
 
     public async sendTyping(to: string, durationMs: number): Promise<void> {
@@ -147,7 +144,7 @@ export class WWebJSMessagingTransport implements MessagingTransport {
                     const media = await message.downloadMedia();
                     if (!media) return undefined;
                     return {
-                        data: media.data,
+                        data: Buffer.from(media.data, 'base64'),
                         mimetype: media.mimetype,
                         filename: media.filename ?? null
                     };

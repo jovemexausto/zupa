@@ -2,7 +2,7 @@ import { RuntimeResource } from "../lifecycle";
 
 // TODO: maybe we should introduce OutboundMedia and/or OutboundMessage ?
 export interface InboundMedia {
-  data: string;
+  data: Buffer;
   mimetype: string;
   filename: string | null;
 }
@@ -24,7 +24,6 @@ export interface InboundMessage {
   fromMe: boolean;
   hasMedia?: boolean;
   type?: string;
-  audioPath?: string;
   downloadMedia?: () => Promise<InboundMedia | undefined>;
 }
 
@@ -34,7 +33,7 @@ export interface MessagingTransport extends RuntimeResource {
   onAuthReady?(handler: () => void): () => void;
   onAuthFailure?(handler: (message: string) => void): () => void;
   sendText(to: string, text: string): Promise<void>;
-  sendVoice(to: string, audioPath: string): Promise<void>;
-  sendMedia(to: string, mediaPath: string, caption?: string): Promise<void>;
+  sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void>;
+  sendMedia(to: string, media: { buffer: Buffer; mimetype: string; filename?: string }, caption?: string): Promise<void>;
   sendTyping(to: string, durationMs: number): Promise<void>;
 }
