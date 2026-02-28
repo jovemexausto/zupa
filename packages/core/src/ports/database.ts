@@ -16,10 +16,8 @@ export interface DatabaseProvider extends RuntimeResource, CheckpointSaver, Ledg
   createSession(userId: string): Promise<Session>;
   incrementSessionMessageCount(sessionId: string, amount?: number): Promise<void>;
   endSession(sessionId: string, summary: string): Promise<void>;
-  endSessionWithSummary(sessionId: string, endedAt: Date, kv: Record<string, unknown>): Promise<void>;
+  endSessionWithSummary(sessionId: string, endedAt: Date, summary: string): Promise<void>;
   getRecentSummaries(userId: string, limit: number): Promise<string[]>;
-  getSessionKV(sessionId: string): Promise<Record<string, unknown>>;
-  updateSessionKV(sessionId: string, kv: Record<string, unknown>): Promise<void>;
   createMessage(data: Omit<Message, 'id' | 'createdAt' | 'metadata'> & { metadata?: Record<string, unknown> }): Promise<Message>;
   getRecentMessages(sessionId: string, limit: number): Promise<Message[]>;
   getMessagesWithMetadata(userId: string, since: Date): Promise<Message[]>;

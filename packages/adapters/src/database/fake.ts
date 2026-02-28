@@ -1,10 +1,12 @@
 import {
     type DatabaseProvider,
+    type StateProvider,
     type Message,
     type Session,
     type User,
     type StateSnapshot,
-    type LedgerEvent
+    type LedgerEvent,
+    type SessionState
 } from '@zupa/core';
 import { randomUUID } from 'node:crypto';
 
@@ -14,7 +16,6 @@ export class FakeDatabaseBackend implements DatabaseProvider {
     private readonly usersByNumber = new Map<string, string>();
     private readonly sessions = new Map<string, Session>();
     private readonly messages = new Map<string, Message[]>();
-    public readonly sessionKv = new Map<string, Record<string, unknown>>();
     private readonly checkpoints = new Map<string, StateSnapshot[]>();
     private readonly ledger = new Map<string, LedgerEvent[]>();
 
@@ -102,11 +103,11 @@ export class FakeDatabaseBackend implements DatabaseProvider {
         this.sessions.set(id, session);
     }
 
-    public async endSessionWithSummary(id: string, endedAt: Date, kv: Record<string, unknown>): Promise<void> {
+    public async endSessionWithSummary(id: string, endedAt: Date, summary: string): Promise<void> {
         const session = this.sessions.get(id);
         if (!session) throw new Error(`Session not found: ${id}`);
         session.endedAt = endedAt;
-        this.sessionKv.set(id, kv);
+        session.summary = summary;
         this.sessions.set(id, session);
     }
 
@@ -115,10 +116,6 @@ export class FakeDatabaseBackend implements DatabaseProvider {
             .filter((s) => s.userId === userId && typeof s.summary === 'string')
             .slice(-limit)
             .map((s) => s.summary as string);
-    }
-
-    public async getSessionKV(sessionId: string): Promise<Record<string, unknown>> {
-        return { ...(this.sessionKv.get(sessionId) ?? {}) };
     }
 
     public async createMessage(data: Omit<Message, 'id' | 'createdAt' | 'metadata'> & { metadata?: Record<string, unknown> }): Promise<Message> {
@@ -154,10 +151,6 @@ export class FakeDatabaseBackend implements DatabaseProvider {
         }
     }
 
-    public async updateSessionKV(sessionId: string, kv: Record<string, unknown>): Promise<void> {
-        this.sessionKv.set(sessionId, { ...kv });
-    }
-
     public async putCheckpoint(threadId: string, snapshot: StateSnapshot): Promise<void> {
         const threadCheckpoints = this.checkpoints.get(threadId) || [];
         threadCheckpoints.push(snapshot);
@@ -182,5 +175,48 @@ export class FakeDatabaseBackend implements DatabaseProvider {
         const sessionEvents = this.ledger.get(sessionId) || [];
         sessionEvents.push(event);
         this.ledger.set(sessionId, sessionEvents);
+    }
+}
+
+class FakeSessionState implements SessionState {
+    public constructor(
+        private readonly sessionId: string,
+        private readonly cache: Record<string, unknown>
+    ) { }
+
+    public async get<T>(key: string): Promise<T | null> {
+        return (this.cache[key] as T | undefined) ?? null;
+    }
+
+    public async set<T>(key: string, value: T): Promise<void> {
+        this.cache[key] = value;
+    }
+
+    public async delete(key: string): Promise<void> {
+        delete this.cache[key];
+    }
+
+    public async all(): Promise<Record<string, unknown>> {
+        return { ...this.cache };
+    }
+}
+
+export class FakeStateProvider implements StateProvider {
+    readonly metadata = { name: 'fake-state-provider', version: '1.0.0' }
+    public readonly stores: Record<string, Record<string, unknown>> = {};
+
+    public async start(): Promise<void> { }
+
+    public attach(sessionId: string): SessionState {
+        if (!this.stores[sessionId]) {
+            this.stores[sessionId] = {};
+        }
+        return new FakeSessionState(sessionId, this.stores[sessionId]);
+    }
+
+    public async close(): Promise<void> {
+        for (const key of Object.keys(this.stores)) {
+            delete this.stores[key];
+        }
     }
 }

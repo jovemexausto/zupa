@@ -8,7 +8,8 @@ import {
     createWWebJSTransport,
     FakeFileStorage,
     FakeVectorStore,
-    FakeDatabaseBackend
+    FakeDatabaseBackend,
+    FakeStateProvider
 } from '@zupa/adapters';
 
 /**
@@ -33,6 +34,7 @@ export function createLocalResources(): RuntimeEngineResources {
         storage: new FakeFileStorage(),
         vectors: new FakeVectorStore(),
         database: new FakeDatabaseBackend(),
+        state: new FakeStateProvider(),
         telemetry: {
             emit(e) {
                 // Default telemetry just logs to console for now

@@ -3,7 +3,6 @@
 - [X] Chose one: Engine or Kernel, we should ensure a clear semantic.
 - [X] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
 - [ ] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
-- [ ] Unbound Session Management from KV, make the abstraction crisp and ensure right usage through the codebase
 - [ ] Resolve technical debt and ensure baseline is solid
 - [ ] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
 - [ ] Document capabilities and aspects of the runtime and engine, features, opinions, design choices, etc for future reference of the project ideology

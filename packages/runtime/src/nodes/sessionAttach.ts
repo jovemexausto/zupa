@@ -18,8 +18,11 @@ export const sessionAttachNode = defineNode<RuntimeState, RuntimeEngineContext>(
     session = await resources.database.createSession(user.id);
   }
 
+  const kv = resources.state.attach(session.id);
+  const activeSession = { ...session, kv };
+
   return {
-    stateDiff: { session },
+    stateDiff: { session: activeSession },
     nextTasks: ['command_dispatch_gate']
   };
 });
