@@ -16,6 +16,7 @@ import { ActiveSession } from '../entities/session';
 import { AgentLanguage } from '../entities/agent';
 
 export type EngineNodeName =
+    | 'turn_setup'
     | 'event_dedup_gate'
     | 'access_policy'
     | 'command_dispatch_gate'
