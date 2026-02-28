@@ -1,69 +1,36 @@
-import { z } from 'zod';
 import {
-  type AgentContext,
   type RuntimeEngineResources,
-  type Tool,
-  type CommandDefinition,
-  resolveLanguage
-} from '@zupa/core';
-import {
-  AgentRuntime,
   type RuntimeConfig,
-  buildDefaultNodeHandlers
-} from '@zupa/runtime';
-import { PinoLogger } from '@zupa/adapters';
-import { createLocalResources } from './resources';
+  resolveLanguage,
+} from "@zupa/core";
+import { AgentRuntime, buildDefaultNodeHandlers } from "@zupa/runtime";
+import { PinoLogger } from "@zupa/adapters";
+import { createLocalResources } from "./resources";
 
 type WithReply = { reply: string };
 
 export type AgentProvidersConfig = Partial<RuntimeEngineResources>;
 
-export interface AgentUIConfig {
-  enabled?: boolean;
-  host?: string;
-  port?: number;
-  authToken?: string | undefined;
-  corsOrigin?: string | string[] | undefined;
-  sseHeartbeatMs?: number;
-}
-
-// TODO: Why we have both AgentConfig RuntimeConfig (@zupa/core/src/config/types.ts) ?
-export interface AgentConfig<T extends WithReply = WithReply> {
-  prompt: string | ((ctx: AgentContext<T>) => string | Promise<string>);
-  singleUser?: string;
+/**
+ * AgentConfig extends RuntimeConfig with additional public API options.
+ * The main difference is that `language` and `ui` are optional here,
+ * with sensible defaults applied in resolveRuntimeConfig.
+ */
+export type AgentConfig<T extends WithReply = WithReply> = Omit<
+  RuntimeConfig<T>,
+  "language" | "ui"
+> & {
   language?: string;
-  maxToolIterations?: number;
-  maxWorkingMemory?: number;
-  maxEpisodicMemory?: number;
-  semanticSearchLimit?: number;
-  rateLimitPerUserPerMinute?: number;
-  maxIdempotentRetries?: number;
-  retryBaseDelayMs?: number;
-  retryJitterMs?: number;
-  maxInboundConcurrency?: number;
-  overloadMessage?: string;
-  sessionIdleTimeoutMinutes?: number;
-  toolTimeoutMs?: number;
-  llmTimeoutMs?: number;
-  sttTimeoutMs?: number;
-  ttsTimeoutMs?: number;
-  ttsVoice?: string;
-  audioStoragePath?: string;
-  welcomeMessage?: string;
-  fallbackReply?: string;
-  preferredVoiceReply?: boolean;
-  ui?: false | AgentUIConfig;
-  outputSchema?: z.ZodType<T>;
-  tools?: Tool[];
-  commands?: Record<string, false | CommandDefinition>;
-  context?: (ctx: AgentContext<T>) => Promise<Record<string, unknown>>;
-  onResponse?: (structured: T, ctx: AgentContext<T>) => Promise<void>;
+  ui?: false | RuntimeConfig<T>["ui"];
   providers?: AgentProvidersConfig;
-}
+};
 
 export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   let runtime: AgentRuntime<T> | null = null;
-  const preStartListeners: Array<{ event: string; handler: (...args: unknown[]) => void }> = [];
+  const preStartListeners: Array<{
+    event: string;
+    handler: (...args: unknown[]) => void;
+  }> = [];
 
   const ensureRuntime = (): AgentRuntime<T> => {
     if (runtime) return runtime;
@@ -76,7 +43,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
     runtime = new AgentRuntime<T>({
       runtimeConfig,
       runtimeResources: resources,
-      handlers: buildDefaultNodeHandlers<T>()
+      handlers: buildDefaultNodeHandlers<T>(),
     });
 
     for (const listener of preStartListeners) {
@@ -107,71 +74,61 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
         preStartListeners.push({ event, handler });
       }
       return this;
-    }
+    },
   };
 
   return agent;
 }
 
-function resolveRuntimeConfig<T extends WithReply>(config: AgentConfig<T>): RuntimeConfig<T> {
+function resolveRuntimeConfig<T extends WithReply>(
+  config: AgentConfig<T>,
+): RuntimeConfig<T> {
   const language = resolveLanguage(config.language);
 
+  // Build RuntimeConfig from AgentConfig, excluding the providers field
+  // which is specific to the wrapper API
+  const { providers, ...runtimeConfigFields } = config as any;
+
   const resolved: RuntimeConfig<T> = {
+    ...runtimeConfigFields,
     language,
-    prompt: config.prompt,
-    maxToolIterations: config.maxToolIterations ?? 3,
-    maxWorkingMemory: config.maxWorkingMemory ?? 20,
-    maxEpisodicMemory: config.maxEpisodicMemory ?? 3,
-    semanticSearchLimit: config.semanticSearchLimit ?? 3,
-    rateLimitPerUserPerMinute: config.rateLimitPerUserPerMinute ?? 20,
-    maxIdempotentRetries: config.maxIdempotentRetries ?? 2,
-    retryBaseDelayMs: config.retryBaseDelayMs ?? 75,
-    retryJitterMs: config.retryJitterMs ?? 25,
-    maxInboundConcurrency: config.maxInboundConcurrency ?? 32,
-    overloadMessage: config.overloadMessage ?? 'System is busy right now. Please try again shortly.',
-    sessionIdleTimeoutMinutes: config.sessionIdleTimeoutMinutes ?? 30,
-    toolTimeoutMs: config.toolTimeoutMs ?? 12_000,
-    llmTimeoutMs: config.llmTimeoutMs ?? 20_000,
-    sttTimeoutMs: config.sttTimeoutMs ?? 15_000,
-    ttsTimeoutMs: config.ttsTimeoutMs ?? 15_000,
-    ttsVoice: config.ttsVoice ?? 'alloy',
-    audioStoragePath: config.audioStoragePath ?? './data/audio',
-    fallbackReply: config.fallbackReply ?? 'Sorry! I hit a temporary issue. Please try again in a moment.',
-    preferredVoiceReply: config.preferredVoiceReply ?? false
   };
 
+  // Apply UI defaults if not explicitly provided
   if (config.ui === false) {
     resolved.ui = { enabled: false };
-  } else {
+  } else if (!config.ui) {
     resolved.ui = {
-      enabled: config.ui?.enabled ?? true,
-      host: config.ui?.host ?? '127.0.0.1',
-      port: config.ui?.port ?? 5557,
-      sseHeartbeatMs: config.ui?.sseHeartbeatMs ?? 15_000,
-      authToken: config.ui?.authToken ?? undefined,
-      corsOrigin: config.ui?.corsOrigin ?? undefined
+      enabled: true,
+      host: "127.0.0.1",
+      port: 5557,
+      sseHeartbeatMs: 15_000,
+    };
+  } else {
+    // Fill in any missing UI properties with defaults
+    resolved.ui = {
+      enabled: config.ui.enabled ?? true,
+      host: config.ui.host ?? "127.0.0.1",
+      port: config.ui.port ?? 5557,
+      sseHeartbeatMs: config.ui.sseHeartbeatMs ?? 15_000,
+      authToken: config.ui.authToken,
+      corsOrigin: config.ui.corsOrigin,
     };
   }
-
-  if (config.outputSchema) resolved.outputSchema = config.outputSchema;
-  if (config.tools) resolved.tools = config.tools;
-  if (config.commands) resolved.commands = config.commands;
-  if (config.context) resolved.context = config.context;
-  if (config.onResponse) resolved.onResponse = config.onResponse;
-  if (config.singleUser) resolved.singleUser = config.singleUser;
-  if (config.welcomeMessage) resolved.welcomeMessage = config.welcomeMessage;
 
   return resolved;
 }
 
 function validateRuntimeConfig<T>(_config: RuntimeConfig<T>): void {
   const prompt = _config.prompt;
-  if (typeof prompt === 'string' && !prompt.trim()) {
-    throw new Error('Invalid agent config: missing prompt');
+  if (typeof prompt === "string" && !prompt.trim()) {
+    throw new Error("Invalid agent config: missing prompt");
   }
 }
 
-function applyDefaultProviders(resources: AgentProvidersConfig): RuntimeEngineResources {
+function applyDefaultProviders(
+  resources: AgentProvidersConfig,
+): RuntimeEngineResources {
   const defaults = createLocalResources();
   return {
     transport: resources.transport ?? defaults.transport,
@@ -182,9 +139,11 @@ function applyDefaultProviders(resources: AgentProvidersConfig): RuntimeEngineRe
     vectors: resources.vectors ?? defaults.vectors,
     database: resources.database ?? defaults.database,
     telemetry: resources.telemetry ?? defaults.telemetry,
-    logger: resources.logger ?? new PinoLogger({
-      level: 'info',
-      prettyPrint: process.env.NODE_ENV !== 'production'
-    })
+    logger:
+      resources.logger ??
+      new PinoLogger({
+        level: "info",
+        prettyPrint: process.env.NODE_ENV !== "production",
+      }),
   };
 }
