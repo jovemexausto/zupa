@@ -3,7 +3,9 @@ import {
     type RuntimeEngineContext,
     type AgentContext,
     type ActiveSession,
-    dispatchToolCall
+    dispatchToolCall,
+    withTimeout,
+    retryIdempotent
 } from '@zupa/core';
 import { type RuntimeState } from './index';
 
@@ -35,7 +37,16 @@ export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineConte
 
     const toolResults: Array<{ toolCallId: string; result: string }> = [];
     for (const toolCall of llmResponse.toolCalls) {
-        const result = await dispatchToolCall({ toolCall, tools, context: agentContext });
+        const result = await withTimeout({
+            timeoutMs: config.toolTimeoutMs ?? 10_000,
+            label: `Tool '${toolCall.name}'`,
+            run: () => retryIdempotent({
+                maxRetries: config.maxIdempotentRetries ?? 2,
+                baseDelayMs: config.retryBaseDelayMs ?? 75,
+                jitterMs: config.retryJitterMs ?? 25,
+                run: () => dispatchToolCall({ toolCall, tools, context: agentContext })
+            })
+        });
         toolResults.push({
             toolCallId: toolCall.id,
             result: result.status === 'ok' ? result.result : result.formatted

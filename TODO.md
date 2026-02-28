@@ -5,7 +5,7 @@
 - [X] Setup turbo repo for monorepo management.
 - [X] Do one more assesment pass againt CODEBASE_STATUS_ASSESSMENT.md and current codebase state to ensure we are on the right path, and write a RFC to address the gaps if any. Ensure that the runtime is solid and can be used for production. Plan to resolve technical debt and ensure baseline is solid. At the end remove CODEBASE_STATUS_ASSESSMENT.md, so the RFC cover all needed aspects.
 - [X] Implement Phase 1 of Production Readiness RFC: Add `messageId` to `InboundMessage` mapping.
-- [ ] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
+- [X] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
 - [ ] Implement Phase 1 of Production Readiness RFC: Create and apply universal `withTimeout` wrapper for LLM/STT/TTS calls.
 - [ ] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
 - [ ] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
