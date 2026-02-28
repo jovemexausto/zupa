@@ -227,16 +227,7 @@ export class AgentRuntime<T = unknown> {
       ...context.state,
       user,
       session,
-      inbound, // Ensure the new inbound is in the state immediately
-      inboundDuplicate: undefined,
-      commandHandled: undefined,
-      resolvedContent: undefined,
-      assembledContext: undefined,
-      builtPrompt: undefined,
-      llmResponse: undefined,
-      toolResults: undefined,
-      inputModality: undefined,
-      outputModality: undefined,
+      inbound
     };
 
     const threadId = session.id;
@@ -245,7 +236,7 @@ export class AgentRuntime<T = unknown> {
       await this.executor.invoke(context.state, context, {
         threadId,
         saver,
-        entrypoint: "event_dedup_gate",
+        entrypoint: "turn_setup",
       });
 
       logger.info({ from: inbound.from }, "Inbound message processed");

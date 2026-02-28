@@ -30,28 +30,28 @@ export interface RuntimeState {
   session?: Session | ActiveSession;
   user?: User;
   replyTarget?: string;
-  inboundDuplicate?: boolean;
-  createdUser?: boolean;
-  resolvedContent?: string;
-  inbound?: InboundMessage;
-  commandHandled?: boolean;
+  inboundDuplicate?: boolean | undefined;
+  createdUser?: boolean | undefined;
+  resolvedContent?: string | undefined;
+  inbound?: InboundMessage | undefined;
+  commandHandled?: boolean | undefined;
   /**
    * Session scratchpad — developer-owned KV store.
    * Lives as a top-level graph state field so it is checkpointed at every
    * node transition, guaranteeing deterministic time-travel and resumability.
    * Values must be strictly JSON-serializable (validated by GraphKVStore).
    */
-  kv?: KVStore;
+  kv?: KVStore | undefined;
   assembledContext?: {
     history: Message[];
     relevantMemories?: VectorSearchResult[];
     summaries?: string[];
-  };
-  builtPrompt?: string;
-  llmResponse?: LLMResponse;
-  toolResults?: Array<{ toolCallId: string; result: string }>;
-  inputModality?: 'text' | 'voice';
-  outputModality?: 'text' | 'voice';
+  } | undefined;
+  builtPrompt?: string | undefined;
+  llmResponse?: LLMResponse | undefined;
+  toolResults?: Array<{ toolCallId: string; result: string }> | undefined;
+  inputModality?: 'text' | 'voice' | undefined;
+  outputModality?: 'text' | 'voice' | undefined;
 }
 
 /** Handler type for the Pregel executor – returns a NodeResult. */
@@ -63,6 +63,7 @@ export type RuntimeNodeHandlerMap<T = unknown> = Record<EngineNodeName, RuntimeN
 
 export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T> {
   return {
+    turn_setup: turnSetupNode as RuntimeNodeHandler<T>,
     event_dedup_gate: eventDedupGateNode as RuntimeNodeHandler<T>,
     access_policy: accessPolicyNode as RuntimeNodeHandler<T>,
     command_dispatch_gate: commandDispatchGateNode as RuntimeNodeHandler<T>,
@@ -77,4 +78,6 @@ export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T
   };
 }
 // TODO: Remove this
+import { turnSetupNode } from './turnSetup';
+
 export { RuntimeNodeHandler as EngineNodeHandler, RuntimeNodeHandlerMap as EngineNodeHandlerMap };
