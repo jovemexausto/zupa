@@ -1,27 +1,36 @@
-import { EventEmitter } from 'node:events';
-import { randomUUID } from 'node:crypto';
+import { EventEmitter } from "node:events";
+import { randomUUID } from "node:crypto";
 
 import {
   RuntimeConfig,
   RuntimeResource,
   RuntimeEngineResources,
   RuntimeEngineContext,
-  InboundMessage
-} from '@zupa/core';
+  InboundMessage,
+} from "@zupa/core";
+
+import { EngineExecutor, createInitialRuntimeContext } from "@zupa/engine";
+
+import { EphemeralCheckpointSaver } from "./engine/ephemeralSaver";
+import { buildEngineGraphSpec } from "./engine/graph";
 
 import {
-  EngineExecutor,
-  createInitialRuntimeContext
-} from '@zupa/engine';
-
-import { EphemeralCheckpointSaver } from './engine/ephemeralSaver';
-import { buildEngineGraphSpec } from './engine/graph';
-
-import { bindTransportInbound, type TransportInboundBinding, bindTransportAuth } from './inbound/transportBridge';
-import { closeResources, collectLifecycleResources, startResources } from './resources/lifecycle';
-import { buildDefaultNodeHandlers, type RuntimeState, type RuntimeNodeHandlerMap } from './nodes';
-import { RuntimeUiServer } from './ui/server';
-
+  bindTransportInbound,
+  type TransportInboundBinding,
+  bindTransportAuth,
+} from "./inbound/transportBridge";
+import {
+  closeResources,
+  collectLifecycleResources,
+  startResources,
+} from "./resources/lifecycle";
+import {
+  buildDefaultNodeHandlers,
+  type RuntimeState,
+  type RuntimeNodeHandlerMap,
+} from "./nodes";
+import { RuntimeUiServer } from "./ui/server";
+import { resolveUiConfig } from "./ui/resolveUiConfig";
 
 /**
  * Input configuration required to boot an AgentRuntime instance.
@@ -34,7 +43,7 @@ export interface AgentRuntimeInput<T = unknown> {
 
 /**
  * The core coordination daemon for the Zupa Framework.
- * 
+ *
  * AgentRuntime orchestrates the lifecycle of all adapters, binds the transport
  * for incoming and outgoing messages, starts the UI server if configured,
  * and maintains the execution layer (`EngineExecutor`) to process each request.
@@ -43,11 +52,14 @@ export class AgentRuntime<T = unknown> {
   private readonly emitter = new EventEmitter();
   private readonly runtimeConfig: RuntimeConfig<T>;
   private readonly runtimeResources: RuntimeEngineResources;
-  private readonly executor: EngineExecutor<RuntimeState, RuntimeEngineContext<T>>;
+  private readonly executor: EngineExecutor<
+    RuntimeState,
+    RuntimeEngineContext<T>
+  >;
   private inboundBridge: TransportInboundBinding | null = null;
   private stopAuthBridge: (() => void) | null = null;
   private lifecycleResources: RuntimeResource[] = [];
-  private readonly uiServer: RuntimeUiServer | null;
+  private uiServer: RuntimeUiServer | null = null;
 
   public constructor(input: AgentRuntimeInput<T>) {
     this.runtimeConfig = input.runtimeConfig;
@@ -56,47 +68,42 @@ export class AgentRuntime<T = unknown> {
     const handlers = input.handlers ?? buildDefaultNodeHandlers<T>();
     const graph = buildEngineGraphSpec<T>(handlers);
     this.executor = new EngineExecutor(graph);
-
-    const ui = input.runtimeConfig.ui;
-    this.uiServer =
-      ui?.enabled === false
-        ? null
-        : (() => {
-          return new RuntimeUiServer({
-            host: ui?.host ?? '127.0.0.1',
-            port: ui?.port ?? 5557,
-            sseHeartbeatMs: ui?.sseHeartbeatMs ?? 15_000,
-            authToken: ui?.authToken,
-            corsOrigin: ui?.corsOrigin
-          });
-        })();
+    // UI server will be resolved asynchronously in start()
   }
 
   /**
    * Starts all underlying resources (adapters, graph engine, and UI server).
    * It also binds the inbound transport handler for message intake and concurrency.
-   * 
+   *
    * @throws Error if any adapter fails to start.
    */
   public async start(): Promise<void> {
-    this.runtimeResources.logger.info({ uiEnabled: !!this.uiServer }, 'Starting AgentRuntime');
-    if (this.uiServer) {
+    // Resolve UI config and start UI server if enabled
+    const resolvedUi = await resolveUiConfig(this.runtimeConfig.ui);
+    if (resolvedUi.enabled !== false) {
+      this.uiServer = new RuntimeUiServer(resolvedUi);
       await this.uiServer.start();
+    } else {
+      this.uiServer = null;
     }
+    this.runtimeResources.logger.info(
+      { uiEnabled: !!this.uiServer },
+      "Starting AgentRuntime",
+    );
 
     this.stopAuthBridge = bindTransportAuth({
       transport: this.runtimeResources.transport,
       onAuthQr: (qr) => {
         this.uiServer?.setLatestQr(qr);
-        this.emitRuntimeEvent('auth:qr', qr);
+        this.emitRuntimeEvent("auth:qr", qr);
       },
       onAuthReady: () => {
         this.uiServer?.setOnlineStatus(true);
-        this.emitRuntimeEvent('auth:ready', undefined);
+        this.emitRuntimeEvent("auth:ready", undefined);
       },
       onAuthFailure: (message) => {
-        this.emitRuntimeEvent('auth:failure', message);
-      }
+        this.emitRuntimeEvent("auth:failure", message);
+      },
     });
     this.lifecycleResources = collectLifecycleResources(this.runtimeResources);
     try {
@@ -123,11 +130,14 @@ export class AgentRuntime<T = unknown> {
         if (message) {
           await this.runtimeResources.transport.sendText(inbound.from, message);
         }
-        this.emitRuntimeEvent('inbound:overload', { inbound });
+        this.emitRuntimeEvent("inbound:overload", { inbound });
       },
       onError: (error, inbound) => {
-        this.emitRuntimeEvent('inbound:error', { error: String(error), inbound });
-      }
+        this.emitRuntimeEvent("inbound:error", {
+          error: String(error),
+          inbound,
+        });
+      },
     });
   }
 
@@ -135,7 +145,7 @@ export class AgentRuntime<T = unknown> {
    * Stops all underlying resources gracefully, releasing memory and active ports.
    */
   public async close(): Promise<void> {
-    this.runtimeResources.logger.info('Closing AgentRuntime');
+    this.runtimeResources.logger.info("Closing AgentRuntime");
     if (this.inboundBridge) {
       this.inboundBridge.stop();
       this.inboundBridge = null;
@@ -156,7 +166,10 @@ export class AgentRuntime<T = unknown> {
    * Subscribes to runtime lifecycle and adapter events.
    * Useful for hooking into authentication flows (e.g., retrieving WhatsApp QR codes).
    */
-  public on(event: 'auth:qr' | 'auth:ready' | string, handler: (...args: unknown[]) => void): this {
+  public on(
+    event: "auth:qr" | "auth:ready" | string,
+    handler: (...args: unknown[]) => void,
+  ): this {
     this.emitter.on(event, handler);
     return this;
   }
@@ -166,12 +179,14 @@ export class AgentRuntime<T = unknown> {
    * Normally used for testing or advanced scenarios, as `start()` automatically
    * binds logic to consume transport messages.
    */
-  public async runInbound(inbound: InboundMessage): Promise<RuntimeEngineContext<T>> {
+  public async runInbound(
+    inbound: InboundMessage,
+  ): Promise<RuntimeEngineContext<T>> {
     const requestId = randomUUID();
     const logger = this.runtimeResources.logger.child({ requestId });
 
-    logger.info({ inbound }, 'Inbound message received');
-    this.emitRuntimeEvent('inbound:received', { inbound });
+    logger.info({ inbound }, "Inbound message received");
+    this.emitRuntimeEvent("inbound:received", { inbound });
 
     const startedAt = new Date();
 
@@ -187,27 +202,29 @@ export class AgentRuntime<T = unknown> {
     const threadId = requestId;
 
     try {
-      await this.executor.invoke(
-        context.state,
-        context,
-        {
-          threadId,
-          saver,
-          entrypoint: 'event_dedup_gate'
-        }
-      );
+      await this.executor.invoke(context.state, context, {
+        threadId,
+        saver,
+        entrypoint: "event_dedup_gate",
+      });
 
-      logger.info({ from: inbound.from }, 'Inbound message processed');
-      this.emitRuntimeEvent('inbound:processed', { requestId, from: inbound.from });
+      logger.info({ from: inbound.from }, "Inbound message processed");
+      this.emitRuntimeEvent("inbound:processed", {
+        requestId,
+        from: inbound.from,
+      });
     } catch (error) {
-      logger.error({ error: String(error), inbound }, 'Inbound message failed');
-      this.emitRuntimeEvent('inbound:failed', { requestId, error: String(error), inbound });
+      logger.error({ error: String(error), inbound }, "Inbound message failed");
+      this.emitRuntimeEvent("inbound:failed", {
+        requestId,
+        error: String(error),
+        inbound,
+      });
       throw error;
     }
 
     return context;
   }
-
 
   private emitRuntimeEvent(event: string, payload: unknown): void {
     this.emitter.emit(event, payload);

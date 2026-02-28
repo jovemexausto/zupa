@@ -6,8 +6,7 @@ import {
 import { AgentRuntime, buildDefaultNodeHandlers } from "@zupa/runtime";
 import { PinoLogger } from "@zupa/adapters";
 import { createLocalResources } from "./resources";
-import { getPort } from "get-port-please";
-import { UI_DEFAULTS, LOGGING_DEFAULTS } from "../constants";
+import { LOGGING_DEFAULTS } from "@zupa/core";
 
 type WithReply = { reply: string };
 
@@ -82,6 +81,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   return agent;
 }
 
+// TODO: this seems to not be doing much work
 async function resolveRuntimeConfig<T extends WithReply>(
   config: AgentConfig<T>,
 ): Promise<RuntimeConfig<T>> {
@@ -91,45 +91,12 @@ async function resolveRuntimeConfig<T extends WithReply>(
   // which is specific to the wrapper API
   const { providers, ...runtimeConfigFields } = config as any;
 
+  // Proxy UI config directly; do not resolve here
   const resolved: RuntimeConfig<T> = {
     ...runtimeConfigFields,
     language,
+    ui: config.ui,
   };
-
-  // Apply UI defaults and resolve port
-  if (config.ui === false) {
-    resolved.ui = { enabled: false };
-  } else if (!config.ui) {
-    const port = await getPort({
-      ports: [...UI_DEFAULTS.PREFERRED_PORTS],
-      random: true,
-    });
-    resolved.ui = {
-      enabled: UI_DEFAULTS.ENABLED,
-      host: UI_DEFAULTS.HOST,
-      port,
-      sseHeartbeatMs: UI_DEFAULTS.SSE_HEARTBEAT_MS,
-    };
-  } else {
-    // Find available port if specified, otherwise use the preferred ports
-    const port = config.ui.port
-      ? // If a port is specified, we must use it or fail (don't fallback to preferred ports)
-        config.ui.port
-      : await getPort({
-          ports: [...UI_DEFAULTS.PREFERRED_PORTS],
-          random: true,
-        });
-
-    // Fill in any missing UI properties with defaults
-    resolved.ui = {
-      enabled: config.ui.enabled ?? UI_DEFAULTS.ENABLED,
-      host: config.ui.host ?? UI_DEFAULTS.HOST,
-      port,
-      sseHeartbeatMs: config.ui.sseHeartbeatMs ?? UI_DEFAULTS.SSE_HEARTBEAT_MS,
-      authToken: config.ui.authToken,
-      corsOrigin: config.ui.corsOrigin,
-    };
-  }
 
   return resolved;
 }

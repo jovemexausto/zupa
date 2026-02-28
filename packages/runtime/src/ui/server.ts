@@ -1,6 +1,10 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
 
-import QRCode from 'qrcode';
+import QRCode from "qrcode";
 
 interface RuntimeUiServerOptions {
   host: string;
@@ -44,16 +48,16 @@ export class RuntimeUiServer {
     });
 
     await new Promise<void>((resolve, reject) => {
-      this.server?.once('error', reject);
+      this.server?.once("error", reject);
       this.server?.listen(this.options.port, this.options.host, () => {
-        this.server?.removeListener('error', reject);
+        this.server?.removeListener("error", reject);
         resolve();
       });
     });
 
     this.heartbeatTimer = setInterval(() => {
       for (const client of this.clients.values()) {
-        client.response.write(': heartbeat\n\n');
+        client.response.write(": heartbeat\n\n");
       }
     }, this.heartbeatMs);
     this.heartbeatTimer.unref();
@@ -91,7 +95,7 @@ export class RuntimeUiServer {
     this.isOnline = false;
     this.latestQr = {
       qr,
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     };
   }
 
@@ -106,92 +110,125 @@ export class RuntimeUiServer {
     const serialized = `event: ${type}\ndata: ${JSON.stringify({
       type,
       ts: new Date().toISOString(),
-      payload
+      payload,
     })}\n\n`;
     for (const client of this.clients.values()) {
       client.response.write(serialized);
     }
   }
 
-  private async handleRequest(request: IncomingMessage, response: ServerResponse<IncomingMessage>): Promise<void> {
-    const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+  private async handleRequest(
+    request: IncomingMessage,
+    response: ServerResponse<IncomingMessage>,
+  ): Promise<void> {
+    const url = new URL(
+      request.url ?? "/",
+      `http://${request.headers.host ?? "localhost"}`,
+    );
 
-    if (request.method !== 'GET') {
-      this.writeJson(response, 405, { status: 'error', message: 'Method not allowed' });
+    if (request.method !== "GET") {
+      this.writeJson(response, 405, {
+        status: "error",
+        message: "Method not allowed",
+      });
       return;
     }
 
     if (!this.isAuthorized(request, url)) {
-      this.writeJson(response, 401, { status: 'error', message: 'Unauthorized' });
+      this.writeJson(response, 401, {
+        status: "error",
+        message: "Unauthorized",
+      });
       return;
     }
 
-    if (url.pathname === '/auth/qr') {
+    if (url.pathname === "/auth/qr") {
       await this.handleAuthQr(url, response);
       return;
     }
 
-    if (url.pathname === '/agent/events') {
+    if (url.pathname === "/agent/events") {
       this.handleAgentEvents(response);
       return;
     }
 
-    this.writeJson(response, 404, { status: 'error', message: 'Not found' });
+    this.writeJson(response, 404, { status: "error", message: "Not found" });
   }
 
-  private async handleAuthQr(url: URL, response: ServerResponse<IncomingMessage>): Promise<void> {
-    const format = (url.searchParams.get('format') ?? 'image').toLowerCase();
-    if (format !== 'image' && format !== 'raw') {
-      this.writeJson(response, 400, { status: 'error', message: 'Invalid format. Expected image|raw.' });
+  private async handleAuthQr(
+    url: URL,
+    response: ServerResponse<IncomingMessage>,
+  ): Promise<void> {
+    const format = (url.searchParams.get("format") ?? "image").toLowerCase();
+    if (format !== "image" && format !== "raw") {
+      this.writeJson(response, 400, {
+        status: "error",
+        message: "Invalid format. Expected image|raw.",
+      });
       return;
     }
     if (!this.latestQr) {
       if (this.isOnline) {
-        if (format === 'raw') {
-          this.writeJson(response, 200, { status: 'online', message: 'Agent is already online' });
+        if (format === "raw") {
+          this.writeJson(response, 200, {
+            status: "online",
+            message: "Agent is already online",
+          });
           return;
         }
-        this.writeHtml(response, 200, this.renderStatusPage({
-          title: 'Agent Online',
-          message: 'Agent is already online. No QR code is required right now.'
-        }));
+        this.writeHtml(
+          response,
+          200,
+          this.renderStatusPage({
+            title: "Agent Online",
+            message:
+              "Agent is already online. No QR code is required right now.",
+          }),
+        );
         return;
       }
 
-      this.writeJson(response, 404, { status: 'error', message: 'QR payload not available yet' });
+      this.writeJson(response, 404, {
+        status: "error",
+        message: "QR payload not available yet",
+      });
       return;
     }
 
-    if (format === 'raw') {
+    if (format === "raw") {
       this.writeJson(response, 200, {
-        status: 'ok',
-        format: 'raw',
+        status: "ok",
+        format: "raw",
         qr: this.latestQr.qr,
-        updatedAt: this.latestQr.updatedAt
+        updatedAt: this.latestQr.updatedAt,
       });
       return;
     }
 
     const dataUrl = await QRCode.toDataURL(this.latestQr.qr);
-    this.writeHtml(response, 200, this.renderQrPage({
-      dataUrl,
-      updatedAt: this.latestQr.updatedAt
-    }));
+    this.writeHtml(
+      response,
+      200,
+      this.renderQrPage({
+        dataUrl,
+        updatedAt: this.latestQr.updatedAt,
+      }),
+    );
   }
 
   private handleAgentEvents(response: ServerResponse<IncomingMessage>): void {
     response.statusCode = 200;
-    response.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    response.setHeader('Cache-Control', 'no-cache, no-transform');
-    response.setHeader('Connection', 'keep-alive');
-    response.setHeader('X-Accel-Buffering', 'no');
+    response.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    response.setHeader("Cache-Control", "no-cache, no-transform");
+    response.setHeader("Connection", "keep-alive");
+    response.setHeader("X-Accel-Buffering", "no");
     this.applyCors(response);
 
     const clientId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     this.clients.set(clientId, { id: clientId, response });
     response.write('event: connected\ndata: {"status":"ok"}\n\n');
 
-    response.on('close', () => {
+    response.on("close", () => {
       this.clients.delete(clientId);
     });
   }
@@ -202,7 +239,7 @@ export class RuntimeUiServer {
       return true;
     }
 
-    const queryToken = url.searchParams.get('token');
+    const queryToken = url.searchParams.get("token");
     if (queryToken && queryToken === token) {
       return true;
     }
@@ -212,23 +249,31 @@ export class RuntimeUiServer {
       return false;
     }
 
-    if (!authorization.startsWith('Bearer ')) {
+    if (!authorization.startsWith("Bearer ")) {
       return false;
     }
 
-    return authorization.slice('Bearer '.length) === token;
+    return authorization.slice("Bearer ".length) === token;
   }
 
-  private writeJson(response: ServerResponse<IncomingMessage>, statusCode: number, body: Record<string, unknown>): void {
+  private writeJson(
+    response: ServerResponse<IncomingMessage>,
+    statusCode: number,
+    body: Record<string, unknown>,
+  ): void {
     response.statusCode = statusCode;
-    response.setHeader('Content-Type', 'application/json; charset=utf-8');
+    response.setHeader("Content-Type", "application/json; charset=utf-8");
     this.applyCors(response);
     response.end(JSON.stringify(body));
   }
 
-  private writeHtml(response: ServerResponse<IncomingMessage>, statusCode: number, html: string): void {
+  private writeHtml(
+    response: ServerResponse<IncomingMessage>,
+    statusCode: number,
+    html: string,
+  ): void {
     response.statusCode = statusCode;
-    response.setHeader('Content-Type', 'text/html; charset=utf-8');
+    response.setHeader("Content-Type", "text/html; charset=utf-8");
     this.applyCors(response);
     response.end(html);
   }
@@ -288,10 +333,10 @@ export class RuntimeUiServer {
     }
 
     if (Array.isArray(corsOrigin)) {
-      response.setHeader('Access-Control-Allow-Origin', corsOrigin.join(','));
+      response.setHeader("Access-Control-Allow-Origin", corsOrigin.join(","));
       return;
     }
 
-    response.setHeader('Access-Control-Allow-Origin', corsOrigin);
+    response.setHeader("Access-Control-Allow-Origin", corsOrigin);
   }
 }
