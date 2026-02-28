@@ -6,94 +6,39 @@ import {
   RuntimeResource,
   RuntimeEngineResources,
   RuntimeEngineContext,
-  InboundMessage,
-  StateSnapshot,
-  CheckpointSaver,
-  LedgerEvent,
-  LedgerWriter
+  InboundMessage
 } from '@zupa/core';
 
 import {
   EngineExecutor,
-  type EngineGraphSpec,
-  CanonicalChannels,
-  lastWriteWinsReducer,
-  createInitialRuntimeContext,
-  type ChannelReducer
+  createInitialRuntimeContext
 } from '@zupa/engine';
+
+import { EphemeralCheckpointSaver } from './engine/ephemeralSaver';
+import { buildEngineGraphSpec } from './engine/graph';
 
 import { bindTransportInbound, type TransportInboundBinding } from './inbound/transportBridge';
 import { closeResources, collectLifecycleResources, startResources } from './resources/lifecycle';
 import { buildDefaultNodeHandlers, type RuntimeState, type RuntimeNodeHandlerMap } from './nodes';
 import { RuntimeUiServer } from './ui/server';
 
-// ---------------------------------------------------------------------------
-// In-process checkpoint saver (ephemeral, per-request thread)
-// ---------------------------------------------------------------------------
-class EphemeralCheckpointSaver implements CheckpointSaver<RuntimeState>, LedgerWriter {
-  private checkpoints = new Map<string, StateSnapshot<RuntimeState>>();
 
-  async getCheckpoint(threadId: string): Promise<StateSnapshot<RuntimeState> | null> {
-    return this.checkpoints.get(threadId) ?? null;
-  }
-
-  async putCheckpoint(threadId: string, checkpoint: StateSnapshot<RuntimeState>): Promise<void> {
-    this.checkpoints.set(threadId, checkpoint);
-  }
-
-  async getCheckpointById(_threadId: string, checkpointId: string): Promise<StateSnapshot<RuntimeState> | null> {
-    for (const cp of this.checkpoints.values()) {
-      if (cp.checkpointId === checkpointId) return cp;
-    }
-    return null;
-  }
-
-  async getCheckpointHistory(_threadId: string): Promise<StateSnapshot<RuntimeState>[]> {
-    return [];
-  }
-
-  async appendLedgerEvent(_sessionId: string, _event: LedgerEvent): Promise<void> {
-    // No-op in ephemeral path
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Build a EngineGraphSpec from the node handlers
-// ---------------------------------------------------------------------------
-function buildEngineGraphSpec<T = unknown>(
-  handlers: RuntimeNodeHandlerMap<T>
-): EngineGraphSpec<RuntimeState, RuntimeEngineContext<T>> {
-  const channels: { [K in keyof RuntimeState]: ChannelReducer<RuntimeState[K]> } = {
-    session: lastWriteWinsReducer(),
-    user: lastWriteWinsReducer(),
-    replyTarget: lastWriteWinsReducer(),
-    inboundDuplicate: lastWriteWinsReducer(),
-    createdUser: lastWriteWinsReducer(),
-    resolvedContent: lastWriteWinsReducer(),
-    inbound: lastWriteWinsReducer(),
-    commandHandled: lastWriteWinsReducer(),
-    kv: lastWriteWinsReducer(),
-    assembledContext: lastWriteWinsReducer(),
-    builtPrompt: lastWriteWinsReducer(),
-    llmResponse: lastWriteWinsReducer(),
-    toolResults: (prev, update) => CanonicalChannels.toolResults(prev, update || [])
-  };
-
-  return {
-    channels,
-    nodes: handlers
-  };
-}
-
-// ---------------------------------------------------------------------------
-// AgentRuntime
-// ---------------------------------------------------------------------------
-interface AgentRuntimeInput<T = unknown> {
+/**
+ * Input configuration required to boot an AgentRuntime instance.
+ */
+export interface AgentRuntimeInput<T = unknown> {
   runtimeConfig: RuntimeConfig<T>;
   runtimeResources: RuntimeEngineResources;
   handlers?: RuntimeNodeHandlerMap<T>;
 }
 
+/**
+ * The core coordination daemon for the Zupa Framework.
+ * 
+ * AgentRuntime orchestrates the lifecycle of all adapters, binds the transport
+ * for incoming and outgoing messages, starts the UI server if configured,
+ * and maintains the execution layer (`EngineExecutor`) to process each request.
+ */
 export class AgentRuntime<T = unknown> {
   private readonly emitter = new EventEmitter();
   private readonly runtimeConfig: RuntimeConfig<T>;
@@ -127,6 +72,12 @@ export class AgentRuntime<T = unknown> {
         })();
   }
 
+  /**
+   * Starts all underlying resources (adapters, graph engine, and UI server).
+   * It also binds the inbound transport handler for message intake and concurrency.
+   * 
+   * @throws Error if any adapter fails to start.
+   */
   public async start(): Promise<void> {
     if (this.uiServer) {
       await this.uiServer.start();
@@ -166,6 +117,9 @@ export class AgentRuntime<T = unknown> {
     });
   }
 
+  /**
+   * Stops all underlying resources gracefully, releasing memory and active ports.
+   */
   public async close(): Promise<void> {
     if (this.inboundBridge) {
       this.inboundBridge.stop();
@@ -183,11 +137,20 @@ export class AgentRuntime<T = unknown> {
     }
   }
 
+  /**
+   * Subscribes to runtime lifecycle and adapter events.
+   * Useful for hooking into authentication flows (e.g., retrieving WhatsApp QR codes).
+   */
   public on(event: 'auth:qr' | 'auth:ready' | string, handler: (...args: unknown[]) => void): this {
     this.emitter.on(event, handler);
     return this;
   }
 
+  /**
+   * Invokes the execution graph manually for a specific inbound message.
+   * Normally used for testing or advanced scenarios, as `start()` automatically
+   * binds logic to consume transport messages.
+   */
   public async runInbound(inbound: InboundMessage): Promise<RuntimeEngineContext<T>> {
     this.emitRuntimeEvent('inbound:received', { inbound });
 
