@@ -87,8 +87,13 @@ export class AgentRuntime<T = unknown> {
       this.uiServer = null;
     }
     this.runtimeResources.logger.info(
-      { uiEnabled: !!this.uiServer },
-      "Starting AgentRuntime",
+      {
+        ui: !!this.uiServer,
+        ...(this.uiServer && {
+          url: `http://${this.uiServer.options.host}:${this.uiServer.options.port}`,
+        }),
+      },
+      "Starting AgentRuntime.",
     );
 
     this.stopAuthBridge = bindTransportAuth({

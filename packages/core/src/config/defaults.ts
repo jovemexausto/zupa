@@ -17,8 +17,8 @@ export const UI_DEFAULTS = {
 
   /** get-port-please configuration for finding available ports */
   PORT_CONFIG: {
-    ports: [5557, 5516] as number[],
-    random: true,
+    port: 5557,
+    alternativePortRange: [4200, 4300] as [number, number],
   },
 };
 

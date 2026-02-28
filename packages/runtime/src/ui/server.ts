@@ -25,7 +25,7 @@ interface LatestQrState {
 }
 
 export class RuntimeUiServer {
-  private readonly options: RuntimeUiServerOptions;
+  public readonly options: RuntimeUiServerOptions;
   private readonly clients = new Map<string, SseClient>();
   private readonly heartbeatMs: number;
   private latestQr: LatestQrState | null = null;
