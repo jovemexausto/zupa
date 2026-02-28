@@ -7,3 +7,5 @@ export * from './storage/fake';
 export * from './vectors/fake';
 export * from './stt/fake';
 export * from './tts/fake';
+export * from './logger/fake';
+export * from './logger/pino';

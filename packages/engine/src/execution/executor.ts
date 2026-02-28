@@ -3,8 +3,15 @@ import type {
     CheckpointSaver,
     LedgerEvent,
     LedgerWriter,
-    NodeResult
+    NodeResult,
+    Logger
 } from '@zupa/core';
+
+interface ExecutorContextWithLogger {
+    resources?: {
+        logger?: Logger;
+    }
+}
 import type { ChannelReducer } from '../models/checkpoint';
 
 /**
@@ -44,6 +51,10 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
         config: EngineExecutorConfig<TState>
     ): Promise<StateSnapshot<TState>> {
         const { threadId, saver } = config;
+        const logger = (context as ExecutorContextWithLogger).resources?.logger?.child({ threadId });
+
+        logger?.debug('Starting graph execution');
+
         let checkpoint = await saver.getCheckpoint(threadId) as StateSnapshot<TState> | null;
 
         if (!checkpoint) {
@@ -82,6 +93,8 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
             const ledgerEvents: LedgerEvent[] = [];
             const completedTasks: string[] = [];
 
+            logger?.trace({ step: loopCount, tasks: currentTasks }, 'Executing super-step');
+
             // 1. Parallel Execution Node (Super-step)
             // Nodes receive a read-only snapshot of the current state.
             const snapshotContext = Object.assign({}, context, { state: Object.freeze({ ...currentCheckpoint.values }) }) as TContext & { state: Readonly<TState> };
@@ -107,6 +120,7 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
                             dynamicNextTasks = result.nextTasks;
                         }
                         completedTasks.push(taskName);
+                        logger?.trace({ node: taskName }, 'Node completed');
                     })
                 );
             } catch (err) {
@@ -151,10 +165,12 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
             currentCheckpoint = nextCheckpoint;
 
             if (interrupted) {
+                logger?.warn({ step: loopCount }, 'Graph execution interrupted');
                 break;
             }
         }
 
+        logger?.debug({ steps: loopCount }, 'Graph execution complete');
         return currentCheckpoint;
     }
 

@@ -35,6 +35,11 @@ export const llmNodeNode = defineNode<RuntimeState, RuntimeEngineContext>(async 
         })
     });
 
+    resources.logger.debug({
+        toolCalls: response.toolCalls.length,
+        promptLength: prompt.length
+    }, 'LLM completion successful');
+
     return {
         stateDiff: { llmResponse: response },
         nextTasks: response.toolCalls.length > 0 ? ['tool_execution_node'] : ['response_finalize']
