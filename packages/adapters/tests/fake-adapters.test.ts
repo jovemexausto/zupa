@@ -40,22 +40,23 @@ describe('fake adapters', () => {
     const stt = new FakeSTTProvider('hello from stt');
     const tts = new FakeTTSProvider();
 
-    const sttResult = await stt.transcribe({ audioPath: '/tmp/in.ogg', language: 'pt' as any });
-    const ttsResult = await tts.synthesize({ text: 'hello', voice: 'nova', outputPath: '/tmp/out.ogg', language: 'pt' as any });
+    const sttResult = await stt.transcribe({ audio: Buffer.from('123'), format: 'audio/ogg', language: 'pt' as any });
+    const ttsResult = await tts.synthesize({ text: 'hello', voice: 'nova', language: 'pt' as any });
 
     expect(sttResult.transcript).toBe('hello from stt');
     expect(stt.lastRequest?.language).toBe('pt');
-    expect(ttsResult.audioPath).toBe('/tmp/out.ogg');
-    expect(tts.lastRequest?.outputPath).toBe('/tmp/out.ogg');
+    expect(ttsResult.audio.toString()).toBe('fake-audio-bytes');
+    expect(tts.lastRequest?.voice).toBe('nova');
   });
 
   it('records outbound transport events', async () => {
     const messaging = new FakeMessagingTransport();
     await messaging.sendText('u1', 'hello');
-    await messaging.sendVoice('u1', '/tmp/out.ogg');
+    await messaging.sendVoice('u1', { buffer: Buffer.from('fake'), mimetype: 'audio/ogg' });
 
     expect(messaging.sentText).toEqual([{ to: 'u1', text: 'hello' }]);
-    expect(messaging.sentVoice).toEqual([{ to: 'u1', audioPath: '/tmp/out.ogg' }]);
+    expect(messaging.sentVoice[0].to).toBe('u1');
+    expect(messaging.sentVoice[0].media.mimetype).toBe('audio/ogg');
   });
 
   it('stores and retrieves users/messages in fake db and kv in state provider', async () => {

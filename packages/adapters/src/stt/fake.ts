@@ -1,11 +1,11 @@
 import { type STTProvider } from '@zupa/core';
 
 export class FakeSTTProvider implements STTProvider {
-    public lastRequest?: { audioPath: string; language?: string };
+    public lastRequest?: { audio: Buffer; format: string; language?: string };
 
     constructor(private readonly transcript: string = 'This is a fake transcript.') { }
 
-    public async transcribe(options: { audioPath: string; language: string }): Promise<{
+    public async transcribe(options: { audio: Buffer; format: string; language: string }): Promise<{
         transcript: string;
         confidence: number;
         latencyMs: number;

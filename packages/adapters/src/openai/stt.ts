@@ -1,5 +1,4 @@
-import { createReadStream } from 'node:fs';
-import OpenAI from 'openai';
+import OpenAI, { toFile } from 'openai';
 import { type STTProvider } from '@zupa/core';
 
 export interface OpenAIWhisperSTTProviderOptions {
@@ -22,7 +21,8 @@ export class OpenAIWhisperSTTProvider implements STTProvider {
     }
 
     public async transcribe(options: {
-        audioPath: string;
+        audio: Buffer;
+        format: string;
         language: string;
     }): Promise<{
         transcript: string;
@@ -32,7 +32,7 @@ export class OpenAIWhisperSTTProvider implements STTProvider {
         const startedAt = Date.now();
         const result = await this.client.audio.transcriptions.create({
             model: this.model,
-            file: createReadStream(options.audioPath),
+            file: await toFile(options.audio, 'audio.ogg', { type: options.format }),
             language: options.language
         });
 

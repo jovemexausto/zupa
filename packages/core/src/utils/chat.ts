@@ -6,7 +6,6 @@ interface ResolveInboundContentInput {
     message: InboundMessage;
     sttProvider: Pick<STTProvider, 'transcribe'>;
     config: {
-        audioStoragePath: string; // Ideally this should be removed and use storage port
         agentLanguage: AgentLanguage;
         sttTimeoutMs?: number;
         maxIdempotentRetries?: number;
@@ -19,11 +18,16 @@ export async function resolveInboundContent(input: ResolveInboundContentInput): 
     contentText: string;
     inputModality: 'text' | 'voice';
 }> {
-    if (!input.message.hasMedia || (input.message.type !== 'ptt' && input.message.type !== 'audio')) {
+    if (!input.message.hasMedia || (input.message.type !== 'ptt' && input.message.type !== 'audio') || !input.message.downloadMedia) {
         return { contentText: input.message.body, inputModality: 'text' };
     }
 
     try {
+        const media = await input.message.downloadMedia();
+        if (!media) {
+            return { contentText: input.message.body, inputModality: 'text' };
+        }
+
         const synthesized = await withTimeout({
             timeoutMs: input.config.sttTimeoutMs ?? 15_000,
             label: 'STT transcription',
@@ -33,7 +37,8 @@ export async function resolveInboundContent(input: ResolveInboundContentInput): 
                 jitterMs: input.config.retryJitterMs ?? 25,
                 run: async () => {
                     return input.sttProvider.transcribe({
-                        audioPath: input.message.audioPath || 'TODO_STUB',
+                        audio: media.data,
+                        format: media.mimetype,
                         language: input.config.agentLanguage
                     });
                 }
@@ -60,7 +65,6 @@ interface FinalizeResponseInput {
     ttsProvider: Pick<TTSProvider, 'synthesize'>;
     messaging: MessagingTransport;
     config: {
-        audioStoragePath: string;
         ttsVoice: string;
         agentLanguage: AgentLanguage;
         ttsTimeoutMs?: number;
@@ -95,20 +99,20 @@ export async function finalizeResponse(input: FinalizeResponseInput): Promise<{
                     return input.ttsProvider.synthesize({
                         text: input.input.replyText,
                         voice: input.config.ttsVoice,
-                        outputPath: 'TODO_STUB',
                         language: input.config.agentLanguage
                     });
                 }
             })
         });
 
-        await input.messaging.sendVoice(input.input.replyTarget, synthesized.audioPath);
-
-        const contentAudioUrl = synthesized.audioPath.split('/').pop() || 'outbound.ogg';
+        await input.messaging.sendVoice(input.input.replyTarget, {
+            buffer: synthesized.audio,
+            mimetype: synthesized.format
+        });
 
         return {
             outputModality: 'voice',
-            contentAudioUrl
+            contentAudioUrl: 'transient-audio-buffer'
         };
     } catch {
         return textReply();

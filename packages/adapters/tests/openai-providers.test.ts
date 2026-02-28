@@ -60,11 +60,6 @@ describe('openai providers', () => {
   });
 
   it('transcribes with whisper and normalizes language', async () => {
-    const baseDir = path.join(tmpdir(), `zupa-stt-${Date.now()}`);
-    await mkdir(baseDir, { recursive: true });
-    const audioPath = path.join(baseDir, 'input.ogg');
-    await writeFile(audioPath, 'fake-audio-bytes');
-
     const create = vi.fn(async () => ({ text: 'ola mundo' }));
 
     const provider = new OpenAIWhisperSTTProvider({
@@ -74,7 +69,7 @@ describe('openai providers', () => {
       } as unknown as OpenAI
     });
 
-    const result = await provider.transcribe({ audioPath, language: 'pt' });
+    const result = await provider.transcribe({ audio: Buffer.from('fake'), format: 'audio/ogg', language: 'pt' });
 
     expect(create).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith(expect.objectContaining({ model: 'whisper-1', language: 'pt' }));
@@ -83,11 +78,7 @@ describe('openai providers', () => {
     expect(result.latencyMs).toBeGreaterThanOrEqual(0);
   });
 
-  it('synthesizes speech and writes audio file', async () => {
-    const baseDir = path.join(tmpdir(), `zupa-stt-${Date.now()}`);
-    await mkdir(baseDir, { recursive: true });
-    const outputPath = path.join(baseDir, 'output.mp3');
-
+  it('synthesizes speech and returns audio buffer', async () => {
     const create = vi.fn(async (_input: Record<string, unknown>) => ({
       arrayBuffer: async () => new TextEncoder().encode('audio').buffer
     }));
@@ -103,18 +94,14 @@ describe('openai providers', () => {
     const result = await provider.synthesize({
       text: 'hello world',
       voice: 'alloy',
-      outputPath,
       language: 'en'
     });
-
-    const output = await readFile(outputPath);
 
     expect(create).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledWith(
       expect.objectContaining({ model: 'gpt-4o-mini-tts', voice: 'alloy', input: 'hello world' })
     );
-    expect(output.toString()).toBe('audio');
-    expect(result.audioPath).toBe(outputPath);
+    expect(result.audio.toString()).toBe('audio');
     expect(result.durationSeconds).toBe(0);
     expect(result.latencyMs).toBeGreaterThanOrEqual(0);
   });

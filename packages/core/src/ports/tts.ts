@@ -4,10 +4,10 @@ export interface TTSProvider extends RuntimeResource {
   synthesize(options: {
     text: string;
     voice?: string;
-    outputPath: string;
     language: string;
   }): Promise<{
-    audioPath: string;
+    audio: Buffer;
+    format: string;
     durationSeconds: number;
     latencyMs: number;
   }>;

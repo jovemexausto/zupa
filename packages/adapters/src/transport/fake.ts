@@ -5,12 +5,12 @@ import {
 } from '@zupa/core';
 
 export class FakeMessagingTransport implements MessagingTransport {
-    public sentMessages: Array<{ to: string; text?: string; audioPath?: string; mediaPath?: string }> = [];
+    public sentMessages: Array<{ to: string; text?: string; audio?: Buffer; media?: Buffer }> = [];
     private handlers = new Set<(message: InboundMessage) => Promise<void>>();
 
     public sentText: Array<{ to: string; text: string }> = [];
-    public sentVoice: Array<{ to: string; audioPath: string }> = [];
-    public sentMedia: Array<{ to: string; mediaPath: string }> = [];
+    public sentVoice: Array<{ to: string; media: { buffer: Buffer; mimetype: string } }> = [];
+    public sentMedia: Array<{ to: string; media: { buffer: Buffer; mimetype: string; filename?: string } }> = [];
     public inboundSubscriptions = 0;
     public inboundUnsubscriptions = 0;
 
@@ -43,14 +43,14 @@ export class FakeMessagingTransport implements MessagingTransport {
         this.sentText.push({ to, text });
     }
 
-    public async sendVoice(to: string, audioPath: string): Promise<void> {
-        this.sentMessages.push({ to, audioPath });
-        this.sentVoice.push({ to, audioPath });
+    public async sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void> {
+        this.sentMessages.push({ to, audio: media.buffer });
+        this.sentVoice.push({ to, media });
     }
 
-    public async sendMedia(to: string, mediaPath: string, _caption?: string): Promise<void> {
-        this.sentMessages.push({ to, mediaPath });
-        this.sentMedia.push({ to, mediaPath });
+    public async sendMedia(to: string, media: { buffer: Buffer; mimetype: string; filename?: string }, _caption?: string): Promise<void> {
+        this.sentMessages.push({ to, media: media.buffer });
+        this.sentMedia.push({ to, media });
     }
 
     public async sendTyping(_to: string, _durationMs: number): Promise<void> {

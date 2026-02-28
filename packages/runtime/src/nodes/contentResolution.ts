@@ -12,7 +12,6 @@ export const contentResolutionNode = defineNode<RuntimeState, RuntimeEngineConte
     message: inbound,
     sttProvider: resources.stt,
     config: {
-      audioStoragePath: config.audioStoragePath || './data/audio',
       agentLanguage: config.language || 'en',
       ...(config.sttTimeoutMs !== undefined && { sttTimeoutMs: config.sttTimeoutMs }),
       ...(config.maxIdempotentRetries !== undefined && { maxIdempotentRetries: config.maxIdempotentRetries }),
