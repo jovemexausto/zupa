@@ -8,7 +8,17 @@ export interface InboundMedia {
 }
 
 export interface InboundMessage {
-  id?: string;
+  /**
+   * Stable, unique identifier for this inbound message.
+   * Used as the idempotency key for deduplication: the runtime graph will
+   * reject any message whose messageId has already been processed.
+   *
+   * Transport adapters that have a natural message ID (e.g., WhatsApp's
+   * `message.id._serialized`) MUST populate this field.
+   * Adapters without a natural ID (e.g., custom webhooks) MUST generate a
+   * deterministic fingerprint (see `generateMessageId` in @zupa/core/utils).
+   */
+  messageId: string;
   from: string;
   body: string;
   fromMe: boolean;

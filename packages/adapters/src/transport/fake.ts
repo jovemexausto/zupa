@@ -1,6 +1,7 @@
 import {
     type MessagingTransport,
-    type InboundMessage
+    type InboundMessage,
+    ensureMessageId
 } from '@zupa/core';
 
 export class FakeMessagingTransport implements MessagingTransport {
@@ -56,15 +57,16 @@ export class FakeMessagingTransport implements MessagingTransport {
         // No-op
     }
 
-    public async simulateInbound(message: InboundMessage): Promise<void> {
+    public async simulateInbound(message: Omit<InboundMessage, 'messageId'> & { messageId?: string }): Promise<void> {
+        const full = ensureMessageId(message);
         const promises = [];
         for (const handler of this.handlers) {
-            promises.push(handler(message));
+            promises.push(handler(full));
         }
         await Promise.all(promises);
     }
 
-    public async emitInbound(message: InboundMessage): Promise<void> {
+    public async emitInbound(message: Omit<InboundMessage, 'messageId'> & { messageId?: string }): Promise<void> {
         await this.simulateInbound(message);
     }
 

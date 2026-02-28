@@ -137,7 +137,7 @@ export class WWebJSMessagingTransport implements MessagingTransport {
 
         this.inboundListener = (message: any) => {
             const inbound: InboundMessage = {
-                id: message.id._serialized,
+                messageId: message.id._serialized,
                 from: message.from,
                 body: message.body,
                 fromMe: message.fromMe,
