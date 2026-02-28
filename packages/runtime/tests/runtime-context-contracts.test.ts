@@ -5,7 +5,6 @@ describe('Runtime Context and Contracts', () => {
   it('should have the correct engine node order', () => {
     expect(ENGINE_NODE_ORDER).toEqual([
       'access_policy',
-      'session_attach',
       'command_dispatch_gate',
       'content_resolution',
       'context_assembly',
