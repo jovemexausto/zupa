@@ -17,7 +17,7 @@ import {
 import { EphemeralCheckpointSaver } from './engine/ephemeralSaver';
 import { buildEngineGraphSpec } from './engine/graph';
 
-import { bindTransportInbound, type TransportInboundBinding } from './inbound/transportBridge';
+import { bindTransportInbound, type TransportInboundBinding, bindTransportAuth } from './inbound/transportBridge';
 import { closeResources, collectLifecycleResources, startResources } from './resources/lifecycle';
 import { buildDefaultNodeHandlers, type RuntimeState, type RuntimeNodeHandlerMap } from './nodes';
 import { RuntimeUiServer } from './ui/server';
@@ -83,7 +83,20 @@ export class AgentRuntime<T = unknown> {
       await this.uiServer.start();
     }
 
-    this.stopAuthBridge = this.bindTransportAuth();
+    this.stopAuthBridge = bindTransportAuth({
+      transport: this.runtimeResources.transport,
+      onAuthQr: (qr) => {
+        this.uiServer?.setLatestQr(qr);
+        this.emitRuntimeEvent('auth:qr', qr);
+      },
+      onAuthReady: () => {
+        this.uiServer?.setOnlineStatus(true);
+        this.emitRuntimeEvent('auth:ready', undefined);
+      },
+      onAuthFailure: (message) => {
+        this.emitRuntimeEvent('auth:failure', message);
+      }
+    });
     this.lifecycleResources = collectLifecycleResources(this.runtimeResources);
     try {
       await startResources(this.lifecycleResources);
@@ -187,40 +200,6 @@ export class AgentRuntime<T = unknown> {
     return context;
   }
 
-  private bindTransportAuth(): (() => void) | null {
-    const transport = this.runtimeResources.transport;
-    const unsubs: Array<() => void> = [];
-
-    if (transport.onAuthQr) {
-      unsubs.push(transport.onAuthQr((qr) => {
-        this.uiServer?.setLatestQr(qr);
-        this.emitRuntimeEvent('auth:qr', qr);
-      }));
-    }
-
-    if (transport.onAuthReady) {
-      unsubs.push(transport.onAuthReady(() => {
-        this.uiServer?.setOnlineStatus(true);
-        this.emitRuntimeEvent('auth:ready', undefined);
-      }));
-    }
-
-    if (transport.onAuthFailure) {
-      unsubs.push(transport.onAuthFailure((message) => {
-        this.emitRuntimeEvent('auth:failure', message);
-      }));
-    }
-
-    if (unsubs.length === 0) {
-      return null;
-    }
-
-    return () => {
-      for (const unsub of unsubs) {
-        unsub();
-      }
-    };
-  }
 
   private emitRuntimeEvent(event: string, payload: unknown): void {
     this.emitter.emit(event, payload);

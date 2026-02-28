@@ -51,3 +51,42 @@ export function bindTransportInbound(input: BindTransportInboundInput): Transpor
     get inFlightCount() { return inFlight; }
   };
 }
+
+export interface BindTransportAuthInput {
+  transport: MessagingTransport;
+  onAuthQr?(qr: string): void;
+  onAuthReady?(): void;
+  onAuthFailure?(message: string): void;
+}
+
+export function bindTransportAuth(input: BindTransportAuthInput): (() => void) | null {
+  const unsubs: Array<() => void> = [];
+
+  if (input.transport.onAuthQr) {
+    unsubs.push(input.transport.onAuthQr((qr) => {
+      input.onAuthQr?.(qr);
+    }));
+  }
+
+  if (input.transport.onAuthReady) {
+    unsubs.push(input.transport.onAuthReady(() => {
+      input.onAuthReady?.();
+    }));
+  }
+
+  if (input.transport.onAuthFailure) {
+    unsubs.push(input.transport.onAuthFailure((message) => {
+      input.onAuthFailure?.(message);
+    }));
+  }
+
+  if (unsubs.length === 0) {
+    return null;
+  }
+
+  return () => {
+    for (const unsub of unsubs) {
+      unsub();
+    }
+  };
+}
