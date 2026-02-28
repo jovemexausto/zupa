@@ -16,6 +16,11 @@ export interface CreateInitialRuntimeContextInput<T = any> {
   runtimeResources: RuntimeEngineResources;
 }
 
+/**
+ * @deprecated - This constant is not used and should be removed in the future.
+ * The node order is defined in the graph specification.
+ * Leaving for reference.
+ */
 export const ENGINE_NODE_ORDER: readonly EngineNodeName[] = [
   'access_policy',
   'session_attach',

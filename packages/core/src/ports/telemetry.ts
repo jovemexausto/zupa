@@ -9,7 +9,7 @@ import { RuntimeResource } from "../lifecycle";
 //       - each event carries a monotonic timestamp (or sequence ID)
 //         → this allows preserving strict emission order even when sinks drain 
 //           concurrently or at different speeds.
-export interface TelemetrySinkPort extends RuntimeResource {
+export interface TelemetrySink extends RuntimeResource {
   emit(event: {
     requestId: string;
     node: string;

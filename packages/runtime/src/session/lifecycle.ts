@@ -1,4 +1,4 @@
-import { type RuntimeDatabasePort as DatabasePort } from '@zupa/core';
+import { type DatabaseProvider as DatabasePort } from '@zupa/core';
 
 export interface EndSessionOptions {
     session: { id: string; kv?: { all(): Promise<Record<string, unknown>> } };

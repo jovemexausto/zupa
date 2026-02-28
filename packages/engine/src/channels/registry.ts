@@ -1,5 +1,5 @@
 import type { ChannelReducer } from '../models/checkpoint';
-import type { MessageRecord } from '@zupa/core';
+import type { Message } from '@zupa/core';
 
 /**
  * Appends new items to an array. If no previous array exists, it starts a new one.
@@ -18,8 +18,8 @@ export function lastWriteWinsReducer<T>(): ChannelReducer<T> {
 /**
  * A reducer that appends messages but enforces a maximum working memory window.
  */
-export function boundedMessagesReducer(maxWindow: number): ChannelReducer<MessageRecord[]> {
-    return (prev: MessageRecord[] | undefined, update: MessageRecord[]) => {
+export function boundedMessagesReducer(maxWindow: number): ChannelReducer<Message[]> {
+    return (prev: Message[] | undefined, update: Message[]) => {
         const combined = [...(prev ?? []), ...update];
         if (combined.length > maxWindow) {
             return combined.slice(-maxWindow);

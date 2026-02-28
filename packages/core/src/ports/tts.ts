@@ -1,6 +1,6 @@
 import { type RuntimeResource } from '../lifecycle';
 
-export interface TTSProviderPort extends RuntimeResource {
+export interface TTSProvider extends RuntimeResource {
   synthesize(options: {
     text: string;
     voice?: string;

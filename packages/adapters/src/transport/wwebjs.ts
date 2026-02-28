@@ -2,7 +2,7 @@ import path from 'node:path';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import WhatsAppWeb, { type Client as WhatsAppClient, type ClientOptions } from 'whatsapp-web.js';
-import { type InboundMessage, type MessagingTransportPort } from '@zupa/core';
+import { type InboundMessage, type MessagingTransport } from '@zupa/core';
 
 const { Client, LocalAuth, MessageMedia } = WhatsAppWeb;
 
@@ -58,7 +58,7 @@ function buildDefaultClientOptions(options?: ClientOptions): ClientOptions {
     };
 }
 
-export class WWebJSMessagingTransport implements MessagingTransportPort {
+export class WWebJSMessagingTransport implements MessagingTransport {
     private readonly client: WhatsAppClient;
     private readonly inboundHandlers = new Set<(message: InboundMessage) => Promise<void>>();
     private inboundListener: ((message: any) => void) | null = null;

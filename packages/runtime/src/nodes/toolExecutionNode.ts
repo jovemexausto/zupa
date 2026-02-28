@@ -2,13 +2,14 @@ import { defineNode } from '@zupa/engine';
 import {
     type RuntimeEngineContext,
     type AgentContext,
-    type SessionWithKV,
+    type ActiveSession,
     dispatchToolCall
 } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
  * tool_execution_node
+ * TODO: Write better docs.
  */
 export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
     const { resources, state, config } = context;
@@ -21,7 +22,7 @@ export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineConte
 
     const agentContext: AgentContext<unknown> = {
         user: state.user,
-        session: state.session as SessionWithKV,
+        session: state.session as ActiveSession,
         inbound: context.inbound,
         language: config.language,
         replyTarget: state.replyTarget,

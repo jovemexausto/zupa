@@ -1,5 +1,5 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeEngineContext, type UserRecord } from '@zupa/core';
+import { type RuntimeEngineContext, type User } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
@@ -7,7 +7,7 @@ import { type RuntimeState } from './index';
  */
 export const sessionAttachNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, state } = context;
-  const user = state.user as UserRecord; // Standardized user resolution should happen here or in access policy
+  const user = state.user as User; // Standardized user resolution should happen here or in access policy
 
   if (!user) {
     return { stateDiff: {}, nextTasks: ['command_dispatch_gate'] };

@@ -4,7 +4,7 @@ import {
   DEFAULT_INBOUND,
   createFakeRuntimeConfig
 } from '@zupa/testing';
-import { type STTProviderPort, type AgentLanguage } from '@zupa/core';
+import { type STTProvider, type AgentLanguage } from '@zupa/core';
 
 describe('content resolution capability slice', () => {
   it('keeps text messages as text modality', async () => {
@@ -15,7 +15,7 @@ describe('content resolution capability slice', () => {
     const config = createFakeRuntimeConfig();
     const resolved = await resolveInboundContent({
       message: DEFAULT_INBOUND,
-      sttProvider: stt as STTProviderPort,
+      sttProvider: stt as STTProvider,
       config: {
         audioStoragePath: './data/test-audio',
         agentLanguage: config.language
@@ -43,7 +43,7 @@ describe('content resolution capability slice', () => {
       },
       sttProvider: {
         transcribe
-      } as STTProviderPort,
+      } as STTProvider,
       config: {
         audioStoragePath: './data/test-audio',
         agentLanguage: 'pt' as AgentLanguage
@@ -76,7 +76,7 @@ describe('content resolution capability slice', () => {
           });
           return { transcript: 'never', confidence: 1, latencyMs: 1 };
         }
-      } as STTProviderPort,
+      } as STTProvider,
       config: {
         audioStoragePath: './data/test-audio',
         agentLanguage: 'pt' as AgentLanguage,
@@ -109,7 +109,7 @@ describe('content resolution capability slice', () => {
           }
           return { transcript: 'retry success', confidence: 1, latencyMs: 1 };
         }
-      } as STTProviderPort,
+      } as STTProvider,
       config: {
         audioStoragePath: './data/test-audio',
         agentLanguage: 'pt' as AgentLanguage,

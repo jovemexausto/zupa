@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import OpenAI from 'openai';
-import { type STTProviderPort } from '@zupa/core';
+import { type STTProvider } from '@zupa/core';
 
 export interface OpenAIWhisperSTTProviderOptions {
     apiKey: string;
@@ -9,7 +9,7 @@ export interface OpenAIWhisperSTTProviderOptions {
     client?: OpenAI;
 }
 
-export class OpenAIWhisperSTTProvider implements STTProviderPort {
+export class OpenAIWhisperSTTProvider implements STTProvider {
     private readonly client: OpenAI;
     private readonly model: string;
 

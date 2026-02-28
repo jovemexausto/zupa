@@ -1,6 +1,6 @@
-import { type TTSProviderPort } from '@zupa/core';
+import { type TTSProvider } from '@zupa/core';
 
-export class FakeTTSProvider implements TTSProviderPort {
+export class FakeTTSProvider implements TTSProvider {
     public lastRequest?: { text: string; voice?: string; outputPath?: string; language?: string };
 
     public async synthesize(options: {

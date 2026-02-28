@@ -1,7 +1,7 @@
 - [X] Create a @zupa/testing package for testing utilities, fixtures, etc. Move each test file to the project it really belongs to, refactoring them so use the testing utilities and fixtures / mockups.
 - [X] Fix .d.ts files being generated in the same directory as the source files and clean up the codebase.
 - [X] Chose one: Engine or Kernel, we should ensure a clear semantic.
-- [ ] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
+- [X] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
 - [ ] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
 - [ ] Unbound Session Management from KV, make the abstraction crisp and ensure right usage through the codebase
 - [ ] Resolve technical debt and ensure baseline is solid

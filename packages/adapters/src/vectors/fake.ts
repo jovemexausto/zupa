@@ -1,6 +1,6 @@
-import { type VectorStorePort } from '@zupa/core';
+import { type VectorStore } from '@zupa/core';
 
-export class FakeVectorStore implements VectorStorePort {
+export class FakeVectorStore implements VectorStore {
     private readonly vectors = new Map<string, any[]>();
 
     public async upsert(userId: string, id: string, text: string, metadata?: object): Promise<void> {

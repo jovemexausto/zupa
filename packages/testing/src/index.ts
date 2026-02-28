@@ -9,8 +9,8 @@ import {
 } from '@zupa/adapters';
 import {
     type RuntimeEngineResources,
-    type UserRecord,
-    type SessionRecord,
+    type User,
+    type Session,
     type InboundMessage,
     type RuntimeConfig,
     type LLMResponse,
@@ -27,7 +27,7 @@ export {
     FakeVectorStore
 };
 
-export const DEFAULT_USER: UserRecord = {
+export const DEFAULT_USER: User = {
     id: 'u1',
     externalUserId: 'user123',
     displayName: 'Test User',
@@ -36,7 +36,7 @@ export const DEFAULT_USER: UserRecord = {
     lastActiveAt: new Date('2026-01-01T00:00:00Z')
 };
 
-export const DEFAULT_SESSION: SessionRecord = {
+export const DEFAULT_SESSION: Session = {
     id: 's1',
     userId: 'u1',
     startedAt: new Date('2026-01-01T00:00:00Z'),

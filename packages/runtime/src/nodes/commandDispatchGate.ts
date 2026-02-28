@@ -3,7 +3,7 @@ import {
   buildCommandRegistry,
   dispatchCommandIfPresent,
   type RuntimeEngineContext,
-  type SessionWithKV
+  type ActiveSession
 } from '@zupa/core';
 import { type RuntimeState } from './index';
 
@@ -58,7 +58,7 @@ export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineCon
     commandRegistry: buildCommandRegistry(config.commands),
     commandContext: {
       user,
-      session: session as SessionWithKV,
+      session: session as ActiveSession,
       inbound,
       language: config.language,
       replyTarget,

@@ -3,7 +3,7 @@ import { zodFunction, zodResponseFormat } from 'openai/helpers/zod';
 import {
     type ChatMessage,
     type LLMCompleteOptions,
-    type LLMProviderPort,
+    type LLMProvider,
     type LLMResponse,
     type Tool,
     type ToolCall
@@ -75,7 +75,7 @@ function fromOpenAIToolCalls(toolCalls: OpenAIToolCall[] | undefined): ToolCall[
         }));
 }
 
-export class OpenAILLMProvider implements LLMProviderPort {
+export class OpenAILLMProvider implements LLMProvider {
     private client: OpenAI;
 
     public constructor(private readonly opts: {

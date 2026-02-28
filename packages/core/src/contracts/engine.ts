@@ -1,17 +1,17 @@
 import {
-    FileStoragePort,
-    LLMProviderPort,
-    MessagingTransportPort,
-    RuntimeDatabasePort,
-    STTProviderPort,
-    TTSProviderPort,
-    TelemetrySinkPort,
-    VectorStorePort
+    FileStorage,
+    LLMProvider,
+    MessagingTransport,
+    DatabaseProvider,
+    STTProvider,
+    TTSProvider,
+    TelemetrySink,
+    VectorStore
 } from '../ports';
 import { InboundMessage } from '../ports/transport';
 import { RuntimeConfig } from '../config/types';
-import { UserRecord } from '../entities/user';
-import { SessionWithKV } from '../entities/session';
+import { User } from '../entities/user';
+import { ActiveSession } from '../entities/session';
 import { AgentLanguage } from '../entities/agent';
 
 export type EngineNodeName =
@@ -40,28 +40,28 @@ export interface RuntimeEngineContext<T = unknown> {
     meta: RuntimeContextMeta;
     config: RuntimeConfig<T>;
     inbound: InboundMessage;
-    user?: UserRecord;
-    session?: SessionWithKV;
-    transport: MessagingTransportPort;
+    user?: User;
+    session?: ActiveSession;
+    transport: MessagingTransport;
     resources: RuntimeEngineResources;
     state: Record<string, unknown>;
     telemetry: RuntimeTelemetryContext;
 }
 
 export interface RuntimeEngineResources {
-    transport: MessagingTransportPort;
-    llm: LLMProviderPort;
-    stt: STTProviderPort;
-    tts: TTSProviderPort;
-    storage: FileStoragePort;
-    vectors: VectorStorePort;
-    database: RuntimeDatabasePort;
-    telemetry: TelemetrySinkPort;
+    transport: MessagingTransport;
+    llm: LLMProvider;
+    stt: STTProvider;
+    tts: TTSProvider;
+    storage: FileStorage;
+    vectors: VectorStore;
+    database: DatabaseProvider;
+    telemetry: TelemetrySink;
 }
 
 export interface AgentContext<T = unknown> {
-    user: UserRecord;
-    session: SessionWithKV;
+    user: User;
+    session: ActiveSession;
     inbound: InboundMessage;
     language: AgentLanguage;
     replyTarget: string;

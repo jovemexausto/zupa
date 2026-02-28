@@ -1,6 +1,6 @@
 import { type RuntimeResource } from '../lifecycle';
 
-export interface STTProviderPort extends RuntimeResource {
+export interface STTProvider extends RuntimeResource {
   transcribe(options: {
     audioPath: string;
     language: string;

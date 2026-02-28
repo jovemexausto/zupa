@@ -18,7 +18,7 @@ export interface InboundMessage {
   downloadMedia?: () => Promise<InboundMedia | undefined>;
 }
 
-export interface MessagingTransportPort extends RuntimeResource {
+export interface MessagingTransport extends RuntimeResource {
   onInbound?(handler: (message: InboundMessage) => Promise<void>): () => void;
   onAuthQr?(handler: (qr: string) => void): () => void;
   onAuthReady?(handler: () => void): () => void;

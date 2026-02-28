@@ -1,10 +1,10 @@
-import { SessionKV } from "../entities/session";
+import { SessionState } from "../entities/session";
 
 export interface SessionKVBackend {
     updateSessionKV(sessionId: string, kv: Record<string, unknown>): Promise<void>;
 }
 
-export class SessionKVStore implements SessionKV {
+export class SessionKVStore implements SessionState {
     public constructor(
         private readonly sessionId: string,
         private readonly db: SessionKVBackend,
