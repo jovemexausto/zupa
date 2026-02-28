@@ -36,17 +36,22 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
   }
 
   // 2. Finalize messaging if we have a reply and necessary context
+  let outputModality: 'text' | 'voice' = 'text';
   if (replyText) {
     const replyTarget = state.replyTarget;
     const user = state.user;
     const session = state.session;
 
     if (replyTarget && user && session) {
-      await finalizeResponse({
+      // Mirror input modality OR follow user preference
+      const preferredVoiceReply = (user.preferences as any).preferredReplyFormat === 'voice' ||
+        (state.inputModality === 'voice' && (user.preferences as any).preferredReplyFormat !== 'text');
+
+      const result = await finalizeResponse({
         input: {
           replyTarget,
           replyText,
-          preferredVoiceReply: config.preferredVoiceReply || false,
+          preferredVoiceReply,
           userId: user.id,
           sessionId: session.id,
         },
@@ -61,11 +66,12 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
           ...(config.retryJitterMs !== undefined && { retryJitterMs: config.retryJitterMs })
         },
       });
+      outputModality = result.outputModality;
     }
   }
 
   return {
-    stateDiff: {},
+    stateDiff: { outputModality },
     nextTasks: ['persistence_hooks']
   };
 });

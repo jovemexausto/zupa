@@ -7,6 +7,7 @@ import {
   RuntimeEngineResources,
   RuntimeEngineContext,
   InboundMessage,
+  normalizeExternalUserId,
 } from "@zupa/core";
 
 import { EngineExecutor, createInitialRuntimeContext } from "@zupa/engine";
@@ -204,7 +205,32 @@ export class AgentRuntime<T = unknown> {
     });
 
     const saver = new EphemeralCheckpointSaver();
-    const threadId = requestId;
+    // Resolve session identity before graph execution to establish consistent threadId
+    const inboundFrom = inbound.from;
+    const inboundExternalUserId = normalizeExternalUserId(inboundFrom);
+
+    let user = await this.runtimeResources.database.findUser(inboundExternalUserId);
+    if (!user) {
+      user = await this.runtimeResources.database.createUser({
+        externalUserId: inboundExternalUserId,
+        displayName: inboundFrom.split(':')[0] || 'Unknown User'
+      });
+    }
+
+    let session = await this.runtimeResources.database.findActiveSession(user.id);
+    if (!session) {
+      session = await this.runtimeResources.database.createSession(user.id);
+    }
+
+    // Crucially, we put the resolved user and session into the initial state
+    // so that nodes like content_resolution can access them immediately.
+    context.state = {
+      ...context.state,
+      user,
+      session
+    };
+
+    const threadId = session.id;
 
     try {
       await this.executor.invoke(context.state, context, {
