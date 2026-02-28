@@ -19,11 +19,7 @@ export const contextAssemblyNode = defineNode<RuntimeState, RuntimeEngineContext
 
   const assembledContext = {
     history: recentMessages,
-    summaries: recentSummaries,
-    // TODO: we're loading everything in memory, can this become a problem?
-    // should we enforce a max size for kv?
-    // how this problem relates to checkpointing?
-    kv: 'kv' in session && session.kv ? await session.kv.all() : {}
+    summaries: recentSummaries
   };
 
   return {

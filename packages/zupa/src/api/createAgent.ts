@@ -179,7 +179,6 @@ function applyDefaultProviders(resources: AgentProvidersConfig): RuntimeEngineRe
     storage: resources.storage ?? defaults.storage,
     vectors: resources.vectors ?? defaults.vectors,
     database: resources.database ?? defaults.database,
-    state: resources.state ?? defaults.state,
     telemetry: resources.telemetry ?? defaults.telemetry,
   };
 }

@@ -8,7 +8,8 @@ import {
   InboundMessage,
   LLMResponse,
   Message,
-  VectorSearchResult
+  VectorSearchResult,
+  KVStore
 } from '@zupa/core';
 import { accessPolicyNode } from './accessPolicy';
 import { llmNodeNode } from './llmNode';
@@ -35,10 +36,16 @@ export interface RuntimeState {
   resolvedContent?: string;
   inbound?: InboundMessage;
   commandHandled?: boolean;
+  /**
+   * Session scratchpad — developer-owned KV store.
+   * Lives as a top-level graph state field so it is checkpointed at every
+   * node transition, guaranteeing deterministic time-travel and resumability.
+   * Values must be strictly JSON-serializable (validated by GraphKVStore).
+   */
+  kv?: KVStore;
   assembledContext?: {
     history: Message[];
     relevantMemories?: VectorSearchResult[];
-    kv?: Record<string, unknown>;
     summaries?: string[];
   };
   builtPrompt?: string;

@@ -5,8 +5,7 @@ import {
     FakeMessagingTransport,
     FakeDatabaseBackend,
     FakeFileStorage,
-    FakeVectorStore,
-    FakeStateProvider
+    FakeVectorStore
 } from '@zupa/adapters';
 import {
     type RuntimeEngineResources,
@@ -25,8 +24,7 @@ export {
     FakeMessagingTransport,
     FakeDatabaseBackend,
     FakeFileStorage,
-    FakeVectorStore,
-    FakeStateProvider
+    FakeVectorStore
 };
 
 export const DEFAULT_USER: User = {
@@ -104,7 +102,6 @@ export function createFakeRuntimeDeps(): RuntimeEngineResources {
         tts: new FakeTTSProvider(),
         storage: new FakeFileStorage(),
         vectors: new FakeVectorStore(),
-        state: new FakeStateProvider(),
         telemetry: { emit() { } },
         database
     };
