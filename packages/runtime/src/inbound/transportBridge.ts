@@ -8,17 +8,25 @@ interface BindTransportInboundInput {
   onOverload?(inbound: InboundMessage): Promise<void> | void;
 }
 
-export function bindTransportInbound(input: BindTransportInboundInput): () => void {
+export interface TransportInboundBinding {
+  /** Stop listening for inbound messages and release the handler. */
+  stop: () => void;
+  /** Number of requests currently being processed. */
+  readonly inFlightCount: number;
+}
+
+export function bindTransportInbound(input: BindTransportInboundInput): TransportInboundBinding {
   if (typeof input.transport.onInbound !== 'function') {
-    return () => {
-      return;
+    return {
+      stop: () => { return; },
+      get inFlightCount() { return 0; }
     };
   }
 
   let inFlight = 0;
   const maxConcurrent = input.maxConcurrent ?? Number.POSITIVE_INFINITY;
 
-  return input.transport.onInbound(async (inbound) => {
+  const stop = input.transport.onInbound(async (inbound) => {
     if (inFlight >= maxConcurrent) {
       try {
         await input.onOverload?.(inbound);
@@ -37,4 +45,9 @@ export function bindTransportInbound(input: BindTransportInboundInput): () => vo
       inFlight -= 1;
     }
   });
+
+  return {
+    stop,
+    get inFlightCount() { return inFlight; }
+  };
 }

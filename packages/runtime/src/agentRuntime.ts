@@ -24,7 +24,7 @@ import {
   type ChannelReducer
 } from '@zupa/engine';
 
-import { bindTransportInbound } from './inbound/transportBridge';
+import { bindTransportInbound, type TransportInboundBinding } from './inbound/transportBridge';
 import { closeResources, collectLifecycleResources, startResources } from './resources/lifecycle';
 import { buildDefaultNodeHandlers, type RuntimeState, type RuntimeNodeHandlerMap } from './nodes';
 import { RuntimeUiServer } from './ui/server';
@@ -102,7 +102,7 @@ export class AgentRuntime<T = unknown> {
   private readonly runtimeConfig: RuntimeConfig<T>;
   private readonly runtimeResources: RuntimeEngineResources;
   private readonly executor: EngineExecutor<RuntimeState, RuntimeEngineContext<T>>;
-  private stopInboundBridge: (() => void) | null = null;
+  private inboundBridge: TransportInboundBinding | null = null;
   private stopAuthBridge: (() => void) | null = null;
   private lifecycleResources: RuntimeResource[] = [];
   private readonly uiServer: RuntimeUiServer | null;
@@ -150,7 +150,7 @@ export class AgentRuntime<T = unknown> {
       throw error;
     }
 
-    this.stopInboundBridge = bindTransportInbound({
+    this.inboundBridge = bindTransportInbound({
       transport: this.runtimeResources.transport,
       maxConcurrent: this.runtimeConfig.maxInboundConcurrency ?? 32,
       runInboundEngine: async (inbound) => {
@@ -170,9 +170,9 @@ export class AgentRuntime<T = unknown> {
   }
 
   public async close(): Promise<void> {
-    if (this.stopInboundBridge) {
-      this.stopInboundBridge();
-      this.stopInboundBridge = null;
+    if (this.inboundBridge) {
+      this.inboundBridge.stop();
+      this.inboundBridge = null;
     }
     if (this.stopAuthBridge) {
       this.stopAuthBridge();
