@@ -16,3 +16,4 @@ export * from './utils/async';
 export * from './utils/modules';
 export * from './utils/user';
 export * from './utils/chat';
+export * from './utils/message';
