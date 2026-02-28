@@ -100,7 +100,10 @@ async function resolveRuntimeConfig<T extends WithReply>(
   if (config.ui === false) {
     resolved.ui = { enabled: false };
   } else if (!config.ui) {
-    const port = await getPort({ ports: [...UI_DEFAULTS.PREFERRED_PORTS] });
+    const port = await getPort({
+      ports: [...UI_DEFAULTS.PREFERRED_PORTS],
+      random: true,
+    });
     resolved.ui = {
       enabled: UI_DEFAULTS.ENABLED,
       host: UI_DEFAULTS.HOST,
@@ -110,11 +113,12 @@ async function resolveRuntimeConfig<T extends WithReply>(
   } else {
     // Find available port if specified, otherwise use the preferred ports
     const port = config.ui.port
-      ? await getPort({
-          port: config.ui.port,
+      ? // If a port is specified, we must use it or fail (don't fallback to preferred ports)
+        config.ui.port
+      : await getPort({
           ports: [...UI_DEFAULTS.PREFERRED_PORTS],
-        })
-      : await getPort({ ports: [...UI_DEFAULTS.PREFERRED_PORTS] });
+          random: true,
+        });
 
     // Fill in any missing UI properties with defaults
     resolved.ui = {
