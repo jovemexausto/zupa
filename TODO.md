@@ -7,10 +7,14 @@
 - [X] Implement Phase 1 of Production Readiness RFC: Add `messageId` to `InboundMessage` mapping.
 - [X] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
 - [X] Implement Phase 1 of Production Readiness RFC: Create and apply universal `withTimeout` wrapper for LLM/STT/TTS calls.
-- [ ] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
+- [X] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
 - [ ] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
 - [ ] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
 - [ ] Document capabilities and aspects of the runtime and engine, features, opinions, design choices, etc for future reference of the project ideology
 - [ ] Replace any console.(log|warn|error) with proper production ready loggin (pino) and ensure it is used consistently across the codebase, also certify we position telemetry and logs at strategic points. This maybe will require refining current approach or imagine a batter solution for cross cutting concerns.
-- [ ] 
+- [ ] Implement Phase 2 of Production Readiness RFC: Implement `sessionIdleTimeoutMinutes` in `session_attach` — auto-finalize expired/zombie sessions.
+- [ ] Implement Phase 2 of Production Readiness RFC: Error taxonomy — classify Transient vs Terminal errors, apply `retryIdempotent` to LLM/Database/Transport calls accordingly.
+- [ ] Implement Phase 2 of Production Readiness RFC: Circuit breaker per provider — fail fast during prolonged outages.
+- [ ] Implement Phase 3 of Production Readiness RFC: Plumb correlation IDs (`requestId`, `sessionId`, `userId`, `eventId`) through `RuntimeEngineContext` and all telemetry/ledger events.
+- [ ] Implement Phase 3 of Production Readiness RFC: Build Audit Ledger — immutable record of tool invocations, command dispatches, and `onResponse` events.
 
