@@ -1,3 +1,5 @@
+// TODO: this is a concept we need to solidify
+
 export interface PreferencePatch {
     reply_in_voice?: boolean;
     max_reply_length?: 'short' | 'normal' | 'long';

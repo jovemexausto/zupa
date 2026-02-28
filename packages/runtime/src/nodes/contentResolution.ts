@@ -1,5 +1,5 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeEngineContext } from '@zupa/core';
+import { type RuntimeEngineContext, resolveInboundContent } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
@@ -8,20 +8,23 @@ import { type RuntimeState } from './index';
 export const contentResolutionNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, inbound, config } = context;
 
-  let body = inbound.body;
-
-  if (inbound.audioPath && resources.stt) {
-    const { transcript } = await resources.stt.transcribe({
-      audioPath: inbound.audioPath,
-      language: config.language || 'en'
-    });
-    body = transcript;
-  }
+  const { contentText } = await resolveInboundContent({
+    message: inbound,
+    sttProvider: resources.stt,
+    config: {
+      audioStoragePath: config.audioStoragePath || './data/audio',
+      agentLanguage: config.language || 'en',
+      ...(config.sttTimeoutMs !== undefined && { sttTimeoutMs: config.sttTimeoutMs }),
+      ...(config.maxIdempotentRetries !== undefined && { maxIdempotentRetries: config.maxIdempotentRetries }),
+      ...(config.retryBaseDelayMs !== undefined && { retryBaseDelayMs: config.retryBaseDelayMs }),
+      ...(config.retryJitterMs !== undefined && { retryJitterMs: config.retryJitterMs })
+    }
+  });
 
   return {
     stateDiff: {
-      resolvedContent: body,
-      inbound: { ...inbound, body }
+      resolvedContent: contentText,
+      inbound: { ...inbound, body: contentText }
     },
     nextTasks: ['context_assembly']
   };

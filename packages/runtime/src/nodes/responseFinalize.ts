@@ -31,6 +31,10 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
           audioStoragePath: config.audioStoragePath || './data/audio',
           ttsVoice: config.ttsVoice || 'alloy',
           agentLanguage: config.language || 'en',
+          ...(config.ttsTimeoutMs !== undefined && { ttsTimeoutMs: config.ttsTimeoutMs }),
+          ...(config.maxIdempotentRetries !== undefined && { maxIdempotentRetries: config.maxIdempotentRetries }),
+          ...(config.retryBaseDelayMs !== undefined && { retryBaseDelayMs: config.retryBaseDelayMs }),
+          ...(config.retryJitterMs !== undefined && { retryJitterMs: config.retryJitterMs })
         },
       });
     }
