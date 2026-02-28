@@ -2,12 +2,12 @@ import {
   RuntimeEngineContext,
   EngineNodeName,
   NodeResult,
-  SessionRecord,
-  SessionWithKV,
-  UserRecord,
+  Session,
+  ActiveSession,
+  User,
   InboundMessage,
   LLMResponse,
-  MessageRecord,
+  Message,
   VectorSearchResult
 } from '@zupa/core';
 import { accessPolicyNode } from './accessPolicy';
@@ -27,8 +27,8 @@ import { telemetryEmitNode } from './telemetryEmit';
  */
 export interface RuntimeState {
   access?: { allowed: boolean; reason?: string };
-  session?: SessionRecord | SessionWithKV;
-  user?: UserRecord;
+  session?: Session | ActiveSession;
+  user?: User;
   replyTarget?: string;
   inboundDuplicate?: boolean;
   createdUser?: boolean;
@@ -36,7 +36,7 @@ export interface RuntimeState {
   inbound?: InboundMessage;
   commandHandled?: boolean;
   assembledContext?: {
-    history: MessageRecord[];
+    history: Message[];
     relevantMemories?: VectorSearchResult[];
     kv?: Record<string, unknown>;
     summaries?: string[];

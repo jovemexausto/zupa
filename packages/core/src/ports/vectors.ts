@@ -7,7 +7,7 @@ export interface VectorSearchResult {
   metadata: Record<string, unknown>;
 }
 
-export interface VectorStorePort extends RuntimeResource {
+export interface VectorStore extends RuntimeResource {
   upsert(userId: string, id: string, text: string, metadata?: object): Promise<void>;
   search(userId: string, query: string, limit: number): Promise<VectorSearchResult[]>;
   delete(userId: string, id: string): Promise<void>;

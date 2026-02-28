@@ -7,6 +7,7 @@ import { type RuntimeState } from './index';
  *
  * Purpose:
  * - Decide whether request is allowed to proceed.
+ * TODO: Write better docs.
  */
 export const accessPolicyNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const inboundFrom = context.inbound.from;

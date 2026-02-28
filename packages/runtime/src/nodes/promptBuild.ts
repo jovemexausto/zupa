@@ -1,5 +1,5 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeEngineContext, applyLengthPreference, type AgentContext, type SessionWithKV } from '@zupa/core';
+import { type RuntimeEngineContext, applyLengthPreference, type AgentContext, type ActiveSession } from '@zupa/core';
 import nunjucks from 'nunjucks';
 import { type RuntimeState } from './index';
 
@@ -19,7 +19,7 @@ export const promptBuildNode = defineNode<RuntimeState, RuntimeEngineContext>(as
   // which is populated by context_assembly if it's there
   const agentContext: AgentContext<unknown> = {
     user: state.user,
-    session: state.session as SessionWithKV,
+    session: state.session as ActiveSession,
     inbound: context.inbound,
     language: config.language,
     replyTarget: state.replyTarget!,

@@ -6,7 +6,7 @@ import {
     AgentContext,
     CommandDefinition
 } from '../contracts/modules';
-import { LLMProviderPort } from '../ports/llm';
+import { LLMProvider } from '../ports/llm';
 import { withTimeout } from './async';
 
 /**
@@ -161,7 +161,7 @@ interface DispatchCommandInput {
     rawText: string;
     commandRegistry: Map<string, CommandDefinition<z.ZodType>>;
     commandContext: AgentContext;
-    llm: LLMProviderPort;
+    llm: LLMProvider;
 }
 
 function parseCommand(rawText: string): { name: string; rawArgs: string } {

@@ -1,10 +1,10 @@
-import { InboundMessage, STTProviderPort, MessagingTransportPort, TTSProviderPort } from "../ports";
+import { InboundMessage, STTProvider, MessagingTransport, TTSProvider } from "../ports";
 import { AgentLanguage } from "../entities/agent";
 import { retryIdempotent, withTimeout } from "./async";
 
 interface ResolveInboundContentInput {
     message: InboundMessage;
-    sttProvider: Pick<STTProviderPort, 'transcribe'>;
+    sttProvider: Pick<STTProvider, 'transcribe'>;
     config: {
         audioStoragePath: string; // Ideally this should be removed and use storage port
         agentLanguage: AgentLanguage;
@@ -57,8 +57,8 @@ interface FinalizeResponseInput {
         userId: string;
         sessionId: string;
     };
-    ttsProvider: Pick<TTSProviderPort, 'synthesize'>;
-    messaging: MessagingTransportPort;
+    ttsProvider: Pick<TTSProvider, 'synthesize'>;
+    messaging: MessagingTransport;
     config: {
         audioStoragePath: string;
         ttsVoice: string;

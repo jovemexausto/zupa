@@ -1,6 +1,6 @@
-import { type FileStoragePort } from '@zupa/core';
+import { type FileStorage } from '@zupa/core';
 
-export class FakeFileStorage implements FileStoragePort {
+export class FakeFileStorage implements FileStorage {
     private storage = new Map<string, Buffer>();
 
     public async start(): Promise<void> { }

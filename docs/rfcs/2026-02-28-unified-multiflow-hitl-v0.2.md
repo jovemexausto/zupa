@@ -256,7 +256,7 @@ type AdminAction =
 
 type AdminAuthConfig = {
   resolveActor(input: { inbound?: InboundMessage; request?: { headers: Record<string, string | undefined> } }): Promise<AdminActor | null>;
-  can(action: AdminAction, actor: AdminActor, session: SessionWithKV): Promise<boolean>;
+  can(action: AdminAction, actor: AdminActor, session: ActiveSession): Promise<boolean>;
 };
 ```
 

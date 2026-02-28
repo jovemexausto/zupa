@@ -1,10 +1,10 @@
 import {
-    type LLMProviderPort,
+    type LLMProvider,
     type LLMCompleteOptions,
     type LLMResponse
 } from '@zupa/core';
 
-export class FakeLLMProvider implements LLMProviderPort {
+export class FakeLLMProvider implements LLMProvider {
     private responses: LLMResponse[];
     private callCount = 0;
 

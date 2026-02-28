@@ -1,9 +1,9 @@
 import {
-    type MessagingTransportPort,
+    type MessagingTransport,
     type InboundMessage
 } from '@zupa/core';
 
-export class FakeMessagingTransport implements MessagingTransportPort {
+export class FakeMessagingTransport implements MessagingTransport {
     public sentMessages: Array<{ to: string; text?: string; audioPath?: string; mediaPath?: string }> = [];
     private handlers = new Set<(message: InboundMessage) => Promise<void>>();
 

@@ -1,6 +1,6 @@
-import { type STTProviderPort } from '@zupa/core';
+import { type STTProvider } from '@zupa/core';
 
-export class FakeSTTProvider implements STTProviderPort {
+export class FakeSTTProvider implements STTProvider {
     public lastRequest?: { audioPath: string; language?: string };
 
     constructor(private readonly transcript: string = 'This is a fake transcript.') { }

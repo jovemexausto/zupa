@@ -1,7 +1,7 @@
-import { InboundMessage, MessagingTransportPort } from "@zupa/core";
+import { InboundMessage, MessagingTransport } from "@zupa/core";
 
 interface BindTransportInboundInput {
-  transport: MessagingTransportPort;
+  transport: MessagingTransport;
   runInboundEngine(inbound: InboundMessage): Promise<void>;
   onError?(error: unknown, inbound: InboundMessage): void;
   maxConcurrent?: number;

@@ -1,4 +1,4 @@
-export interface UserRecord {
+export interface User {
   id             : string;
   externalUserId : string;
   displayName    : string;

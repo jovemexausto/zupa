@@ -1,19 +1,19 @@
 import {
-    type RuntimeDatabasePort,
-    type MessageRecord,
-    type SessionRecord,
-    type UserRecord,
+    type DatabaseProvider,
+    type Message,
+    type Session,
+    type User,
     type StateSnapshot,
     type LedgerEvent
 } from '@zupa/core';
 import { randomUUID } from 'node:crypto';
 
-export class FakeDatabaseBackend implements RuntimeDatabasePort {
+export class FakeDatabaseBackend implements DatabaseProvider {
     private readonly claimedInboundEvents = new Set<string>();
-    private readonly users = new Map<string, UserRecord>();
+    private readonly users = new Map<string, User>();
     private readonly usersByNumber = new Map<string, string>();
-    private readonly sessions = new Map<string, SessionRecord>();
-    private readonly messages = new Map<string, MessageRecord[]>();
+    private readonly sessions = new Map<string, Session>();
+    private readonly messages = new Map<string, Message[]>();
     public readonly sessionKv = new Map<string, Record<string, unknown>>();
     private readonly checkpoints = new Map<string, StateSnapshot[]>();
     private readonly ledger = new Map<string, LedgerEvent[]>();
@@ -27,14 +27,14 @@ export class FakeDatabaseBackend implements RuntimeDatabasePort {
         return 'claimed';
     }
 
-    public async findUser(externalUserId: string): Promise<UserRecord | null> {
+    public async findUser(externalUserId: string): Promise<User | null> {
         const id = this.usersByNumber.get(externalUserId);
         return id ? this.users.get(id) ?? null : null;
     }
 
-    public async createUser(data: { externalUserId: string; displayName: string; preferences?: object }): Promise<UserRecord> {
+    public async createUser(data: { externalUserId: string; displayName: string; preferences?: object }): Promise<User> {
         const now = new Date();
-        const user: UserRecord = {
+        const user: User = {
             id: randomUUID(),
             externalUserId: data.externalUserId,
             displayName: data.displayName,
@@ -66,15 +66,15 @@ export class FakeDatabaseBackend implements RuntimeDatabasePort {
         return all.filter((m) => m.userId === userId && m.role === 'user' && m.createdAt >= since).length;
     }
 
-    public async findActiveSession(userId: string): Promise<SessionRecord | null> {
+    public async findActiveSession(userId: string): Promise<Session | null> {
         for (const session of this.sessions.values()) {
             if (session.userId === userId && session.endedAt === null) return session;
         }
         return null;
     }
 
-    public async createSession(userId: string): Promise<SessionRecord> {
-        const session: SessionRecord = {
+    public async createSession(userId: string): Promise<Session> {
+        const session: Session = {
             id: randomUUID(),
             userId,
             startedAt: new Date(),
@@ -121,8 +121,8 @@ export class FakeDatabaseBackend implements RuntimeDatabasePort {
         return { ...(this.sessionKv.get(sessionId) ?? {}) };
     }
 
-    public async createMessage(data: Omit<MessageRecord, 'id' | 'createdAt' | 'metadata'> & { metadata?: Record<string, unknown> }): Promise<MessageRecord> {
-        const message: MessageRecord = {
+    public async createMessage(data: Omit<Message, 'id' | 'createdAt' | 'metadata'> & { metadata?: Record<string, unknown> }): Promise<Message> {
+        const message: Message = {
             ...data,
             id: randomUUID(),
             createdAt: new Date(),
@@ -134,12 +134,12 @@ export class FakeDatabaseBackend implements RuntimeDatabasePort {
         return message;
     }
 
-    public async getRecentMessages(sessionId: string, limit: number): Promise<MessageRecord[]> {
+    public async getRecentMessages(sessionId: string, limit: number): Promise<Message[]> {
         const bucket = this.messages.get(sessionId) ?? [];
         return bucket.slice(-limit);
     }
 
-    public async getMessagesWithMetadata(userId: string, since: Date): Promise<MessageRecord[]> {
+    public async getMessagesWithMetadata(userId: string, since: Date): Promise<Message[]> {
         const all = [...this.messages.values()].flat();
         return all.filter((m) => m.userId === userId && m.createdAt >= since);
     }

@@ -21,6 +21,6 @@ export interface LLMResponse {
   latencyMs: number;
 }
 
-export interface LLMProviderPort extends RuntimeResource {
+export interface LLMProvider extends RuntimeResource {
   complete(options: LLMCompleteOptions): Promise<LLMResponse>;
 }

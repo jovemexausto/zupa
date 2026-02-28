@@ -1,4 +1,4 @@
-export interface SessionRecord {
+export interface Session {
   id: string;
   userId: string;
   startedAt: Date;
@@ -8,13 +8,13 @@ export interface SessionRecord {
   metadata: Record<string, unknown>;
 }
 
-export interface SessionKV {
+export interface SessionState {
   get<T>(key: string): Promise<T | null>;
   set<T>(key: string, value: T): Promise<void>;
   delete(key: string): Promise<void>;
   all(): Promise<Record<string, unknown>>;
 }
 
-export interface SessionWithKV extends SessionRecord {
-  kv: SessionKV;
+export interface ActiveSession extends Session {
+  kv: SessionState;
 }

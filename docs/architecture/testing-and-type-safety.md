@@ -11,8 +11,8 @@ As the Zupa framework grew, testing boilerplate and the use of `any` in core con
 We've extracted shared testing logic into a dedicated workspace package. This reduces duplication and provides a single source of truth for mock data and fakes.
 
 ### Standard Fixtures
-- **`DEFAULT_USER`**: A standard `UserRecord` mockup.
-- **`DEFAULT_SESSION`**: A standard `SessionRecord` mockup.
+- **`DEFAULT_USER`**: A standard `User` mockup.
+- **`DEFAULT_SESSION`**: A standard `Session` mockup.
 - **`DEFAULT_INBOUND`**: A standard `InboundMessage` mockup for simulating incoming traffic.
 
 ### Factories & Helpers
@@ -26,7 +26,7 @@ The project has transitioned to a "zero-any" policy in core logic.
 
 ### Core Contracts (`@zupa/core`)
 - Interfaces like `NodeHandler`, `NodeResult`, and `CheckpointSaver` are now generic, allowing packages to define their internal state shapes without losing type information.
-- `TelemetrySinkPort` now includes mandatory fields like `timestamp`, removing ad-hoc casts.
+- `TelemetrySink` now includes mandatory fields like `timestamp`, removing ad-hoc casts.
 
 ### Pregel Executor (`@zupa/engine`)
 - The `KernelExecutor` and `KernelGraphSpec` now use `object` constraints for state handling. This allows using interface types (like `RuntimeState`) directly without requiring index signatures (`Record<string, unknown>`), which previously forced developers to use `any`.

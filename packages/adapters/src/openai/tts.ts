@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import OpenAI from 'openai';
-import { type TTSProviderPort } from '@zupa/core';
+import { type TTSProvider } from '@zupa/core';
 
 export interface OpenAITTSProviderOptions {
     apiKey: string;
@@ -11,7 +11,7 @@ export interface OpenAITTSProviderOptions {
     client?: OpenAI;
 }
 
-export class OpenAITTSProvider implements TTSProviderPort {
+export class OpenAITTSProvider implements TTSProvider {
     private readonly client: OpenAI;
     private readonly model: string;
     private readonly voice: string;

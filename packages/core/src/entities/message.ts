@@ -3,7 +3,7 @@ export interface TokensUsed {
   completionTokens : number;
 }
 
-export interface MessageRecord {
+export interface Message {
   id             : string;
   sessionId      : string;
   userId         : string;
