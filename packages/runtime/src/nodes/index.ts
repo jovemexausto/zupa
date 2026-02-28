@@ -12,6 +12,7 @@ import {
   KVStore
 } from '@zupa/core';
 import { accessPolicyNode } from './accessPolicy';
+import { eventDedupGateNode } from './eventDedupGate';
 import { llmNodeNode } from './llmNode';
 import { toolExecutionNodeNode } from './toolExecutionNode';
 import { commandDispatchGateNode } from './commandDispatchGate';
@@ -62,6 +63,7 @@ export type RuntimeNodeHandlerMap<T = unknown> = Record<EngineNodeName, RuntimeN
 
 export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T> {
   return {
+    event_dedup_gate: eventDedupGateNode as RuntimeNodeHandler<T>,
     access_policy: accessPolicyNode as RuntimeNodeHandler<T>,
     session_attach: sessionAttachNode as RuntimeNodeHandler<T>,
     command_dispatch_gate: commandDispatchGateNode as RuntimeNodeHandler<T>,
