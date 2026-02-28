@@ -32,10 +32,10 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@zupa/adapters": "workspace:*",
     "@zupa/core": "workspace:*",
     "@zupa/engine": "workspace:*",
     "@zupa/runtime": "workspace:*",
-    "@zupa/adapters": "workspace:*",
     "nunjucks": "^3.2.4",
     "zod": "^4.1.11",
     "zod-to-json-schema": "^3.25.1"
@@ -45,7 +45,6 @@
     "@types/nunjucks": "^3.2.6",
     "@types/qrcode": "^1.5.5",
     "@types/qrcode-terminal": "^0.12.2",
-    "@zupa/testing": "workspace:*",
     "drizzle-kit": "^0.31.4",
     "tsup": "^8.5.0",
     "tsx": "^4.20.6",

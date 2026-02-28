@@ -108,6 +108,7 @@ type InterruptConfirmEffect = {
   id?: string;
   question: string;
   timeoutSeconds?: number;
+  // Maybe a callback to validate the response?
   positiveKeywords?: string[];
   negativeKeywords?: string[];
   responseSchema?: ZodTypeAny;

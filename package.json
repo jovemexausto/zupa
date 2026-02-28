@@ -4,13 +4,13 @@
   "private": true,
   "description": "Voxpal pnpm workspace",
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
     "dev": "pnpm --filter voxpal build && pnpm --filter english-buddy dev",
     "dev:stack": "docker compose -f examples/english-buddy/docker-compose.yml up --build",
     "litellm:up": "docker compose -f examples/english-buddy/docker-compose.yml up -d litellm",
-    "litellm:down": "docker compose -f examples/english-buddy/docker-compose.yml stop litellm",
-    "typecheck": "pnpm -r typecheck"
+    "litellm:down": "docker compose -f examples/english-buddy/docker-compose.yml stop litellm"
   },
   "engines": {
     "node": ">=20"
@@ -19,5 +19,9 @@
   "dependencies": {
     "@types/qrcode": "^1.5.6",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@zupa/testing": "workspace:*",
+    "turbo": "^2.8.12"
   }
 }
