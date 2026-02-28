@@ -21,7 +21,6 @@ import { contextAssemblyNode } from './contextAssembly';
 import { persistenceHooksNode } from './persistenceHooks';
 import { promptBuildNode } from './promptBuild';
 import { responseFinalizeNode } from './responseFinalize';
-import { sessionAttachNode } from './sessionAttach';
 import { telemetryEmitNode } from './telemetryEmit';
 
 /**
@@ -66,7 +65,6 @@ export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T
   return {
     event_dedup_gate: eventDedupGateNode as RuntimeNodeHandler<T>,
     access_policy: accessPolicyNode as RuntimeNodeHandler<T>,
-    session_attach: sessionAttachNode as RuntimeNodeHandler<T>,
     command_dispatch_gate: commandDispatchGateNode as RuntimeNodeHandler<T>,
     content_resolution: contentResolutionNode as RuntimeNodeHandler<T>,
     context_assembly: contextAssemblyNode as RuntimeNodeHandler<T>,

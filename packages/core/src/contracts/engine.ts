@@ -18,7 +18,6 @@ import { AgentLanguage } from '../entities/agent';
 export type EngineNodeName =
     | 'event_dedup_gate'
     | 'access_policy'
-    | 'session_attach'
     | 'command_dispatch_gate'
     | 'content_resolution'
     | 'context_assembly'
