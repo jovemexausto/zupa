@@ -11,7 +11,32 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
 
   if (!llmResponse) return { stateDiff: {}, nextTasks: ['persistence_hooks'] };
 
-  if (llmResponse.content) {
+  const structured = llmResponse.structured;
+  const replyText = llmResponse.content || (structured as any)?.reply;
+
+  const replyTarget = state.replyTarget;
+  const user = state.user;
+  const session = state.session;
+
+  // 1. Trigger onResponse hook if structured data and hook exist
+  if (structured && config.onResponse && replyTarget && user && session) {
+    const agentContext = {
+      user,
+      session,
+      inbound: context.inbound,
+      resources: context.resources,
+      config: context.config,
+      replyTarget,
+      language: config.language || 'en',
+      endSession: async () => {
+        await resources.database.endSession(session.id, 'Session ended by agent');
+      }
+    };
+    await config.onResponse(structured as any, agentContext as any);
+  }
+
+  // 2. Finalize messaging if we have a reply and necessary context
+  if (replyText) {
     const replyTarget = state.replyTarget;
     const user = state.user;
     const session = state.session;
@@ -20,7 +45,7 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
       await finalizeResponse({
         input: {
           replyTarget,
-          replyText: llmResponse.content,
+          replyText,
           preferredVoiceReply: config.preferredVoiceReply || false,
           userId: user.id,
           sessionId: session.id,
