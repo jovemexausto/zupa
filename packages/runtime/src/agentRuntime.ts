@@ -75,6 +75,7 @@ function buildEngineGraphSpec<T = unknown>(
     resolvedContent: lastWriteWinsReducer(),
     inbound: lastWriteWinsReducer(),
     commandHandled: lastWriteWinsReducer(),
+    kv: lastWriteWinsReducer(),
     assembledContext: lastWriteWinsReducer(),
     builtPrompt: lastWriteWinsReducer(),
     llmResponse: lastWriteWinsReducer(),
@@ -214,7 +215,7 @@ export class AgentRuntime<T = unknown> {
         {
           threadId,
           saver,
-          entrypoint: 'access_policy'
+          entrypoint: 'event_dedup_gate'
         }
       );
       this.emitRuntimeEvent('inbound:processed', { requestId, from: inbound.from });
