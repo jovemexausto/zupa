@@ -9,6 +9,7 @@ export * from './contracts/checkpoint';
 export * from './contracts/ledger';
 export * from './contracts/modules';
 export * from './config/types';
+export * from './config/defaults';
 export * from './lifecycle';
 export * from './utils/transport';
 export * from './utils/session';

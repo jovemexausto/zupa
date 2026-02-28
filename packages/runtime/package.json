@@ -18,6 +18,7 @@
     "dependencies": {
         "@zupa/core": "workspace:*",
         "@zupa/engine": "workspace:*",
+        "get-port-please": "^3.2.0",
         "nunjucks": "^3.2.4",
         "zod": "^4.1.11"
     },

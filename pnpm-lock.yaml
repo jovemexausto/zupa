@@ -139,6 +139,9 @@ importers:
       '@zupa/engine':
         specifier: workspace:*
         version: link:../engine
+      get-port-please:
+        specifier: ^3.2.0
+        version: 3.2.0
       nunjucks:
         specifier: ^3.2.4
         version: 3.2.4
@@ -201,9 +204,6 @@ importers:
       '@zupa/runtime':
         specifier: workspace:*
         version: link:../runtime
-      get-port-please:
-        specifier: ^3.2.0
-        version: 3.2.0
       nunjucks:
         specifier: ^3.2.4
         version: 3.2.4

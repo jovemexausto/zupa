@@ -6,9 +6,6 @@
  * UI Server Configuration
  */
 export const UI_DEFAULTS = {
-  /** Default UI ports to try, in priority order */
-  PREFERRED_PORTS: [5557, 5516] as const,
-
   /** Default host for UI server */
   HOST: "127.0.0.1" as const,
 
@@ -17,7 +14,13 @@ export const UI_DEFAULTS = {
 
   /** Whether UI is enabled by default */
   ENABLED: true as const,
-} as const;
+
+  /** get-port-please configuration for finding available ports */
+  PORT_CONFIG: {
+    ports: [5557, 5516] as number[],
+    random: true,
+  },
+};
 
 /**
  * Logging Configuration
