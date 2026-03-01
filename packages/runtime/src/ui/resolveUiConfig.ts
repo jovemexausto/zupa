@@ -34,9 +34,25 @@ export async function getAvailablePort(options: {
   throw new Error(`No available port found in range ${from}-${to}`);
 }
 
-export async function resolveUiConfig(ui: any): Promise<any> {
+export type RawUiConfig = {
+  host?: string;
+  port?: number;
+  enabled?: boolean;
+  authToken?: string;
+  corsOrigin?: string | string[];
+  sseHeartbeatMs?: number;
+};
+
+export async function resolveUiConfig(ui: false | RawUiConfig | undefined): Promise<{
+  enabled?: boolean;
+  host: string;
+  port: number;
+  sseHeartbeatMs: number;
+  authToken?: string;
+  corsOrigin?: string | string[];
+}> {
   if (ui === false) {
-    return { enabled: false };
+    return { enabled: false, host: UI_DEFAULTS.HOST, port: UI_DEFAULTS.PORT_CONFIG.port, sseHeartbeatMs: UI_DEFAULTS.SSE_HEARTBEAT_MS };
   }
 
   const host = ui?.host ?? UI_DEFAULTS.HOST;
@@ -62,7 +78,7 @@ export async function resolveUiConfig(ui: any): Promise<any> {
     host,
     port,
     sseHeartbeatMs: ui.sseHeartbeatMs ?? UI_DEFAULTS.SSE_HEARTBEAT_MS,
-    authToken: ui.authToken,
-    corsOrigin: ui.corsOrigin,
+    ...(ui.authToken !== undefined && { authToken: ui.authToken }),
+    ...(ui.corsOrigin !== undefined && { corsOrigin: ui.corsOrigin }),
   };
 }

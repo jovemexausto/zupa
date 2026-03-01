@@ -21,3 +21,4 @@
 - [x] why do we still have audioStoragePath references in the codebase?
 - [x] fromMe is not used, we should remove it
 - [ ] Esure graceful shutdown of all resources on SIGINT and SIGTERM
+- [ ] clean-up 'as any' casts on the codebase

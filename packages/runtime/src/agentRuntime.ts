@@ -193,9 +193,8 @@ export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
   public on(event: 'auth:ready', handler: () => void): this;
   public on(event: 'auth:failure', handler: (message: string) => void): this;
   public on(event: string, handler: (...args: unknown[]) => void): this;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public on(event: string, handler: (...args: any[]) => void): this {
-    this.emitter.on(event, handler);
+  public on(event: string, handler: unknown): this {
+    this.emitter.on(event, handler as (...args: unknown[]) => void);
     return this;
   }
 
