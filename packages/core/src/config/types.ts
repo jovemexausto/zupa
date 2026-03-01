@@ -41,7 +41,7 @@ export interface RuntimeConfig<T = unknown> {
   retryJitterMs?: number;
   maxInboundConcurrency?: number;
   overloadMessage?: string;
-  sessionIdleTimeoutMinutes?: number;
+  sessionIdleTimeoutMinutes: number;
   toolTimeoutMs?: number;
   llmTimeoutMs?: number;
   sttTimeoutMs?: number;

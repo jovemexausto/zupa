@@ -17,6 +17,7 @@ export interface Session {
   id: string;
   userId: string;
   startedAt: Date;
+  lastActiveAt: Date;
   endedAt: Date | null;
   summary: string | null;
   messageCount: number;

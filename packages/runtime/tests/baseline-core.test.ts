@@ -183,4 +183,57 @@ describe("Zupa Baseline Core Functionality", () => {
 
     await runtime.close();
   });
+
+  it("should auto-finalize idle sessions based on sessionIdleTimeoutMinutes", async () => {
+    const deps = createFakeRuntimeDeps();
+    const db = deps.database as FakeDatabaseBackend;
+
+    // Set a short timeout for the test
+    const config = createFakeRuntimeConfig();
+    config.sessionIdleTimeoutMinutes = 30;
+
+    const runtime = new AgentRuntime({
+      runtimeConfig: config,
+      runtimeResources: deps,
+    });
+
+    const llm = deps.llm as FakeLLMProvider;
+    llm.setResponses([
+      createFakeLLMResponse({ content: "First reply" }),
+      createFakeLLMResponse({ content: "Second reply" }),
+    ]);
+
+    await runtime.start();
+
+    // Turn 1
+    await runtime.runInbound({
+      ...DEFAULT_INBOUND,
+      from: TEST_USER_FROM,
+      body: "Hello first turn"
+    });
+
+    const user = await db.findUser(TEST_USER_ID);
+    const session1 = await db.findActiveSession(user!.id);
+    expect(session1).toBeTruthy();
+
+    // Artificially age the session by 60 minutes
+    const agedDate = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+    session1!.lastActiveAt = agedDate;
+    (db as any).sessions.set(session1!.id, session1!);
+
+    // Turn 2
+    await runtime.runInbound({
+      ...DEFAULT_INBOUND,
+      body: "Hello second turn"
+    });
+
+    const session2 = await db.findActiveSession(user!.id);
+    expect(session2).toBeTruthy();
+
+    // Should be a completely new session ID
+    expect(session2!.id).not.toBe(session1!.id);
+    expect(session2!.messageCount).toBe(1); // The new session just received the second turn
+
+    await runtime.close();
+  });
 });

@@ -27,10 +27,11 @@ export type AgentProvidersConfig = Partial<Omit<RuntimeEngineResources, 'transpo
  */
 export type AgentConfig<T extends WithReply = WithReply> = Omit<
   RuntimeConfig<T>,
-  "language" | "ui"
+  "language" | "ui" | "sessionIdleTimeoutMinutes"
 > & {
   language?: string;
   ui?: false | RuntimeConfig<T>["ui"];
+  sessionIdleTimeoutMinutes?: number;
   providers?: AgentProvidersConfig;
 };
 
@@ -121,6 +122,7 @@ async function resolveRuntimeConfig<T extends WithReply>(
   const resolved: RuntimeConfig<T> = {
     ...rest,
     language,
+    sessionIdleTimeoutMinutes: config.sessionIdleTimeoutMinutes ?? 15,
     ...(ui !== false && ui !== undefined && { ui }),
   };
 

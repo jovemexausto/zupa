@@ -81,6 +81,7 @@ export class FakeDatabaseBackend implements DatabaseProvider {
             id: randomUUID(),
             userId,
             startedAt: new Date(),
+            lastActiveAt: new Date(),
             endedAt: null,
             summary: null,
             messageCount: 0,
@@ -88,6 +89,13 @@ export class FakeDatabaseBackend implements DatabaseProvider {
         };
         this.sessions.set(session.id, session);
         return session;
+    }
+
+    public async touchSession(id: string): Promise<void> {
+        const session = this.sessions.get(id);
+        if (!session) throw new Error(`Session not found: ${id}`);
+        session.lastActiveAt = new Date();
+        this.sessions.set(id, session);
     }
 
     public async incrementSessionMessageCount(id: string, amount = 1): Promise<void> {

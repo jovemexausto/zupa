@@ -45,6 +45,7 @@ export const DEFAULT_SESSION: Session = {
   id: "s1",
   userId: "u1",
   startedAt: new Date("2026-01-01T00:00:00Z"),
+  lastActiveAt: new Date("2026-01-01T00:00:00Z"),
   endedAt: null,
   summary: null,
   messageCount: 0,
@@ -112,7 +113,7 @@ export function createFakeRuntimeDeps(): RuntimeEngineResources {
     tts: new FakeTTSProvider(),
     storage: new FakeFileStorage(),
     vectors: new FakeVectorStore(),
-    telemetry: { emit() {} },
+    telemetry: { emit() { } },
     database,
     logger: new FakeLogger(),
   };

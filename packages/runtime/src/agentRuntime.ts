@@ -62,7 +62,7 @@ export interface AgentRuntimeEvents {
  * for incoming and outgoing messages, starts the UI server if configured,
  * and maintains the execution layer (`EngineExecutor`) to process each request.
  */
-export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
+export class AgentRuntime<T = unknown> {
   private readonly emitter = new EventEmitter();
   private readonly runtimeConfig: RuntimeConfig<T>;
   private readonly runtimeResources: RuntimeEngineResources;
@@ -257,9 +257,24 @@ export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
     }
 
     let session = await this.runtimeResources.database.findActiveSession(user.id);
+
+    if (session && this.runtimeConfig.sessionIdleTimeoutMinutes) {
+      const idleMinutes = (Date.now() - session.lastActiveAt.getTime()) / 60000;
+      if (idleMinutes >= this.runtimeConfig.sessionIdleTimeoutMinutes) {
+        logger.info({ sessionId: session.id, idleMinutes }, "Auto-finalizing idle session");
+        await this.runtimeResources.database.endSession(
+          session.id,
+          "Session automatically finalized due to inactivity limit reached."
+        );
+        session = null;
+      }
+    }
+
     if (!session) {
       session = await this.runtimeResources.database.createSession(user.id);
     }
+
+    await this.runtimeResources.database.touchSession(session.id);
 
     // Crucially, we put the resolved user and session into the initial state
     // so that nodes like content_resolution can access them immediately.

@@ -12,6 +12,7 @@ export interface DatabaseProvider extends RuntimeResource, CheckpointSaver, Ledg
   touchUserLastActive(userId: string): Promise<void>;
   updateUserPreferences(userId: string, prefs: object): Promise<void>;
   countUserMessagesSince(userId: string, since: Date): Promise<number>;
+  touchSession(sessionId: string): Promise<void>;
   findActiveSession(userId: string): Promise<Session | null>;
   createSession(userId: string): Promise<Session>;
   incrementSessionMessageCount(sessionId: string, amount?: number): Promise<void>;
