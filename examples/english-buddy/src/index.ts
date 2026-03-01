@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createAgent, WWebJSAuthPayload, WWebJSMessagingTransport } from 'zupa';
+import { createAgent, withReply, WWebJSAuthPayload, WWebJSMessagingTransport } from 'zupa';
 
 import { scheduleReminder, sendPronunciationClip, sendVocabCard } from './tools';
 import { getRecurringMistakes, getVocabularyHistory } from './queries';
@@ -16,16 +16,13 @@ const CorrectionSchema = z.object({
   category: z.enum(['grammar', 'vocabulary', 'preposition', 'article', 'other'])
 });
 
-const AgentReplySchema = z.object({
-  reply: z.string(),
+const AgentReplySchema = withReply({
   correction: CorrectionSchema.nullable(),
   sessionEnded: z.boolean(),
   vocabularyIntroduced: z.array(z.string()),
-});
+})
 
-type AgentReply = z.infer<typeof AgentReplySchema>;
-
-const agent = createAgent<AgentReply>({
+const agent = createAgent({
   prompt: `
     You are Sam, a friendly assistant in your late 20s chatting with
     {{ user.displayName }} on WhatsApp.
@@ -44,6 +41,7 @@ const agent = createAgent<AgentReply>({
   tools: [scheduleReminder, sendVocabCard, sendPronunciationClip],
   //
   language: 'pt',
+  modality: 'text',
   //
   context: async (ctx) => ({
     recurringMistakes: await getRecurringMistakes(ctx.user.id),

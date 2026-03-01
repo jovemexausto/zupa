@@ -13,7 +13,7 @@ export { ModalitySchema, ReplySchema, withReply };
 
 export type WithReply = {
   reply: string;
-  modality?: 'text' | 'voice';
+  modality?: 'text' | 'voice' | undefined;
 };
 
 export type AgentProvidersConfig = Partial<Omit<RuntimeEngineResources, 'transport'>> & {
@@ -107,7 +107,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   return agent;
 }
 
-// TODO: this seems to not be doing much work
+// TODO: this seems to not be doing much work, maybe it doesn't belong here
 async function resolveRuntimeConfig<T extends WithReply>(
   config: AgentConfig<T>,
 ): Promise<RuntimeConfig<T>> {
