@@ -55,7 +55,6 @@ export const DEFAULT_INBOUND: InboundMessage = {
   messageId: "test-msg-001",
   from: "user123",
   body: "hello",
-  fromMe: false,
 };
 
 export function createFakeRuntimeConfig(

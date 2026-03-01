@@ -228,7 +228,6 @@ export class WWebJSMessagingTransport implements MessagingTransport {
         messageId: message.id._serialized,
         from: message.from,
         body: message.body,
-        fromMe: message.fromMe,
         hasMedia: message.hasMedia,
         type: message.type,
         downloadMedia: async () => {

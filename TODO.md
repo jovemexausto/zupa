@@ -19,4 +19,4 @@
 - [ ] migrate from agent.on('auth:qr') ti agent.on('auth:request') with generic type based on Transport passed, so we make it transport agnostic and each can define what to pass to it.
 - [ ] move TEST_USER_FROM and TEST_USER_ID to @zupa/tests
 - [x] why do we still have audioStoragePath references in the codebase?
-- [ ] fromMe is not used, we should remove it
+- [x] fromMe is not used, we should remove it
