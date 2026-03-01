@@ -17,17 +17,8 @@ export const ReplySchema = z.object({
  */
 export function withReply<T extends ZodRawShape>(
     customShape: T
-): z.ZodObject<T & {
-    reply: z.ZodString;
-    modality: z.ZodTypeAny;
-}> {
-    return z.object({
-        ...customShape,
-        ...ReplySchema
-    }) as unknown as z.ZodObject<T & {
-        reply: z.ZodString;
-        modality: z.ZodTypeAny;
-    }>;
+) {
+    return z.object(customShape).extend(ReplySchema.shape);
 }
 
 /**
