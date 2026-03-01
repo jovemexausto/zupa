@@ -1,10 +1,10 @@
 import { z, type ZodRawShape } from 'zod';
 
-export const ModalitySchema = z.enum(['text', 'voice']).optional().describe(
+export const ModalitySchema = z.enum(['text', 'voice']).nullable().describe(
     "Analyze the conversation and the user's latest message. " +
     "If they ask for voice, audio, or a spoken response, return 'voice'. " +
     "If they ask for text, return 'text'. " +
-    "If there is no clear signal or preference, leave this field undefined."
+    "If there is no clear signal or preference, return null."
 );
 
 export const ReplySchema = z.object({
@@ -27,7 +27,7 @@ export function withReply<T extends ZodRawShape>(
  */
 export function applyModalityPreference(prompt: string, preferences: any): string {
     if (preferences?.preferredReplyFormat === 'dynamic') {
-        return `${prompt}\n\nThe user's output preference is dynamic. Determine if they explicitly asked for text or voice and adjust your output modality accordingly by populating the 'modality' field. If they didn't specify, leave it undefined.`;
+        return `${prompt}\n\nThe user's output preference is dynamic. Determine if they explicitly asked for text or voice and adjust your output modality accordingly by populating the 'modality' field. If they didn't specify, return null.`;
     }
     return prompt;
 }

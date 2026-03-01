@@ -59,6 +59,42 @@ describe('openai providers', () => {
     expect(result.latencyMs).toBeGreaterThanOrEqual(0);
   });
 
+  it('supports nullable schemas in structured outputs without throwing', async () => {
+    const create = vi.fn(async (_input: unknown) => ({
+      model: 'gpt-4o-mini',
+      usage: { prompt_tokens: 10, completion_tokens: 5 },
+      choices: [
+        {
+          message: {
+            content: '{"reply":"hello","modality":null}',
+          }
+        }
+      ]
+    }));
+
+    const provider = new OpenAILLMProvider({
+      apiKey: 'sk-test',
+      model: 'gpt-4o-mini',
+      client: {
+        chat: { completions: { create } }
+      } as unknown as OpenAI
+    });
+
+    const TestSchema = z.object({
+      reply: z.string(),
+      modality: z.enum(['text', 'voice']).nullable()
+    });
+
+    const result = await provider.complete({
+      systemPrompt: 'test',
+      messages: [{ role: 'user', content: 'hey' }],
+      outputSchema: TestSchema
+    });
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(result.structured).toEqual({ reply: 'hello', modality: null });
+  });
+
   it('transcribes with whisper and normalizes language', async () => {
     const create = vi.fn(async () => ({ text: 'ola mundo' }));
 
