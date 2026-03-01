@@ -1,15 +1,15 @@
-- [X] Create a @zupa/testing package for testing utilities, fixtures, etc. Move each test file to the project it really belongs to, refactoring them so use the testing utilities and fixtures / mockups.
-- [X] Fix .d.ts files being generated in the same directory as the source files and clean up the codebase.
-- [X] Chose one: Engine or Kernel, we should ensure a clear semantic.
-- [X] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
-- [X] Setup turbo repo for monorepo management.
-- [X] Do one more assesment pass againt CODEBASE_STATUS_ASSESSMENT.md and current codebase state to ensure we are on the right path, and write a RFC to address the gaps if any. Ensure that the runtime is solid and can be used for production. Plan to resolve technical debt and ensure baseline is solid. At the end remove CODEBASE_STATUS_ASSESSMENT.md, so the RFC cover all needed aspects.
-- [X] Implement Phase 1 of Production Readiness RFC: Add `messageId` to `InboundMessage` mapping.
-- [X] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
-- [X] Implement Phase 1 of Production Readiness RFC: Create and apply universal `withTimeout` wrapper for LLM/STT/TTS calls.
-- [X] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
-- [X] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
-- [X] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
+- [x] Create a @zupa/testing package for testing utilities, fixtures, etc. Move each test file to the project it really belongs to, refactoring them so use the testing utilities and fixtures / mockups.
+- [x] Fix .d.ts files being generated in the same directory as the source files and clean up the codebase.
+- [x] Chose one: Engine or Kernel, we should ensure a clear semantic.
+- [x] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
+- [x] Setup turbo repo for monorepo management.
+- [x] Do one more assesment pass againt CODEBASE_STATUS_ASSESSMENT.md and current codebase state to ensure we are on the right path, and write a RFC to address the gaps if any. Ensure that the runtime is solid and can be used for production. Plan to resolve technical debt and ensure baseline is solid. At the end remove CODEBASE_STATUS_ASSESSMENT.md, so the RFC cover all needed aspects.
+- [x] Implement Phase 1 of Production Readiness RFC: Add `messageId` to `InboundMessage` mapping.
+- [x] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
+- [x] Implement Phase 1 of Production Readiness RFC: Create and apply universal `withTimeout` wrapper for LLM/STT/TTS calls.
+- [x] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
+- [x] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
+- [x] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
 - [ ] Document capabilities and aspects of the runtime and engine, features, opinions, design choices, etc for future reference of the project ideology.
 - [ ] Implement Phase 2 of Production Readiness RFC: Implement `sessionIdleTimeoutMinutes` in `session_attach` — auto-finalize expired/zombie sessions.
 - [ ] Implement Phase 2 of Production Readiness RFC: Error taxonomy — classify Transient vs Terminal errors, apply `retryIdempotent` to LLM/Database/Transport calls accordingly.
@@ -18,5 +18,5 @@
 - [ ] Implement Phase 3 of Production Readiness RFC: Build Audit Ledger — immutable record of tool invocations, command dispatches, and `onResponse` events.
 - [ ] migrate from agent.on('auth:qr') ti agent.on('auth:request') with generic type based on Transport passed, so we make it transport agnostic and each can define what to pass to it.
 - [ ] move TEST_USER_FROM and TEST_USER_ID to @zupa/tests
-- [ ] why do we still have audioStoragePath references in the codebase?
+- [x] why do we still have audioStoragePath references in the codebase?
 - [ ] fromMe is not used, we should remove it

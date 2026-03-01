@@ -80,7 +80,6 @@ export function createFakeRuntimeConfig(
     sttTimeoutMs: 15000,
     ttsTimeoutMs: 15000,
     ttsVoice: "alloy",
-    audioStoragePath: "./data/audio",
     fallbackReply: "Error",
     preferredVoiceReply: false,
     ui: { enabled: false },
