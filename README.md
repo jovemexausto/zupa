@@ -113,9 +113,11 @@ await agent.start();
 
 ## Dive Deeper
 
-Zupa isn't just a library; it's a completely different paradigm for agentic execution. We've thrown away the traditional "Linear Request/Response" model in favor of a **Pregel-inspired Bulk Synchronous Parallel (BSP)** engine.
+While robust execution engines (like Pregel/LangGraph) have revolutionized how AI workflows are mathematically resolved, **Zupa is focused on the rest of the iceberg: Full-Stack Orchestration**.
 
-To understand how Zupa achieves perfect time-travel debugging, stateless router handshakes, and dual-memory ledgers, read our [Vision & Ideology Manifesto](./docs/product/01-vision.md).
+Zupa brings the "Batteries-Included" philosophy to agent development. We provide the robust BSP engine under the hood, but our true innovation lies in the built-in scaffolding: **Transport Adapters, Stateless Router Handshakes, Native Multimodality, and Dual-Memory Ledgers.**
+
+To understand how Zupa seamlessly bridges the gap between chaotic real-world inputs (like WhatsApp voice notes) and mathematically pure graph execution, read our [Vision & Ideology Manifesto](./docs/product/01-vision.md).
 
 ---
 
