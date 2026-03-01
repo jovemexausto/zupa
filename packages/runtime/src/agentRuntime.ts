@@ -6,11 +6,11 @@ import {
   RuntimeResource,
   RuntimeEngineResources,
   RuntimeEngineContext,
+  RouterState,
   InboundMessage,
-  normalizeExternalUserId,
 } from "@zupa/core";
 
-import { EngineExecutor, createInitialRuntimeContext } from "@zupa/engine";
+import { EngineExecutor, createInitialRuntimeContext, TransientCheckpointSaver } from "@zupa/engine";
 
 import { buildEngineGraphSpec } from "./engine/graph";
 
@@ -29,6 +29,7 @@ import {
   type RuntimeState,
   type RuntimeNodeHandlerMap,
 } from "./nodes";
+import { buildRouterGraphSpec } from "./nodes/router";
 import { RuntimeUiServer } from "./ui/server";
 import { resolveUiConfig } from "./ui/resolveUiConfig";
 
@@ -70,6 +71,11 @@ export class AgentRuntime<T = unknown> {
     RuntimeState,
     RuntimeEngineContext<T>
   >;
+  private readonly routerExecutor: EngineExecutor<
+    RouterState,
+    RuntimeEngineContext<T>
+  >;
+  private readonly routerSaver: TransientCheckpointSaver<RouterState>;
   private inboundBridge: TransportInboundBinding | null = null;
   private stopAuthBridge: (() => void) | null = null;
   private lifecycleResources: RuntimeResource[] = [];
@@ -94,6 +100,10 @@ export class AgentRuntime<T = unknown> {
     const handlers = input.handlers ?? buildDefaultNodeHandlers<T>();
     const graph = buildEngineGraphSpec<T>(handlers);
     this.executor = new EngineExecutor(graph);
+
+    const routerGraph = buildRouterGraphSpec<T>();
+    this.routerExecutor = new EngineExecutor(routerGraph);
+    this.routerSaver = new TransientCheckpointSaver<RouterState>();
     // UI server will be resolved asynchronously in start()
   }
 
@@ -244,38 +254,27 @@ export class AgentRuntime<T = unknown> {
     });
 
     const saver = this.runtimeResources.database;
-    // Resolve session identity before graph execution to establish consistent threadId
-    const inboundFrom = inbound.from;
-    const inboundExternalUserId = normalizeExternalUserId(inboundFrom);
 
-    let user = await this.runtimeResources.database.findUser(inboundExternalUserId);
-    if (!user) {
-      user = await this.runtimeResources.database.createUser({
-        externalUserId: inboundExternalUserId,
-        displayName: inboundFrom.split(':')[0] || 'Unknown User'
-      });
-    }
-
-    let session = await this.runtimeResources.database.findActiveSession(user.id);
-
-    if (session && this.runtimeConfig.sessionIdleTimeoutMinutes) {
-      const idleMinutes = (Date.now() - session.lastActiveAt.getTime()) / 60000;
-      if (idleMinutes >= this.runtimeConfig.sessionIdleTimeoutMinutes) {
-        logger.info({ sessionId: session.id, idleMinutes }, "Auto-finalizing idle session");
-        await this.runtimeResources.database.endSession(
-          session.id,
-          "Session automatically finalized due to inactivity limit reached."
-        );
-        session = null;
+    // Phase 1: Invoke stateless Router Graph to resolve Identity and Session.
+    // We use a transient threadId and an in-memory saver for the router
+    // to avoid polluting the persistent database with throwaway router checkpoints.
+    const routerResult = await this.routerExecutor.invoke(
+      { inbound },
+      context,
+      {
+        threadId: `router:${requestId}`,
+        saver: this.routerSaver,
+        entrypoint: "identity_resolution"
       }
+    );
+
+    const { user, session } = routerResult.values;
+
+    if (!user || !session) {
+      throw new Error("Logic Error: Router failed to resolve user or session");
     }
 
-    if (!session) {
-      session = await this.runtimeResources.database.createSession(user.id);
-    }
-
-    await this.runtimeResources.database.touchSession(session.id);
-
+    // Phase 2: Invoke the main Agent Graph using the resolved sessionId as the threadId.
     // Crucially, we put the resolved user and session into the initial state
     // so that nodes like content_resolution can access them immediately.
     context.state = {
