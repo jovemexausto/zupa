@@ -2,7 +2,10 @@ export interface User {
   id: string;
   externalUserId: string;
   displayName: string;
-  preferences: Record<string, unknown>;
+  preferences: {
+    preferredReplyFormat?: 'text' | 'voice' | 'mirror' | 'dynamic';
+    [key: string]: unknown;
+  };
   createdAt: Date;
   lastActiveAt: Date;
 }

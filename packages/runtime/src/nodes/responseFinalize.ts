@@ -18,20 +18,23 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
   const user = state.user;
   const session = state.session;
 
+  if (!user || !session || !replyTarget) return { stateDiff: {}, nextTasks: ['persistence_hooks'] };
+
+  const agentContext = {
+    user,
+    session,
+    inbound: context.inbound!,
+    resources: context.resources,
+    config: context.config,
+    replyTarget,
+    language: config.language || 'en',
+    endSession: async () => {
+      await resources.database.endSession(session.id, 'Session ended by agent');
+    }
+  };
+
   // 1. Trigger onResponse hook if structured data and hook exist
-  if (structured && config.onResponse && replyTarget && user && session) {
-    const agentContext = {
-      user,
-      session,
-      inbound: context.inbound,
-      resources: context.resources,
-      config: context.config,
-      replyTarget,
-      language: config.language || 'en',
-      endSession: async () => {
-        await resources.database.endSession(session.id, 'Session ended by agent');
-      }
-    };
+  if (structured && config.onResponse) {
     await config.onResponse(structured as any, agentContext as any);
   }
 
@@ -43,9 +46,56 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
     const session = state.session;
 
     if (replyTarget && user && session) {
-      // Mirror input modality OR follow user preference
-      const preferredVoiceReply = (user.preferences as any).preferredReplyFormat === 'voice' ||
-        (state.inputModality === 'voice' && (user.preferences as any).preferredReplyFormat !== 'text');
+      // 2. Decide output modality
+      const preference = user.preferences.preferredReplyFormat || 'mirror';
+      const enforcer = config.modality || 'auto';
+
+      let preferredVoiceReply = false;
+
+      if (enforcer === 'voice') {
+        preferredVoiceReply = true;
+      } else if (enforcer === 'text') {
+        preferredVoiceReply = false;
+      } else if (preference === 'voice') {
+        preferredVoiceReply = true;
+      } else if (preference === 'text') {
+        preferredVoiceReply = false;
+      } else if (preference === 'mirror') {
+        preferredVoiceReply = (state.inputModality === 'voice');
+      } else if (preference === 'dynamic') {
+        // dynamic strategy: Structured -> Custom Extractor -> Heuristic -> Mirror
+        const llmChoice = (structured as any)?.modality;
+
+        if (llmChoice === 'voice') {
+          preferredVoiceReply = true;
+        } else if (llmChoice === 'text') {
+          preferredVoiceReply = false;
+        } else {
+          // Try custom extractor
+          const customChoice = config.dynamicModalityExtractor
+            ? config.dynamicModalityExtractor(state, agentContext as any)
+            : undefined;
+
+          if (customChoice === 'voice') {
+            preferredVoiceReply = true;
+          } else if (customChoice === 'text') {
+            preferredVoiceReply = false;
+          } else {
+            // Heuristic fallback
+            const hasVoiceRequest = /voice|audio|speak|falar|áudio/i.test(state.resolvedContent || '');
+            const hasTextRequest = /text|texto|escreve/i.test(state.resolvedContent || '');
+
+            if (hasVoiceRequest && !hasTextRequest) {
+              preferredVoiceReply = true;
+            } else if (hasTextRequest && !hasVoiceRequest) {
+              preferredVoiceReply = false;
+            } else {
+              // Final Fallback: Mirror
+              preferredVoiceReply = (state.inputModality === 'voice');
+            }
+          }
+        }
+      }
 
       const result = await finalizeResponse({
         input: {

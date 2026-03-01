@@ -6,9 +6,14 @@ import {
 import { AgentRuntime, buildDefaultNodeHandlers } from "@zupa/runtime";
 import { PinoLogger } from "@zupa/adapters";
 import { createLocalResources } from "./resources";
-import { LOGGING_DEFAULTS } from "@zupa/core";
+import { LOGGING_DEFAULTS, ModalitySchema, ReplySchema, withReply } from "@zupa/core";
 
-type WithReply = { reply: string };
+export { ModalitySchema, ReplySchema, withReply };
+
+export type WithReply = {
+  reply: string;
+  modality?: 'text' | 'voice';
+};
 
 export type AgentProvidersConfig = Partial<RuntimeEngineResources>;
 
