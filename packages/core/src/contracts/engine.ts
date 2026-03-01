@@ -50,8 +50,8 @@ export interface RuntimeEngineContext<T = unknown> {
     telemetry: RuntimeTelemetryContext;
 }
 
-export interface RuntimeEngineResources<TAuthPayload = unknown> {
-    transport: MessagingTransport<TAuthPayload>;
+export interface RuntimeEngineResources {
+    transport: MessagingTransport<unknown>;
     llm: LLMProvider;
     stt: STTProvider;
     tts: TTSProvider;

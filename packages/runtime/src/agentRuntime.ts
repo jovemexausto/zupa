@@ -35,18 +35,18 @@ import { resolveUiConfig } from "./ui/resolveUiConfig";
 /**
  * Input configuration required to boot an AgentRuntime instance.
  */
-export interface AgentRuntimeInput<T = unknown, TAuthPayload = unknown> {
+export interface AgentRuntimeInput<T = unknown> {
   runtimeConfig: RuntimeConfig<T>;
-  runtimeResources: RuntimeEngineResources<TAuthPayload>;
+  runtimeResources: RuntimeEngineResources;
   handlers?: RuntimeNodeHandlerMap<T>;
 }
 
 /**
- * Known Zupa runtime events and their handler signatures.
- * Enables fully-typed `.on()` calls — TAuthPayload flows from the transport.
+ * Known Zupa runtime events emitted by AgentRuntime.
+ * Use these as the `event` argument of `runtime.on(event, handler)`.
  */
-export interface AgentRuntimeEvents<TAuthPayload = unknown> {
-  'auth:request': (payload: TAuthPayload) => void;
+export interface AgentRuntimeEvents {
+  'auth:request': (payload: unknown) => void;
   'auth:ready': () => void;
   'auth:failure': (message: string) => void;
   'inbound:received': (data: { inbound: InboundMessage }) => void;
@@ -65,7 +65,7 @@ export interface AgentRuntimeEvents<TAuthPayload = unknown> {
 export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
   private readonly emitter = new EventEmitter();
   private readonly runtimeConfig: RuntimeConfig<T>;
-  private readonly runtimeResources: RuntimeEngineResources<TAuthPayload>;
+  private readonly runtimeResources: RuntimeEngineResources;
   private readonly executor: EngineExecutor<
     RuntimeState,
     RuntimeEngineContext<T>
@@ -75,7 +75,7 @@ export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
   private lifecycleResources: RuntimeResource[] = [];
   private uiServer: RuntimeUiServer | null = null;
 
-  public constructor(input: AgentRuntimeInput<T, TAuthPayload>) {
+  public constructor(input: AgentRuntimeInput<T>) {
     this.runtimeConfig = input.runtimeConfig;
     this.runtimeResources = input.runtimeResources;
 
@@ -183,15 +183,18 @@ export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
 
   /**
    * Subscribes to runtime lifecycle and adapter events.
-   * Provides typed autocomplete for known events via AgentRuntimeEvents.
-   * For non-enumerated events, falls back to a generic string key signature.
+   *
+   * For `'auth:request'`, use the generic to type the payload from your transport:
+   * ```ts
+   * runtime.on<WWebJSAuthPayload>('auth:request', (payload) => { ... });
+   * ```
    */
-  public on<K extends keyof AgentRuntimeEvents<TAuthPayload>>(
-    event: K,
-    handler: AgentRuntimeEvents<TAuthPayload>[K],
-  ): this;
+  public on<TPayload = unknown>(event: 'auth:request', handler: (payload: TPayload) => void): this;
+  public on(event: 'auth:ready', handler: () => void): this;
+  public on(event: 'auth:failure', handler: (message: string) => void): this;
   public on(event: string, handler: (...args: unknown[]) => void): this;
-  public on(event: string, handler: (...args: unknown[]) => void): this {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public on(event: string, handler: (...args: any[]) => void): this {
     this.emitter.on(event, handler);
     return this;
   }
