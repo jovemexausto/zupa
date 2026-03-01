@@ -12,7 +12,8 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
   if (!llmResponse) return { stateDiff: {}, nextTasks: ['persistence_hooks'] };
 
   const structured = llmResponse.structured;
-  const replyText = llmResponse.content || (structured as any)?.reply;
+  const structuredRecord = (structured !== null && typeof structured === 'object') ? structured as Record<string, unknown> : undefined;
+  const replyText = llmResponse.content || (typeof structuredRecord?.reply === 'string' ? structuredRecord.reply : undefined);
 
   const replyTarget = state.replyTarget;
   const user = state.user;
@@ -22,7 +23,7 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
 
   const agentContext = {
     user,
-    session,
+    session: session as import('@zupa/core').ActiveSession,
     inbound: context.inbound!,
     resources: context.resources,
     config: context.config,
@@ -33,9 +34,10 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
     }
   };
 
-  // 1. Trigger onResponse hook if structured data and hook exist
-  if (structured && config.onResponse) {
-    await config.onResponse(structured as any, agentContext as any);
+  if (structured !== undefined && structured !== null && config.onResponse) {
+    // structured and agentContext are typed as unknown at this layer;
+    // onResponse is called with the runtime context, types verified at config level
+    await (config.onResponse as (s: unknown, ctx: unknown) => Promise<void>)(structured, agentContext);
   }
 
   // 2. Finalize messaging if we have a reply and necessary context
@@ -64,7 +66,7 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
         preferredVoiceReply = (state.inputModality === 'voice');
       } else if (preference === 'dynamic') {
         // dynamic strategy: Structured -> Custom Extractor -> Heuristic -> Mirror
-        const llmChoice = (structured as any)?.modality;
+        const llmChoice = structuredRecord?.modality;
 
         if (llmChoice === 'voice') {
           preferredVoiceReply = true;
@@ -73,7 +75,7 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
         } else {
           // Try custom extractor
           const customChoice = config.dynamicModalityExtractor
-            ? config.dynamicModalityExtractor(state, agentContext as any)
+            ? config.dynamicModalityExtractor(state, agentContext)
             : undefined;
 
           if (customChoice === 'voice') {

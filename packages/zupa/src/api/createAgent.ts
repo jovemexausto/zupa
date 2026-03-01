@@ -38,8 +38,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   let runtime: AgentRuntime<T> | null = null;
   const preStartListeners: Array<{
     event: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    handler: (...args: any[]) => void;
+    handler: ((...args: unknown[]) => void) | ((arg: unknown) => void) | (() => void);
   }> = [];
 
   const ensureRuntime = async (): Promise<AgentRuntime<T>> => {
@@ -75,12 +74,12 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   function on(event: 'auth:ready', handler: () => void): typeof agent;
   function on(event: 'auth:failure', handler: (message: string) => void): typeof agent;
   function on(event: string, handler: (...args: unknown[]) => void): typeof agent;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function on(event: string, handler: (...args: any[]) => void): typeof agent {
+  function on(event: string, handler: unknown): typeof agent {
+    const normalized = handler as (...args: unknown[]) => void;
     if (runtime) {
-      runtime.on(event, handler);
+      runtime.on(event, normalized);
     } else {
-      preStartListeners.push({ event, handler });
+      preStartListeners.push({ event, handler: normalized });
     }
     return agent;
   }
@@ -114,15 +113,15 @@ async function resolveRuntimeConfig<T extends WithReply>(
 ): Promise<RuntimeConfig<T>> {
   const language = resolveLanguage(config.language);
 
-  // Build RuntimeConfig from AgentConfig, excluding the providers field
-  // which is specific to the wrapper API
-  const { providers, ...runtimeConfigFields } = config as any;
+  // Strip providers (public API) to get pure RuntimeConfig fields
+  // AgentConfig adds `language` as optional with a wider type and `providers`;
+  // RuntimeConfig expects `language` as AgentLanguage — we resolve below.
+  const { providers: _providers, language: _lang, ui, ...rest } = config as AgentConfig<T> & { providers?: unknown };
 
-  // Proxy UI config directly; do not resolve here
   const resolved: RuntimeConfig<T> = {
-    ...runtimeConfigFields,
+    ...rest,
     language,
-    ui: config.ui,
+    ...(ui !== false && ui !== undefined && { ui }),
   };
 
   return resolved;

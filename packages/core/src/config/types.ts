@@ -4,10 +4,19 @@ import { AgentContext } from "../contracts/engine";
 import { Tool } from "../contracts/modules";
 import { CommandDefinition } from "../contracts/modules";
 
+export type UiConfig = {
+  host?: string;
+  port?: number;
+  enabled?: boolean;
+  authToken?: string;
+  corsOrigin?: string | string[];
+  sseHeartbeatMs?: number;
+};
+
 export type Modality = 'text' | 'voice' | 'auto';
 
-export type DynamicModalityExtractor<T = any> = (
-  state: any,
+export type DynamicModalityExtractor<T = unknown> = (
+  state: unknown,
   ctx: AgentContext<T>
 ) => 'text' | 'voice' | undefined;
 
@@ -41,12 +50,5 @@ export interface RuntimeConfig<T = unknown> {
   welcomeMessage?: string;
   fallbackReply?: string;
   preferredVoiceReply?: boolean;
-  ui?: {
-    enabled?: boolean;
-    host?: string;
-    port?: number;
-    authToken?: string | undefined;
-    corsOrigin?: string | string[] | undefined;
-    sseHeartbeatMs?: number;
-  };
+  ui?: false | UiConfig;
 }
