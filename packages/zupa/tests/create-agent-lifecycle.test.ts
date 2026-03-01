@@ -1,17 +1,14 @@
-import { describe, expect, it } from 'vitest';
-import { createAgent } from '../src/index';
-import {
-  FakeMessagingTransport,
-  createFakeRuntimeDeps
-} from '@zupa/testing';
+import { describe, expect, it } from "vitest";
+import { createAgent } from "../src/index";
+import { FakeMessagingTransport, createFakeRuntimeDeps } from "@zupa/testing";
 
-describe('createAgent lifecycle', () => {
-  it('registers inbound callback on start and unregisters on close', async () => {
+describe("createAgent lifecycle", () => {
+  it("registers inbound callback on start and unregisters on close", async () => {
     const deps = createFakeRuntimeDeps();
     const transport = deps.transport as FakeMessagingTransport;
 
     const agent = createAgent({
-      prompt: 'hello',
+      prompt: "hello",
       ui: false,
       providers: {
         transport,
@@ -21,8 +18,8 @@ describe('createAgent lifecycle', () => {
         storage: deps.storage,
         vectors: deps.vectors,
         database: deps.database,
-        telemetry: deps.telemetry
-      }
+        telemetry: deps.telemetry,
+      },
     });
 
     expect(transport.inboundSubscriptions).toBe(0);
@@ -30,15 +27,15 @@ describe('createAgent lifecycle', () => {
     await agent.start();
     expect(transport.inboundSubscriptions).toBe(1);
 
-    await transport.emitInbound({ from: '+15550001111', body: 'hello', fromMe: false });
+    await transport.emitInbound({ from: "+15550001111", body: "hello" });
 
     await agent.close();
     expect(transport.inboundUnsubscriptions).toBe(1);
 
-    await transport.emitInbound({ from: '+15550001111', body: 'hello-again', fromMe: false });
+    await transport.emitInbound({ from: "+15550001111", body: "hello-again" });
   });
 
-  it('starts resources in declared order and closes in reverse order', async () => {
+  it("starts resources in declared order and closes in reverse order", async () => {
     const deps = createFakeRuntimeDeps();
     const events: string[] = [];
 
@@ -51,16 +48,16 @@ describe('createAgent lifecycle', () => {
       };
     };
 
-    mark('db', deps.database);
-    mark('file', deps.storage);
-    mark('vector', deps.vectors);
-    mark('llm', deps.llm);
-    mark('stt', deps.stt);
-    mark('tts', deps.tts);
-    mark('transport', deps.transport);
+    mark("db", deps.database);
+    mark("file", deps.storage);
+    mark("vector", deps.vectors);
+    mark("llm", deps.llm);
+    mark("stt", deps.stt);
+    mark("tts", deps.tts);
+    mark("transport", deps.transport);
 
     const agent = createAgent({
-      prompt: 'hello',
+      prompt: "hello",
       ui: false,
       providers: {
         transport: deps.transport,
@@ -70,28 +67,28 @@ describe('createAgent lifecycle', () => {
         storage: deps.storage,
         vectors: deps.vectors,
         database: deps.database,
-        telemetry: deps.telemetry
-      }
+        telemetry: deps.telemetry,
+      },
     });
 
     await agent.start();
     await agent.close();
 
     expect(events).toEqual([
-      'start:db',
-      'start:file',
-      'start:vector',
-      'start:llm',
-      'start:stt',
-      'start:tts',
-      'start:transport',
-      'close:transport',
-      'close:tts',
-      'close:stt',
-      'close:llm',
-      'close:vector',
-      'close:file',
-      'close:db'
+      "start:db",
+      "start:file",
+      "start:vector",
+      "start:llm",
+      "start:stt",
+      "start:tts",
+      "start:transport",
+      "close:transport",
+      "close:tts",
+      "close:stt",
+      "close:llm",
+      "close:vector",
+      "close:file",
+      "close:db",
     ]);
   });
 });
