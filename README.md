@@ -13,12 +13,13 @@ Zupa is a full-stack, transport-agnostic framework designed for building product
 
 ## Stop Writing Plumbing. Start Writing Reasoning.
 
-Building a production-ready agent usually means writing fragile boilerplate to handle session persistence, multi-modal audio transformation, and event deduplication. Zupa abstracts all of this into a high-performance runtime so you can focus on what matters: the agent's behavior.
+Building a toy chatbot is easy. Building a production-grade, multi-modal autonomous agent that survives server crashes, handles complex human handovers, and scales horizontally is incredibly hard.
 
-- **Durable by Default**: Every execution step is checkpointed. If your server crashes mid-flight, the agent resumes exactly where it left off. No lost context.
-- **Native Multi-modality**: High-performance STT/TTS mirroring is built-in. Speak to your agent, and it speaks back to you.
-- **Separation of Concerns**: Built-in identity resolution, isolated session memory, and persistent developer scratchpads (`kv`).
-- **Structured Outputs**: Native `zod` integration ensures your LLM outputs strictly what your code expects.
+**The hardest problem in autonomous AI is no longer the execution graph; it is the chaotic, stateful orchestration required to connect that graph to the real world.**
+
+While modern graph execution engines (like LangGraph) have solved the mathematical problem of *how* complex reasoning loops execute, they largely abandon the developer at the product layer. How do you handle real-time voice notes? How do you map a phone number to a session without blowing up the context window? How do you persist memory across deployments?
+
+Zupa is the answer. A full-stack **"batteries-included" orchestrator** that wraps a mathematically robust execution engine inside an opinionated product framework so you can focus on what matters: the agent's actual behavior.
 
 ---
 
@@ -102,7 +103,7 @@ const agent = createAgent({
   },
 });
 
-// 3. Handle Auth (Terminal QR Code)
+// 4. Handle Auth (Terminal QR Code)
 agent.on("auth:request", ({ qrString }) => console.log("Scan me:", qrString));
 agent.on("auth:ready", () => console.log("Sam is online!"));
 
@@ -111,19 +112,39 @@ await agent.start();
 
 ---
 
-## Dive Deeper
+## Architecture
 
-While robust execution engines (like Pregel/LangGraph) have revolutionized how AI workflows are mathematically resolved, **Zupa is focused on the rest of the iceberg: Full-Stack Orchestration**.
+Zupa is not just a library; it is a production engineering framework with strong opinions.
 
-Zupa brings the "Batteries-Included" philosophy to agent development. We provide the robust BSP engine under the hood, but our true innovation lies in the built-in scaffolding: **Transport Adapters, Stateless Router Handshakes, Native Multimodality, and Dual-Memory Ledgers.**
+### Purity of Boundaries (Ports & Adapters)
+In Hexagonal Architecture we trust. The half-life of an LLM model or a platform API (like Meta/WhatsApp) is measured in months. Your core business logic must outlive them all.
 
-To understand how Zupa seamlessly bridges the gap between chaotic real-world inputs (like WhatsApp voice notes) and mathematically pure graph execution, read our [Vision & Ideology Manifesto](./docs/product/01-vision.md).
+- **The Engine**: A mathematically pure DAG executor. It has zero knowledge of transport protocols, LLM providers, or database schemas. It only orchestrates atomic super-steps and checkpoints.
+- **The Runtime**: The domain-aware bridge. It translates real-world inputs (WhatsApp messages, audio blobs) into structured Graph inputs and manages the lifecycle of the agent.
+- **The Adapters**: All external implementations (OpenAI, Groq, WhatsApp-Web.js, Postgres) are strictly isolated behind Ports. Swap an LLM provider or switch from WhatsApp to Slack without touching a single line of your agent reasoning code.
+
+### The Router Pattern (Identity in the AI Era)
+A persistent problem in conversational agents is "Infinite Thread Syndrome." Mapping a user's phone number directly to a single LLM memory thread means the context window inevitably explodes, latency spikes, and costs skyrocket.
+
+Zupa solves this natively with **The Handshake Router Graph**: before the main agent runs, a lightning-fast, stateless graph resolves *Who* the user is and *Which* time-boxed session they belong to. The main agent then executes using this specific `sessionId` as its physical `threadId`, permanently decoupling the physical transport layer from the active conversational working memory.
+
+### Memory Duality (Checkpoints vs. Ledgers)
+Working memory and historical audit trails serve opposing purposes. Zupa handles both via the **Dual-Write Pattern**.
+
+- **Checkpoints (Execution State)**: Fast, compact, intentionally "forgetful." They hold only what the LLM needs *right now* to make the next decision. Pluggable into fast KVs like Redis.
+- **Ledgers (Audit History)**: Immutable, relational, infinite. Every tool call, token usage metric, modality shift, and decision is recorded here for analytics, compliance, and UI rendering. Pluggable into robust SQL databases.
+
+### Empathy as a Technical Primitive (Native Modality)
+Voice is not an afterthought in Zupa; it is a first-class citizen. By setting `modality: 'auto'`, an agent replies in the exact same format it receives — the framework seamlessly handles the STT/TTS transcoding pipeline. Agents can also break the mirror when contextually optimal (e.g., sending a voice clip to correct a mispronunciation even if the user texted).
+
+### Resilient Execution (The BSP Foundation)
+Under the hood, Zupa uses a discrete **Pregel-inspired Bulk Synchronous Parallel (BSP)** engine. If the server crashes mid-reasoning, the engine loads the last checkpoint and resumes exactly where it left off. State is separated into pure, immutable **Channels** with deterministic Reducers — no "Global God Object" that silently mutates.
 
 ---
 
 ## Roadmap
 
-Zupa is evolving rapidly. View the full [ROADMAP.md](./ROADMAP.md) for a detailed breakdown of where we are heading, including Distributed Persistence, Multi-instance QR Management, and Advanced HITL handoffs.
+Zupa is evolving rapidly. View the full [ROADMAP.md](./ROADMAP.md) for a detailed breakdown, including Distributed Persistence, Multi-instance QR Management, and Advanced HITL handoffs.
 
 ---
 
@@ -139,4 +160,4 @@ Read our [Contributing Guidelines](./CONTRIBUTING.md) to get your local environm
 
 Zupa is an independent open-source project and is **not** affiliated with, authorized, maintained, sponsored, or endorsed by WhatsApp, Meta, or any of its affiliates or subsidiaries. It provides initial bootstrap velocity via `whatsapp-web.js` but does not use official Meta APIs by default.
 
-_Stay Agentic. Stay Durable._
+_Where agents meet the real world._
