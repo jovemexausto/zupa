@@ -21,9 +21,19 @@ export type AgentProvidersConfig<TAuthPayload = unknown> = Partial<Omit<RuntimeE
 };
 
 /**
+ * Utility type to extract the TAuthPayload from an AgentProvidersConfig.
+ * This is what allows TypeScript to infer TAuthPayload from the transport instance
+ * passed in providers without requiring an explicit type annotation.
+ */
+export type InferAuthPayload<TProviders extends AgentProvidersConfig<unknown>> =
+  TProviders extends AgentProvidersConfig<infer P> ? P : unknown;
+
+/**
  * AgentConfig extends RuntimeConfig with additional public API options.
  * The main difference is that `language` and `ui` are optional here,
  * with sensible defaults applied in resolveRuntimeConfig.
+ *
+ * TAuthPayload is inferred from providers.transport via InferAuthPayload.
  */
 export type AgentConfig<T extends WithReply = WithReply, TAuthPayload = unknown> = Omit<
   RuntimeConfig<T>,
@@ -34,7 +44,10 @@ export type AgentConfig<T extends WithReply = WithReply, TAuthPayload = unknown>
   providers?: AgentProvidersConfig<TAuthPayload>;
 };
 
-export function createAgent<T extends WithReply, TAuthPayload = unknown>(config: AgentConfig<T, TAuthPayload>) {
+export function createAgent<T extends WithReply, TProviders extends AgentProvidersConfig<unknown> = AgentProvidersConfig<unknown>>(
+  config: Omit<AgentConfig<T, InferAuthPayload<TProviders>>, 'providers'> & { providers?: TProviders }
+) {
+  type TAuthPayload = InferAuthPayload<TProviders>;
   let runtime: AgentRuntime<T, TAuthPayload> | null = null;
   const preStartListeners: Array<{
     event: string;
@@ -47,7 +60,7 @@ export function createAgent<T extends WithReply, TAuthPayload = unknown>(config:
     const runtimeConfig = await resolveRuntimeConfig<T>(config);
     validateRuntimeConfig<T>(runtimeConfig);
 
-    const resources = applyDefaultProviders<TAuthPayload>(config.providers || {});
+    const resources = applyDefaultProviders<TAuthPayload>((config.providers ?? {}) as AgentProvidersConfig<TAuthPayload>);
 
     runtime = new AgentRuntime<T, TAuthPayload>({
       runtimeConfig,
