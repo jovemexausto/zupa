@@ -74,6 +74,18 @@ export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
   private stopAuthBridge: (() => void) | null = null;
   private lifecycleResources: RuntimeResource[] = [];
   private uiServer: RuntimeUiServer | null = null;
+  private isClosing = false;
+
+  private handleShutdown = async (): Promise<void> => {
+    try {
+      this.runtimeResources.logger.info("Received termination signal, shutting down gracefully...");
+      await this.close();
+      process.exit(0);
+    } catch (err) {
+      this.runtimeResources.logger.error({ err }, "Error during graceful shutdown");
+      process.exit(1);
+    }
+  };
 
   public constructor(input: AgentRuntimeInput<T>) {
     this.runtimeConfig = input.runtimeConfig;
@@ -158,12 +170,21 @@ export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
         });
       },
     });
+
+    process.on('SIGINT', this.handleShutdown);
+    process.on('SIGTERM', this.handleShutdown);
   }
 
   /**
    * Stops all underlying resources gracefully, releasing memory and active ports.
    */
   public async close(): Promise<void> {
+    if (this.isClosing) return;
+    this.isClosing = true;
+
+    process.removeListener('SIGINT', this.handleShutdown);
+    process.removeListener('SIGTERM', this.handleShutdown);
+
     this.runtimeResources.logger.info("Closing AgentRuntime");
     if (this.inboundBridge) {
       this.inboundBridge.stop();
