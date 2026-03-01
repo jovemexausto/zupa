@@ -34,14 +34,16 @@ Requires Node 18+. Bring your own API key.
 ## The shortest agent that actually works
 
 ```ts
-import { createAgent } from 'zupa'
+import { createAgent } from "zupa";
 
 const agent = createAgent({
-  prompt: 'You are a practical, friendly assistant.',
-})
+  prompt: "You are a practical, friendly assistant.",
+});
 
-agent.on('auth:qr', () => console.log('Open http://127.0.0.1:5557/auth/qr to fetch QR payload'))
-await agent.start()
+agent.on("auth:qr", () =>
+  console.log("Open http://127.0.0.1:5557/auth/qr to fetch QR payload"),
+);
+await agent.start();
 ```
 
 That's it. Start the agent, fetch the QR payload endpoint, scan with WhatsApp, and start talking to your agent.
@@ -53,8 +55,8 @@ Zupa ships with working defaults for everything — SQLite database, local file 
 ## A real agent
 
 ```ts
-import { createAgent, defineTool } from 'zupa'
-import { z } from 'zod'
+import { createAgent, defineTool } from "zupa";
+import { z } from "zod";
 
 const agent = createAgent({
   prompt: `
@@ -64,76 +66,85 @@ const agent = createAgent({
   `,
 
   outputSchema: z.object({
-    reply:      z.string(),
+    reply: z.string(),
     correction: z.string().nullable(),
     sessionEnd: z.boolean(),
   }),
 
   tools: [
     defineTool({
-      name:        'send_vocab_card',
-      description: 'Send a vocabulary card for a word',
-      parameters:  z.object({ word: z.string(), definition: z.string() }),
+      name: "send_vocab_card",
+      description: "Send a vocabulary card for a word",
+      parameters: z.object({ word: z.string(), definition: z.string() }),
       before: async (params, ctx) => {
-        await ctx.resources.transport.sendText(ctx.replyTarget, '📚 vocab card incoming...')
+        await ctx.resources.transport.sendText(
+          ctx.replyTarget,
+          "📚 vocab card incoming...",
+        );
       },
       handler: async (params, ctx) => {
-        const card = await buildVocabCard(params)
-        await ctx.resources.transport.sendMedia(ctx.replyTarget, card)
-        return 'Card sent.'
+        const card = await buildVocabCard(params);
+        await ctx.resources.transport.sendMedia(ctx.replyTarget, card);
+        return "Card sent.";
       },
     }),
   ],
 
   context: async (user, session) => ({
-    mistakes:    await getRecurringMistakes(user.id),
-    corrections: await session.kv.get<number>('corrections') ?? 0,
+    mistakes: await getRecurringMistakes(user.id),
+    corrections: (await session.kv.get<number>("corrections")) ?? 0,
   }),
 
   onResponse: async (structured, ctx) => {
     if (structured.correction) {
-      const n = await ctx.session.kv.get<number>('corrections') ?? 0
-      await ctx.session.kv.set('corrections', n + 1)
+      const n = (await ctx.session.kv.get<number>("corrections")) ?? 0;
+      await ctx.session.kv.set("corrections", n + 1);
     }
     if (structured.sessionEnd) {
-      await ctx.endSession()
+      await ctx.endSession();
     }
   },
 
   commands: {
     reset: {
-      description: 'Start a fresh session',
+      description: "Start a fresh session",
       handler: async (ctx) => {
-        await ctx.endSession()
-        await ctx.resources.transport.sendText(ctx.replyTarget, 'Starting fresh! 👋')
+        await ctx.endSession();
+        await ctx.resources.transport.sendText(
+          ctx.replyTarget,
+          "Starting fresh! 👋",
+        );
       },
     },
     remind: {
-      description: 'Set a reminder — /remind practice in 2h',
+      description: "Set a reminder — /remind practice in 2h",
       args: z.object({
         message: z.string(),
-        delay:   z.string(),
+        delay: z.string(),
       }),
       handler: async (ctx, args) => {
         await ctx.resources.database.scheduleMessage({
-          to:     ctx.replyTarget,
-          text:   `⏰ ${args.message}`,
+          to: ctx.replyTarget,
+          text: `⏰ ${args.message}`,
           sendAt: parseDelay(args.delay),
-        })
-        await ctx.resources.transport.sendText(ctx.replyTarget, `Reminder set for ${args.delay} ✓`)
+        });
+        await ctx.resources.transport.sendText(
+          ctx.replyTarget,
+          `Reminder set for ${args.delay} ✓`,
+        );
       },
     },
   },
 
   providers: {
     transport: integrations.transport.wwebjs(),
-    llm:       integrations.llm.openai({ model: 'gpt-4o' }),
-    database:  integrations.database.postgres({ url: process.env.DATABASE_URL }),
+    llm: integrations.llm.openai({ model: "gpt-4o" }),
+    database: integrations.database.postgres({ url: process.env.DATABASE_URL }),
   },
-})
+});
 
-agent.on('auth:ready', () => console.log('Agent online'))
-await agent.start()
+agent.on("auth:ready", () => console.log("Agent online"));
+await agent.start();
 ```
 
 ---
@@ -162,13 +173,13 @@ Every inbound message moves through a deterministic engine pipeline. No magic. N
 ## Runtime Knobs
 
 `createAgent` also supports additive runtime controls without changing the zero-config path:
+
 - `maxToolIterations`
 - `maxWorkingMemory`
 - `maxEpisodicMemory`
 - `semanticSearchLimit`
 - `rateLimitPerUserPerMinute`
 - `ttsVoice`
-- `audioStoragePath`
 - `welcomeMessage`
 - `fallbackReply`
 
@@ -180,32 +191,32 @@ Every runtime resource has a default. Override only what you need.
 
 ```ts
 createAgent({
-  prompt: '...',
+  prompt: "...",
   providers: {
     // only specify what you're intentionally changing
     transport: integrations.transport.wwebjs(),
-    database:  integrations.database.postgres({ url: process.env.DATABASE_URL }),
-  }
-})
+    database: integrations.database.postgres({ url: process.env.DATABASE_URL }),
+  },
+});
 ```
 
-| Resource    | Default                   | Alternatives                                    |
-|-------------|---------------------------|-------------------------------------------------|
-| `transport` | `wwebjs()`                | `telegram()`, `whatsappBusiness()`, `fake()`    |
-| `llm`       | `openai({ model: 'gpt-4o' })` | any LiteLLM-compatible endpoint             |
-| `stt`       | `whisper()`               | `whisperLocal()`, `deepgram()`                  |
-| `tts`       | `openai()`                | `elevenlabs()`, `coqui()`                       |
-| `database`  | `sqlite()`                | `postgres()`                                    |
-| `storage`   | `local()`                 | `s3({ bucket, region })`                        |
-| `vectors`   | `noop()`                  | `chroma()`, `pinecone()`                        |
-| `telemetry` | console logger            | `{ emit: (event) => yourObservability(event) }` |
+| Resource    | Default                       | Alternatives                                    |
+| ----------- | ----------------------------- | ----------------------------------------------- |
+| `transport` | `wwebjs()`                    | `telegram()`, `whatsappBusiness()`, `fake()`    |
+| `llm`       | `openai({ model: 'gpt-4o' })` | any LiteLLM-compatible endpoint                 |
+| `stt`       | `whisper()`                   | `whisperLocal()`, `deepgram()`                  |
+| `tts`       | `openai()`                    | `elevenlabs()`, `coqui()`                       |
+| `database`  | `sqlite()`                    | `postgres()`                                    |
+| `storage`   | `local()`                     | `s3({ bucket, region })`                        |
+| `vectors`   | `noop()`                      | `chroma()`, `pinecone()`                        |
+| `telemetry` | console logger                | `{ emit: (event) => yourObservability(event) }` |
 
 All providers are imported from `zupa/integrations`:
 
 ```ts
-import { integrations } from 'zupa'
+import { integrations } from "zupa";
 
-const { transport, llm, database } = integrations
+const { transport, llm, database } = integrations;
 ```
 
 ---
@@ -220,31 +231,31 @@ WhatsApp Web automation via Puppeteer. Requires a dedicated number — don't run
 
 ```ts
 integrations.transport.wwebjs({
-  authStrategy: 'local',      // persists session to .wwebjs_auth/
-  dataPath:     '.wwebjs_auth',
-})
+  authStrategy: "local", // persists session to .wwebjs_auth/
+  dataPath: ".wwebjs_auth",
+});
 ```
 
 On first run (or after disconnect), Zupa starts an in-process HTTP auth server (enabled by default). Use `GET /auth/qr` to read the current QR payload and `GET /agent/events` for SSE auth/runtime updates. Session is persisted — you won't need to scan again unless you explicitly disconnect.
 
-### Telegram *(coming soon)*
+### Telegram _(coming soon)_
 
 ```ts
 integrations.transport.telegram({
   token: process.env.TELEGRAM_BOT_TOKEN,
-})
+});
 ```
 
 No QR, no dedicated SIM. Token auth, instant setup.
 
-### WhatsApp Business API *(coming soon)*
+### WhatsApp Business API _(coming soon)_
 
 ```ts
 integrations.transport.whatsappBusiness({
-  token:      process.env.WA_TOKEN,
-  phoneId:    process.env.WA_PHONE_ID,
-  webhookPath: '/webhooks/whatsapp',
-})
+  token: process.env.WA_TOKEN,
+  phoneId: process.env.WA_PHONE_ID,
+  webhookPath: "/webhooks/whatsapp",
+});
 ```
 
 Official Meta Cloud API. Production-grade, requires business verification.
@@ -253,10 +264,14 @@ Official Meta Cloud API. Production-grade, requires business verification.
 
 ```ts
 // local development
-providers: { transport: integrations.transport.wwebjs() }
+providers: {
+  transport: integrations.transport.wwebjs();
+}
 
 // move to Telegram — everything else unchanged
-providers: { transport: integrations.transport.telegram({ token }) }
+providers: {
+  transport: integrations.transport.telegram({ token });
+}
 ```
 
 ---
@@ -274,10 +289,10 @@ Zupa assembles memory from three tiers before every LLM call. You get this autom
 ```ts
 onResponse: async (structured, ctx) => {
   if (structured.importantFact) {
-    await ctx.rememberFact(structured.importantFact)
+    await ctx.rememberFact(structured.importantFact);
     // stored as embedding, retrieved by similarity on future messages
   }
-}
+};
 ```
 
 Sessions end when you call `ctx.endSession()` or after `SESSION_IDLE_TIMEOUT` minutes of inactivity. Summary generation is automatic.
@@ -317,29 +332,29 @@ Declare tools with `defineTool` for full TypeScript inference between your Zod s
 
 ```ts
 const searchKnowledgeBase = defineTool({
-  name:        'search_kb',
-  description: 'Search the knowledge base for relevant information',
-  parameters:  z.object({ query: z.string() }),
+  name: "search_kb",
+  description: "Search the knowledge base for relevant information",
+  parameters: z.object({ query: z.string() }),
 
   // runs before handler — send status, validate, or abort
   before: async (params, ctx) => {
-    await ctx.resources.transport.sendText(ctx.replyTarget, '🔍 searching...')
+    await ctx.resources.transport.sendText(ctx.replyTarget, "🔍 searching...");
     // return modified params to change what handler receives
     // throw to abort — error message is fed to LLM as tool result
   },
 
   handler: async (params, ctx) => {
-    const results = await vectorSearch(params.query)
-    return JSON.stringify(results)   // string fed back to LLM
+    const results = await vectorSearch(params.query);
+    return JSON.stringify(results); // string fed back to LLM
   },
 
   // runs after handler — transform result, log analytics
   after: async (params, result, ctx) => {
-    await logToolCall({ tool: 'search_kb', userId: ctx.user.id })
+    await logToolCall({ tool: "search_kb", userId: ctx.user.id });
     // return a new string to change what LLM sees
     // return void to pass through the original result
   },
-})
+});
 ```
 
 ### Abort with a graceful message
@@ -348,11 +363,13 @@ If `before` throws, the error message becomes the tool result the LLM sees. The 
 
 ```ts
 before: async (params, ctx) => {
-  const calls = await ctx.session.kv.get<number>('searches') ?? 0
+  const calls = (await ctx.session.kv.get<number>("searches")) ?? 0;
   if (calls >= 5) {
-    throw new Error('Search limit reached for this session. Tell the user you\'ve done extensive research and summarize what you found.')
+    throw new Error(
+      "Search limit reached for this session. Tell the user you've done extensive research and summarize what you found.",
+    );
   }
-}
+};
 ```
 
 ---
@@ -392,11 +409,11 @@ commands: {
 
 **Built-in commands** (all overridable, all disableable):
 
-| Command  | Description                                     |
-|----------|-------------------------------------------------|
-| `/help`  | Auto-generated from all command descriptions    |
-| `/reset` | Ends current session, starts fresh              |
-| `/usage` | Token usage + estimated cost for this session   |
+| Command  | Description                                   |
+| -------- | --------------------------------------------- |
+| `/help`  | Auto-generated from all command descriptions  |
+| `/reset` | Ends current session, starts fresh            |
+| `/usage` | Token usage + estimated cost for this session |
 
 When a command has an `args` schema, Zupa makes a small LLM call to parse the natural language argument string into the schema. `/remind call doctor in 2h` → `{ message: "call doctor", delay: "2h" }`. No regex, no positional argument system.
 
@@ -407,10 +424,12 @@ When a command has an `args` schema, Zupa makes a small LLM call to parse the na
 Every Zupa agent ships with an in-process auth/event HTTP server (no separate process).
 
 Default bind:
+
 - `host`: `127.0.0.1`
 - `port`: `5557`
 
 Endpoints:
+
 - `GET /auth/qr`
 - default format: image payload (`{ status, format: "image", mimeType, dataUrl, updatedAt }`)
 - optional `?format=raw` for `{ status, format: "raw", qr, updatedAt }`
@@ -423,17 +442,18 @@ Configure it:
 
 ```ts
 createAgent({
-  prompt: '...',
+  prompt: "...",
   ui: {
-    host:           '127.0.0.1',
-    port:           5557,
-    authToken:      process.env.ZUPA_UI_TOKEN,
+    host: "127.0.0.1",
+    port: 5557,
+    authToken: process.env.ZUPA_UI_TOKEN,
     sseHeartbeatMs: 15000,
-  }
-})
+  },
+});
 ```
 
 Security policy:
+
 - loopback hosts (`127.0.0.1`, `localhost`, `::1`) can run without token
 - non-loopback hosts require `ui.authToken`
 - when token is set, endpoints require `Authorization: Bearer <token>` (or `?token=` for browser EventSource)
@@ -441,7 +461,7 @@ Security policy:
 Disable it if you don't need it:
 
 ```ts
-createAgent({ prompt: '...', ui: false })
+createAgent({ prompt: "...", ui: false });
 ```
 
 ---
@@ -453,19 +473,19 @@ Declare a Zod schema and the LLM returns a typed, validated instance. TypeScript
 ```ts
 const agent = createAgent({
   outputSchema: z.object({
-    reply:      z.string(),           // required — Zupa reads this
+    reply: z.string(), // required — Zupa reads this
     correction: z.string().nullable(),
-    topic:      z.string(),
+    topic: z.string(),
     sessionEnd: z.boolean(),
   }),
 
   onResponse: async (structured, ctx) => {
     // structured is fully typed — InferZod<typeof outputSchema>
     // no casting, no JSON.parse, no assertions
-    if (structured.sessionEnd) await ctx.endSession()
-    await updateUserTopics(ctx.user.id, structured.topic)
+    if (structured.sessionEnd) await ctx.endSession();
+    await updateUserTopics(ctx.user.id, structured.topic);
   },
-})
+});
 ```
 
 Without a schema, `onResponse` receives `{ reply: string }`.
@@ -477,34 +497,34 @@ Without a schema, `onResponse` receives `{ reply: string }`.
 Use fake providers for deterministic tests that don't touch the network:
 
 ```ts
-import { createAgent, integrations } from 'zupa'
-import { createFakeRuntimeDeps } from 'zupa/testing'
+import { createAgent, integrations } from "zupa";
+import { createFakeRuntimeDeps } from "zupa/testing";
 
-const fakes = createFakeRuntimeDeps()
+const fakes = createFakeRuntimeDeps();
 
 const agent = createAgent({
-  prompt: 'You are a helpful assistant.',
+  prompt: "You are a helpful assistant.",
   providers: {
     transport: fakes.transport,
-    llm:       integrations.llm.fake({ reply: 'Hello! How can I help?' }),
-    database:  fakes.database,
-    storage:   fakes.storage,
+    llm: integrations.llm.fake({ reply: "Hello! How can I help?" }),
+    database: fakes.database,
+    storage: fakes.storage,
   },
-})
+});
 
-await agent.start()
+await agent.start();
 
 // send a message
 await fakes.transport.simulateInbound({
-  from: '+5521999990001',
-  text: 'Hello',
-})
+  from: "+5521999990001",
+  text: "Hello",
+});
 
 // assert the reply
-const sent = fakes.transport.getSentMessages()
-expect(sent[0].text).toBe('Hello! How can I help?')
+const sent = fakes.transport.getSentMessages();
+expect(sent[0].text).toBe("Hello! How can I help?");
 
-await agent.close()
+await agent.close();
 ```
 
 `createFakeRuntimeDeps()` gives you in-memory implementations of every backend. No SQLite file, no temp directories, no cleanup. Fast, parallel-safe, zero flakiness.
@@ -520,8 +540,8 @@ providers: {
   telemetry: {
     emit: (event) => {
       // event.node, event.duration, event.agentId, event.sessionId, ...
-      datadog.increment(`zupa.node.${event.node}`, event.duration)
-    }
+      datadog.increment(`zupa.node.${event.node}`, event.duration);
+    };
   }
 }
 ```

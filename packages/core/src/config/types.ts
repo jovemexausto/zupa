@@ -38,7 +38,6 @@ export interface RuntimeConfig<T = unknown> {
   sttTimeoutMs?: number;
   ttsTimeoutMs?: number;
   ttsVoice?: string;
-  audioStoragePath?: string;
   welcomeMessage?: string;
   fallbackReply?: string;
   preferredVoiceReply?: boolean;
