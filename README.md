@@ -19,7 +19,9 @@ Building a toy chatbot is easy. Building a production-grade, multi-modal autonom
 
 While modern graph execution engines (like LangGraph) have solved the mathematical problem of *how* complex reasoning loops execute, they largely abandon the developer at the product layer. How do you handle real-time voice notes? How do you map a phone number to a session without blowing up the context window? How do you persist memory across deployments?
 
-Zupa is the answer. A full-stack **"batteries-included" orchestrator** that wraps a mathematically robust execution engine inside an opinionated product framework so you can focus on what matters: the agent's actual behavior.
+**Zupa is the answer.**
+
+A full-stack **"batteries-included" orchestrator** that wraps a robust execution engine inside an opinionated product framework so you can focus on what matters: the agent's actual behavior.
 
 ---
 
