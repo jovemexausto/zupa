@@ -2,7 +2,7 @@
 
 Building a toy chatbot is easy. Building a production-grade, multi-modal autonomous agent that survives server crashes, handles complex human handovers, and scales horizontally is incredibly hard.
 
-We believe that **Conversational AI has outgrown the linear Request/Response paradigm.**
+**The hardest problem in autonomous AI is no longer the execution graph; it is the chaotic, stateful orchestration required to connect that graph to the real world.**
 
 While modern graph execution engines (like LangGraph) have solved the mathematical problem of *how* complex reasoning loops should execute via the Bulk Synchronous Parallel (BSP) model, they largely abandon the developer at the product layer. 
 
@@ -21,7 +21,7 @@ We believe in strict, Hexagonal Architecture. The half-life of an LLM model or a
 
 - **The Engine**: A mathematically pure DAG (Directed Acyclic Graph) executor. It has zero knowledge of transport protocols, LLM providers, or database schemas. It only orchestrates atomic super-steps and checkpoints.
 - **The Runtime**: The domain-aware bridge. It translates real-world chaos (WhatsApp messages, audio blobs) into structured Graph inputs and manages the lifecycle of the agent.
-- **The Adapters (`+vendors`)**: All external implementations (OpenAI, Groq, WhatsApp-Web.js, Postgres) are strictly isolated behind Ports. You can swap an LLM provider or switch from WhatsApp to Slack without touching a single line of your agent's reasoning code.
+- **The Adapters**: All external implementations (OpenAI, Groq, WhatsApp-Web.js, Postgres) are strictly isolated behind Ports. You can swap an LLM provider or switch from WhatsApp to Slack without touching a single line of your agent's reasoning code.
 
 ## 2. The Router Pattern (Identity in the AI Era)
 A persistent problem in conversational agents is "Infinite Thread Syndrome." If you map a user's phone number directly to a single LLM memory thread, the context window inevitably explodes, latency spikes, and costs skyrocket.
