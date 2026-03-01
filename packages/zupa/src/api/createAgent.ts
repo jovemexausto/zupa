@@ -13,7 +13,7 @@ export { ModalitySchema, ReplySchema, withReply };
 
 export type WithReply = {
   reply: string;
-  modality?: 'text' | 'voice' | undefined;
+  modality?: 'text' | 'voice' | null;
 };
 
 export type AgentProvidersConfig = Partial<Omit<RuntimeEngineResources, 'transport'>> & {
