@@ -46,3 +46,7 @@ Outbound methods should accept a `Buffer` + `mimeType` or a `mediaUrl` rather th
 ## Actions Required
 - Review and approve RFC.
 - Move implementation into our execution tracking (`TODO.md` / `task.md`).
+
+---
+*Date: 2026-02-28*
+*Status: Implemented*

@@ -7,6 +7,8 @@
 
 Zupa is a full-stack, transport-agnostic framework designed for building production-grade conversational AI agents. While it is built to run on any messaging platform, it targets **WhatsApp** as its primary first-class citizen to deliver immediate, high-impact value out of the box.
 
+Because Zupa is a self-contained Node.js process with zero managed-service dependencies, **it deploys anywhere** — a $5 VPS, a Docker container, a Raspberry Pi, or a serverless edge function. Your agent is yours.
+
 > 🚨 **Early Stage Project**: Zupa is in active, early development. We are building the foundation for the next generation of durable AI agents. We are actively looking for early adopters, feedback, and contributors to help shape the future of the framework!
 
 ---
@@ -141,6 +143,9 @@ Voice is not an afterthought in Zupa; it is a first-class citizen. By setting `m
 
 ### Resilient Execution (The BSP Foundation)
 Under the hood, Zupa uses a discrete **Pregel-inspired Bulk Synchronous Parallel (BSP)** engine. If the server crashes mid-reasoning, the engine loads the last checkpoint and resumes exactly where it left off. State is separated into pure, immutable **Channels** with deterministic Reducers — no "Global God Object" that silently mutates.
+
+### Deploy Anywhere (Zero Infrastructure Lock-In)
+Zupa has zero infrastructure opinions. The runtime is a single Node.js process. Checkpoints default to local SQLite. There is no mandatory cloud service, no proprietary queue, no container orchestrator requirement. A Zupa agent runs identically on a $5 VPS, a Docker container, a Raspberry Pi behind a home router, a serverless edge function, or any PaaS like Railway, Render, or Fly.io. **Your agent is yours to deploy wherever you want.**
 
 ---
 

@@ -3,7 +3,7 @@
 ## What is Zupa?
 Zupa is a **full-stack, batteries-included TypeScript framework** for building production-grade conversational AI agents. It is transport-agnostic but ships WhatsApp (via `whatsapp-web.js`) as its primary first-class transport.
 
-The core thesis: modern execution engines (LangGraph/Pregel) solve how to run reasoning graphs, but they abandon developers at the product layer (transports, sessions, memory, modality). Zupa fills that gap.
+The core thesis: modern execution engines (LangGraph/Pregel) solve how to run reasoning graphs, but they abandon developers at the product layer (transports, sessions, memory, modality). Zupa fills that gap — and because it is a self-contained Node.js process with zero managed-service dependencies, **it deploys anywhere**: a $5 VPS, a Docker container, a Raspberry Pi, or a serverless edge function.
 
 ## Package Architecture
 - **`@zupa/core`** (Apache-2.0): Pure domain primitives, Zod schemas, port interfaces. No frameworks. No I/O.
@@ -30,6 +30,16 @@ Before the main agent graph runs, a stateless Router Graph resolves identity: Wh
 
 ### 5. BSP Execution
 Execution happens in discrete, checkpointed super-steps. Server crash mid-reasoning? On restart the engine loads the last checkpoint and resumes exactly where it left off.
+
+### 6. Deploy Anywhere
+Zupa has zero infrastructure opinions. The runtime is a single Node.js process. Checkpoints default to local SQLite. There is no mandatory cloud service, no proprietary queue, no container orchestrator requirement. This means a Zupa agent runs identically on:
+- A $5 DigitalOcean droplet
+- A Docker container in any cloud
+- A Raspberry Pi behind a home router
+- A serverless/edge function (with external checkpoint storage)
+- Any PaaS (Railway, Render, Fly.io)
+
+This is a core, non-negotiable value proposition: **your agent is yours to deploy wherever you want.**
 
 ## Core API Surface
 ```typescript
