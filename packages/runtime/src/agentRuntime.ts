@@ -35,10 +35,24 @@ import { resolveUiConfig } from "./ui/resolveUiConfig";
 /**
  * Input configuration required to boot an AgentRuntime instance.
  */
-export interface AgentRuntimeInput<T = unknown> {
+export interface AgentRuntimeInput<T = unknown, TAuthPayload = unknown> {
   runtimeConfig: RuntimeConfig<T>;
-  runtimeResources: RuntimeEngineResources;
+  runtimeResources: RuntimeEngineResources<TAuthPayload>;
   handlers?: RuntimeNodeHandlerMap<T>;
+}
+
+/**
+ * Known Zupa runtime events and their handler signatures.
+ * Enables fully-typed `.on()` calls — TAuthPayload flows from the transport.
+ */
+export interface AgentRuntimeEvents<TAuthPayload = unknown> {
+  'auth:request': (payload: TAuthPayload) => void;
+  'auth:ready': () => void;
+  'auth:failure': (message: string) => void;
+  'inbound:received': (data: { inbound: InboundMessage }) => void;
+  'inbound:processed': (data: { requestId: string; from: string }) => void;
+  'inbound:failed': (data: { requestId: string; error: string; inbound: InboundMessage }) => void;
+  'inbound:overload': (data: { inbound: InboundMessage }) => void;
 }
 
 /**
@@ -48,10 +62,10 @@ export interface AgentRuntimeInput<T = unknown> {
  * for incoming and outgoing messages, starts the UI server if configured,
  * and maintains the execution layer (`EngineExecutor`) to process each request.
  */
-export class AgentRuntime<T = unknown> {
+export class AgentRuntime<T = unknown, TAuthPayload = unknown> {
   private readonly emitter = new EventEmitter();
   private readonly runtimeConfig: RuntimeConfig<T>;
-  private readonly runtimeResources: RuntimeEngineResources;
+  private readonly runtimeResources: RuntimeEngineResources<TAuthPayload>;
   private readonly executor: EngineExecutor<
     RuntimeState,
     RuntimeEngineContext<T>
@@ -61,7 +75,7 @@ export class AgentRuntime<T = unknown> {
   private lifecycleResources: RuntimeResource[] = [];
   private uiServer: RuntimeUiServer | null = null;
 
-  public constructor(input: AgentRuntimeInput<T>) {
+  public constructor(input: AgentRuntimeInput<T, TAuthPayload>) {
     this.runtimeConfig = input.runtimeConfig;
     this.runtimeResources = input.runtimeResources;
 
@@ -98,9 +112,9 @@ export class AgentRuntime<T = unknown> {
 
     this.stopAuthBridge = bindTransportAuth({
       transport: this.runtimeResources.transport,
-      onAuthQr: (qr) => {
-        this.uiServer?.setLatestQr(qr);
-        this.emitRuntimeEvent("auth:qr", qr);
+      onAuthRequest: (payload) => {
+        this.uiServer?.setLatestQr(typeof payload === 'string' ? payload : JSON.stringify(payload));
+        this.emitRuntimeEvent("auth:request", payload);
       },
       onAuthReady: () => {
         this.uiServer?.setOnlineStatus(true);
@@ -169,12 +183,15 @@ export class AgentRuntime<T = unknown> {
 
   /**
    * Subscribes to runtime lifecycle and adapter events.
-   * Useful for hooking into authentication flows (e.g., retrieving WhatsApp QR codes).
+   * Provides typed autocomplete for known events via AgentRuntimeEvents.
+   * For non-enumerated events, falls back to a generic string key signature.
    */
-  public on(
-    event: "auth:qr" | "auth:ready" | string,
-    handler: (...args: unknown[]) => void,
-  ): this {
+  public on<K extends keyof AgentRuntimeEvents<TAuthPayload>>(
+    event: K,
+    handler: AgentRuntimeEvents<TAuthPayload>[K],
+  ): this;
+  public on(event: string, handler: (...args: unknown[]) => void): this;
+  public on(event: string, handler: (...args: unknown[]) => void): this {
     this.emitter.on(event, handler);
     return this;
   }

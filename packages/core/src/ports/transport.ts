@@ -26,9 +26,16 @@ export interface InboundMessage {
   downloadMedia?: () => Promise<InboundMedia | undefined>;
 }
 
-export interface MessagingTransport extends RuntimeResource {
+export interface MessagingTransport<TAuthPayload = unknown> extends RuntimeResource {
   onInbound?(handler: (message: InboundMessage) => Promise<void>): () => void;
-  onAuthQr?(handler: (qr: string) => void): () => void;
+
+  /**
+   * Called when the transport requires user action to authenticate.
+   * The payload shape is defined entirely by the concrete transport adapter.
+   * For example, WWebJSTransport emits `{ type: 'qr', qrString: string }`.
+   */
+  onAuthRequest?(handler: (payload: TAuthPayload) => void): () => void;
+
   onAuthReady?(handler: () => void): () => void;
   onAuthFailure?(handler: (message: string) => void): () => void;
   sendText(to: string, text: string): Promise<void>;
@@ -42,4 +49,11 @@ export interface MessagingTransport extends RuntimeResource {
     caption?: string,
   ): Promise<void>;
   sendTyping(to: string, durationMs: number): Promise<void>;
+
+  /**
+   * Phantom field — never populated at runtime.
+   * Exists solely so TypeScript can carry TAuthPayload through assignment
+   * (e.g. `const t: MessagingTransport<MyPayload>` infers back correctly).
+   */
+  readonly _authPayload?: TAuthPayload;
 }

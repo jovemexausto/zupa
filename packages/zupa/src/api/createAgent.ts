@@ -1,9 +1,10 @@
 import {
   type RuntimeEngineResources,
   type RuntimeConfig,
+  type MessagingTransport,
   resolveLanguage,
 } from "@zupa/core";
-import { AgentRuntime, buildDefaultNodeHandlers } from "@zupa/runtime";
+import { AgentRuntime, buildDefaultNodeHandlers, type AgentRuntimeEvents } from "@zupa/runtime";
 import { PinoLogger } from "@zupa/adapters";
 import { createLocalResources } from "./resources";
 import { LOGGING_DEFAULTS, ModalitySchema, ReplySchema, withReply } from "@zupa/core";
@@ -15,38 +16,40 @@ export type WithReply = {
   modality?: 'text' | 'voice';
 };
 
-export type AgentProvidersConfig = Partial<RuntimeEngineResources>;
+export type AgentProvidersConfig<TAuthPayload = unknown> = Partial<Omit<RuntimeEngineResources, 'transport'>> & {
+  transport?: MessagingTransport<TAuthPayload>;
+};
 
 /**
  * AgentConfig extends RuntimeConfig with additional public API options.
  * The main difference is that `language` and `ui` are optional here,
  * with sensible defaults applied in resolveRuntimeConfig.
  */
-export type AgentConfig<T extends WithReply = WithReply> = Omit<
+export type AgentConfig<T extends WithReply = WithReply, TAuthPayload = unknown> = Omit<
   RuntimeConfig<T>,
   "language" | "ui"
 > & {
   language?: string;
   ui?: false | RuntimeConfig<T>["ui"];
-  providers?: AgentProvidersConfig;
+  providers?: AgentProvidersConfig<TAuthPayload>;
 };
 
-export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
-  let runtime: AgentRuntime<T> | null = null;
+export function createAgent<T extends WithReply, TAuthPayload = unknown>(config: AgentConfig<T, TAuthPayload>) {
+  let runtime: AgentRuntime<T, TAuthPayload> | null = null;
   const preStartListeners: Array<{
     event: string;
     handler: (...args: unknown[]) => void;
   }> = [];
 
-  const ensureRuntime = async (): Promise<AgentRuntime<T>> => {
+  const ensureRuntime = async (): Promise<AgentRuntime<T, TAuthPayload>> => {
     if (runtime) return runtime;
 
     const runtimeConfig = await resolveRuntimeConfig<T>(config);
     validateRuntimeConfig<T>(runtimeConfig);
 
-    const resources = applyDefaultProviders(config.providers || {});
+    const resources = applyDefaultProviders<TAuthPayload>(config.providers || {});
 
-    runtime = new AgentRuntime<T>({
+    runtime = new AgentRuntime<T, TAuthPayload>({
       runtimeConfig,
       runtimeResources: resources,
       handlers: buildDefaultNodeHandlers<T>(),
@@ -59,29 +62,43 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
     return runtime;
   };
 
+  /**
+   * Typed event subscription. For known events, handler args are fully typed.
+   * Accepts `string` as a fallback for custom/unforeseen events.
+   */
+  function on<K extends keyof AgentRuntimeEvents<TAuthPayload>>(
+    event: K,
+    handler: AgentRuntimeEvents<TAuthPayload>[K],
+  ): typeof agent;
+  function on(event: string, handler: (...args: unknown[]) => void): typeof agent;
+  function on(event: string, handler: (...args: unknown[]) => void): typeof agent {
+    if (runtime) {
+      runtime.on(event, handler);
+    } else {
+      preStartListeners.push({ event, handler });
+    }
+    return agent;
+  }
+
   const agent = {
-    async start(): Promise<void> {
-      await (await ensureRuntime()).start();
-    },
-
-    async stop(): Promise<void> {
-      if (!runtime) return;
-      await runtime.close();
-    },
-
-    async close(): Promise<void> {
-      return this.stop();
-    },
-
-    on(event: string, handler: (...args: unknown[]) => void) {
-      if (runtime) {
-        runtime.on(event, handler);
-      } else {
-        preStartListeners.push({ event, handler });
-      }
-      return this;
-    },
+    start,
+    stop,
+    close,
+    on,
   };
+
+  async function start(): Promise<void> {
+    await (await ensureRuntime()).start();
+  }
+
+  async function stop(): Promise<void> {
+    if (!runtime) return;
+    await runtime.close();
+  }
+
+  async function close(): Promise<void> {
+    return stop();
+  }
 
   return agent;
 }
@@ -113,12 +130,12 @@ function validateRuntimeConfig<T>(_config: RuntimeConfig<T>): void {
   }
 }
 
-function applyDefaultProviders(
-  resources: AgentProvidersConfig,
-): RuntimeEngineResources {
+function applyDefaultProviders<TAuthPayload = unknown>(
+  resources: AgentProvidersConfig<TAuthPayload>,
+): RuntimeEngineResources<TAuthPayload> {
   const defaults = createLocalResources();
   return {
-    transport: resources.transport ?? defaults.transport,
+    transport: (resources.transport ?? defaults.transport) as MessagingTransport<TAuthPayload>,
     llm: resources.llm ?? defaults.llm,
     stt: resources.stt ?? defaults.stt,
     tts: resources.tts ?? defaults.tts,

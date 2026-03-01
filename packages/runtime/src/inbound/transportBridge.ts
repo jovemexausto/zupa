@@ -52,19 +52,19 @@ export function bindTransportInbound(input: BindTransportInboundInput): Transpor
   };
 }
 
-export interface BindTransportAuthInput {
-  transport: MessagingTransport;
-  onAuthQr?(qr: string): void;
+export interface BindTransportAuthInput<TAuthPayload = unknown> {
+  transport: MessagingTransport<TAuthPayload>;
+  onAuthRequest?(payload: TAuthPayload): void;
   onAuthReady?(): void;
   onAuthFailure?(message: string): void;
 }
 
-export function bindTransportAuth(input: BindTransportAuthInput): (() => void) | null {
+export function bindTransportAuth<TAuthPayload = unknown>(input: BindTransportAuthInput<TAuthPayload>): (() => void) | null {
   const unsubs: Array<() => void> = [];
 
-  if (input.transport.onAuthQr) {
-    unsubs.push(input.transport.onAuthQr((qr) => {
-      input.onAuthQr?.(qr);
+  if (input.transport.onAuthRequest) {
+    unsubs.push(input.transport.onAuthRequest((payload) => {
+      input.onAuthRequest?.(payload);
     }));
   }
 
