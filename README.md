@@ -1,23 +1,24 @@
 # Zupa ⚡️
 
-### The Batteries-Included TypeScript Framework for Resilient Agentic Conversations.
+### The Batteries-Included TypeScript Framework for Resilient Agentic Conversations
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![NPM Version](https://img.shields.io/npm/v/zupa.svg)](https://www.npmjs.com/package/zupa)
 
-Zupa is a full-stack conversational framework designed for building production-grade conversational AI agents. While it is built to be **transport-agnostic**, it targets **WhatsApp** as its primary first-class citizen to deliver immediate, high-impact value for developers.
+Zupa is a full-stack, transport-agnostic framework designed for building production-grade conversational AI agents. While it is built to run on any messaging platform, it targets **WhatsApp** as its primary first-class citizen to deliver immediate, high-impact value out of the box.
 
-Built on the **Bulk Synchronous Parallel (BSP)** model (inspired by LangGraph’s Pregel), Zupa ensures your agents aren't just toys—they are **Durable AI Workflows** that can survive crashes, maintain infinite audit trails, and handle multi-modal interactions (Voice/Text) out of the box.
+> 🚨 **Early Stage Project**: Zupa is in active, early development. We are building the foundation for the next generation of durable AI agents. We are actively looking for early adopters, feedback, and contributors to help shape the future of the framework!
 
 ---
 
-## 🌟 Why Zupa?
+## 🌟 Stop Writing Plumbing. Start Writing Reasoning.
 
-- **Durable by Default**: Every step is checkpointed. If your server crashes mid-tool-call, Sam resumes exactly where he left off.
-- **The Router Pattern**: Automatically decouples transport IDs from session memory. Isolated, time-boxed conversations without context-window bloat.
-- **Native Multi-modality**: High-performance STT/TTS mirroring. Speak to your agent, and it speaks back.
-- **Batteries Included**: Built-in session management, identity resolution, working memory, and persistent scratchpads (`kv`).
-- **Standard Library of Agents**: Stop writing plumbing. Start writing reasoning.
+Building a production-ready agent usually means writing fragile boilerplate to handle session persistence, multi-modal audio transformation, and event deduplication. Zupa abstracts all of this into a high-performance runtime so you can focus on what matters: the agent's behavior.
+
+- **Durable by Default**: Every execution step is checkpointed. If your server crashes mid-flight, the agent resumes exactly where it left off. No lost context.
+- **Native Multi-modality**: High-performance STT/TTS mirroring is built-in. Speak to your agent, and it speaks back to you.
+- **Separation of Concerns**: Built-in identity resolution, isolated session memory, and persistent developer scratchpads (`kv`).
+- **Structured Outputs**: Native `zod` integration ensures your LLM outputs strictly what your code expects.
 
 ---
 
@@ -33,7 +34,7 @@ npm install zupa zod
 import { z } from 'zod';
 import { createAgent, withReply, WWebJSMessagingTransport } from 'zupa';
 
-// 1. Define your Response Schema (Structured Output)
+// 1. Define your Response Schema
 const SamReplySchema = withReply({
   correction: z.string().nullable(),
   vocabularyIntroduced: z.array(z.string()),
@@ -48,7 +49,7 @@ const agent = createAgent({
   }
 });
 
-// 3. Handle Auth (QR Code)
+// 3. Handle Auth (Terminal QR Code)
 agent.on('auth:request', ({ qrString }) => console.log('Scan me:', qrString));
 agent.on('auth:ready', () => console.log('Sam is online!'));
 
@@ -57,38 +58,29 @@ await agent.start();
 
 ---
 
-## 🏗 Key Architectural Pillars
+## 🏗 Dive Deeper
 
-### 1. The BSP / Pregel Loop
-Zupa executes graphs in atomic **Super-steps**. Nodes take snapshots of **Channels** and return **Writes**. This eliminates data races and provides perfect time-travel debugging.
+Zupa isn't just a library; it's a completely different paradigm for agentic execution. We've thrown away the traditional "Linear Request/Response" model in favor of a **Pregel-inspired Bulk Synchronous Parallel (BSP)** engine. 
 
-### 2. Router Handshake
-Before the main agent loop, Zupa runs a stateless **Router Graph**. It resolves the User identity and time-boxed Session ID before loading the execution memory. This prevents "infinite thread syndrome."
-
-### 3. Memory Duality
-- **Checkpoints**: High-performance snapshots for the LLM's context window.
-- **Ledgers**: Immutable relational history of every message, tool call, and decision.
+To understand how Zupa achieves perfect time-travel debugging, stateless router handshakes, and dual-memory ledgers, read our [Vision & Ideology Manifesto](./docs/product/01-vision.md).
 
 ---
 
 ## 🗺 Roadmap
 
-Zupa is rapidly evolving. Here is our path to v1.0:
+Zupa is evolving rapidly. View the full [ROADMAP.md](./ROADMAP.md) for a detailed breakdown of where we are heading, including Distributed Persistence, Multi-instance QR Management, and Advanced HITL handoffs.
 
-- [x] **Phase 1: Foundation**: Pregel Engine, Durable Checkpointing, Voice Mirroring (STT/TTS).
-- [ ] **Phase 2: Production Readiness**: Error Taxonomy, Circuit Breakers, and Correlation ID Plumbung.
-- [ ] **Phase 3: Zupa Cloud**: Distributed Redis/PG Persistence, Multi-instance QR Management, Human-in-the-loop (HITL) Handoffs.
+---
 
-Check out the full [ROADMAP.md](./ROADMAP.md) for details.
+## 🤝 Join the Rebellion
+
+We are actively looking for developers who want to push the boundaries of conversational AI. Whether it's adding a new Transport Adapter (Telegram, Slack) or improving the core execution engine, your PRs are deeply welcome.
+
+Read our [Contributing Guidelines](./CONTRIBUTING.md) to get your local environment set up within minutes.
 
 ---
 
 ## ⚖️ Legal Disclaimer
 Zupa is an independent open-source project and is **not** affiliated with, authorized, maintained, sponsored, or endorsed by WhatsApp, Meta, or any of its affiliates or subsidiaries. It provides initial bootstrap velocity via `whatsapp-web.js` but does not use official Meta APIs by default.
-
----
-
-## 🤝 Contributing
-We love contributors! Zupa is built on a modern monorepo (Turbo) with a strict "Ports and Adapters" architecture. Read our [Ideology Guide](./docs/architecture/ideology.md) to get started.
 
 *Stay Agentic. Stay Durable.*

@@ -1,66 +1,54 @@
-# Zupa: The Batteries-Included TypeScript Framework for Resilient Agentic Conversations
+# The Zupa Vision & Manifesto
 
-Zupa is a full-stack conversational framework designed for building production-grade AI agents. While it is built to be **transport-agnostic** (extensible to any messaging platform), it targets **WhatsApp** as its primary first-class citizen to deliver immediate high-impact value for developers.
+Building a toy chatbot is easy. Building a production-grade, multi-modal autonomous agent that survives server crashes, handles complex human handovers, and scales horizontally is incredibly hard.
 
-By abstracting away the complexities of session persistence, multi-modal transformation (STT/TTS), and event-driven orchestration, Zupa allows developers to focus on the **Agent's Reasoning and Value** rather than the plumbing. It is designed to be the "Standard Library" for professional conversational agents, providing the structural opinions, high-performance runtime, and deep observability that enterprise-grade applications demand.
+Zupa was born out of the necessity to bridge this gap. We believe that **Conversational AI has outgrown the linear Request/Response paradigm.**
 
-Zupa represents a shift from fragile LLM wrappers to **Durable AI Workflows**. By providing a batteries-included substrate for state management, identity resolution, and modality-aware interaction, Zupa enables developers to build agents that are as reliable as traditional software. Whether it's a high-frequency customer support bot or a complex long-running business assistant, Zupa's mission is to provide the core opinions and primitives necessary for agents to survive and thrive in unpredictable production environments.
-
-> [!IMPORTANT]
-> **Legal Disclaimer**: Zupa is an independent open-source project and is **not** affiliated with, authorized, maintained, sponsored, or endorsed by WhatsApp, Meta, or any of its affiliates or subsidiaries. It currently leverages `whatsapp-web.js` as an initial bootstrap to provide immediate velocity for developers, but does not use official Meta APIs by default.
+This manifesto outlines the core technical opinions and architectural foundation that make Zupa unlike any other framework.
 
 ---
 
-## 1. The Execution Model: BSP / Pregel Loop
-Zupa's engine is built on the **Bulk Synchronous Parallel (BSP)** model, inspired by LangGraph’s Pregel architecture.
+## 1. The Paradigm Shift: Durable AI Workflows
+The industry standard of slapping an LLM inside an Express request handler is fundamentally flawed. If a database query or an API call timeouts at minute 3 of a complex agent reasoning chain, the entire request dies. The context is lost, the tokens are wasted, and the user is left hanging.
 
-- **Atomic Super-steps**: Execution is partitioned into discrete pulses. Either the whole step completes and commits its state, or it crashes and resumes from the last known good checkpoint.
-- **Pure State Channels**: Instead of a "Global State Object" that everything mutates, Zupa uses **Channels**. Nodes take snapshots of channels and return **Writes**.
-- **Deterministic Reducers**: Data races are solved by channel-specific **Reducers** (e.g., `append`, `override`, `max`). This ensures that even if three nodes run concurrently, their combined state is predictable.
+**Zupa's Answer: The BSP Engine**
+Zupa’s core execution engine is built on the **Bulk Synchronous Parallel (BSP)** model, heavily inspired by LangGraph’s Pregel architecture. Execution happens in atomic, discretely checkpointed pulses (Super-steps). 
+
+- **Resumability**: If the server crashes mid-flight, Zupa doesn't care. Upon restart, the engine loads the last checkpoint and resumes the agent exactly where it left off.
+- **Pure State Channels**: There is no mutable "Global Context". State is separated into defined **Channels**. Nodes take read-only snapshots and return pure **Writes**.
+- **Deterministic Resolution**: Channel Reducers (like `append` or `override`) ensure that parallel execution and race conditions are resolved predictably.
 
 ## 2. Purity of Boundaries: Engine vs. Runtime
-We maintain a strict separation between "How to Run" (Engine) and "What to Run" (Runtime).
+We believe in strict, hexagonal architectural boundaries. Dependencies rot, but pure graph logic endures.
 
-- **The Engine**: A generic, stateless DAG/Graph executor. It doesn't know about WhatsApp, LLMs, or Databases. It only knows about Super-steps and Checkpoints.
-- **The Runtime**: The domain-aware bridge. It translates transport-agnostic events into Graph pulses and manages the **handoff** between stateless routing and stateful agents.
-- **Adapters Layer**: Following the **Ports and Adapters** pattern. All external dependencies (LLM Providers, STT/TTS, Databases) must be isolated. No vendor code should ever touch the Engine or Core logic.
+- **The Engine**: A mathematically pure DAG executor. It has zero knowledge of transport protocols, LLM providers, or database schemas. It only orchestrates super-steps and checkpoints.
+- **The Runtime**: The domain-aware bridge. It translates real-world chaos (WhatsApp messages, audio blobs) into structured Graph inputs. It handles the critical **Handoff** between stateless routing and stateful agent logic.
+- **The Adapters (`+vendors`)**: All external implementations (OpenAI, Groq, WhatsApp-Web.js, Postgres) are strictly isolated behind Ports. You can swap an LLM provider without touching a single line of your agent's reasoning.
 
-## 3. Reliability: Durable by Default
-Zupa prioritizes **Resumability** over raw execution speed.
+## 3. The Router Pattern: Identity in the AI Era
+A persistent problem in conversational agents is "Infinite Thread Syndrome." If you map a user's phone number directly to a graph thread, the context window inevitably explodes.
 
-- **Universal Checkpointing**: Every barrier commit in a graph is a persisted checkpoint. If the server crashes mid-tool call, the agent resumes exactly where it left off.
-- **Wait-is-a-Checkpoint**: In Zupa, there is no "Pause Table". A "Waiting" state is simply a checkpoint that has no runnable nodes until a specific input channel is updated (`resume`).
-- **Idempotency Gates**: The runtime enforces strict exactly-once processing for inbound messages using `messageId` deduplication at the entrypoint.
+Zupa introduces **The Handshake Router Graph**:
+Before the main agent executes, a lightning-fast, stateless graph runs to resolve *Who* the user is and *Which* time-boxed session they belong to. The main agent then executes using this specific `sessionId` as its physical `threadId`.
 
-## 4. The Handshake: The Router Pattern
-Zupa decouples conversational identity from execution memory.
+This decouples the physical transport from the conversational memory.
 
-- **Conversation Threads != Transport IDs**: We don't use the raw transport ID (e.g. phone number) as the primary execution thread. Why? Because it leads to infinite context bloat.
-- **The Handshake**: Every request starts in a stateless **Router Graph**.
-  - **Identity Resolution**: Resolve the User.
-  - **Session Resolution**: Resolve or Start a time-boxed Session ID.
-- **Execution Threads**: The main Agent Graph runs using the `sessionId` as its `threadId`. This ensures that context windows stay clean, manageable, and time-boxed (Idle Timeouts).
+## 4. Memory Duality: Checkpoints vs. Ledgers
+Working memory and historical audit trails serve opposing purposes. Trying to combine them creates bloated bottlenecks.
 
-## 5. Memory Duality: Checkpoints vs. Ledgers
-We recognize that execution state and interaction history have different life cycles.
+- **Checkpoints (Execution State)**: Fast, compact, and intentionally "forgetful." They hold only what the LLM needs right now in its active context window.
+- **Ledgers (Audit History)**: Immutable, relational, and infinite. Every tool call, token usage metric, and decision is recorded here for analytics, compliance, and UI rendering.
 
-- **Checkpoints (Execution State)**: Fast, bounded, and potentially "forgetful" snapshots of the working memory. They are optimized for the LLM's context window.
-- **Ledgers (Audit History)**: Infinite, relational, and immutable historical records of every message sent/received. 
-- **The Dual-Write Pattern**: A single transactional commit updates the "Work State" (Checkpoint) and the "Audit Trail" (Ledger) simultaneously.
+Zupa handles both via the **Dual-Write Pattern**. At the end of every atomic step, the Checkpoint and the Ledger are updated synchronously.
 
-## 6. Interaction Philosophy: Empathy & Modality
-Agents should communicate like helpful collaborators, not just text-completion wrappers.
+## 5. Empathy as a Technical Primitive
+An agent's UX is defined by its modality. If a user dictates a frantic voice note, responding with a long wall of text is poor UX.
 
-- **Modality Mirroring**: By default, the agent responds in the same format it was addressed (If you talk to it via Voice, it replies with Voice).
-- **Dynamic Adaptability**: The agent is empowered to "choose" its modality based on intent (e.g. sending an audio if the user asks for a pronunciation).
-- **Graceful Handover**: The engine is built for Human-In-The-Loop (HITL) scenarios where agents can "wait" for a human expert to approve or take over the turn.
+- **Modality Mirroring**: Zupa natively tracks `inputModality` and `outputModality`. By default, an agent replies in the same format it receives.
+- **Dynamic Extensibility**: Agents can choose to break the mirror when mathematically optimal (e.g., an English tutor agent choosing to send a Voice note strictly for pronunciation corrections).
+- **Graceful Handover**: The hardest problem in AI is knowing when to stop. Zupa’s engine treats "Waiting for Human Approval" (HITL) simply as a paused checkpoint awaiting a specific channel update.
 
-## 7. Scaling Vision: From Local to Cloud
-Zupa scales from a single NodeJS process to a distributed swarm.
+## The Future
+We are building a substrate that allows developers to treat Agents like standard software services. Zupa aims to be the standard library that provides these opinions out of the box so that engineers can spend 100% of their time on their agent's actual value proposition.
 
-- **Transient Handshakes**: Lightweight operations (like Routing) use in-memory `MemoryCheckpointSaver` adapters.
-- **Shared State**: Production instances use a centralized `PersistenceProvider` (Redis, PostgreSQL) so any replica can resume any thread.
-- **Centralized Orchestration**: A single Management UI/API monitors all replicas, even if they are spread across different geographical nodes.
-
----
 *Stay Agentic. Stay Durable.*
