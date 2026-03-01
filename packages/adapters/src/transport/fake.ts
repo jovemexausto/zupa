@@ -26,7 +26,7 @@ export class FakeMessagingTransport implements MessagingTransport {
         };
     }
 
-    public onAuthQr?(handler: (qr: string) => void): () => void {
+    public onAuthRequest?(handler: (payload: unknown) => void): () => void {
         return () => { };
     }
 

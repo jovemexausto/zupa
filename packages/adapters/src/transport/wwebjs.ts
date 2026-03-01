@@ -6,6 +6,15 @@ import WhatsAppWeb, {
 } from "whatsapp-web.js";
 import { type InboundMessage, type MessagingTransport } from "@zupa/core";
 
+/**
+ * Auth payload emitted by WWebJSMessagingTransport during the QR-code authentication flow.
+ */
+export interface WWebJSAuthPayload {
+  type: 'qr';
+  /** The raw QR code string — pass this to a QR library such as `qrcode-terminal`. */
+  qrString: string;
+}
+
 const { Client, LocalAuth, MessageMedia } = WhatsAppWeb;
 
 function toChatId(number: string): string {
@@ -20,52 +29,52 @@ function resolveBrowserExecutablePath(): string | undefined {
 
   const windowsCandidates = [
     process.env.LOCALAPPDATA &&
-      path.join(
-        process.env.LOCALAPPDATA,
-        "Google",
-        "Chrome",
-        "Application",
-        "chrome.exe",
-      ),
+    path.join(
+      process.env.LOCALAPPDATA,
+      "Google",
+      "Chrome",
+      "Application",
+      "chrome.exe",
+    ),
     process.env.PROGRAMFILES &&
-      path.join(
-        process.env.PROGRAMFILES,
-        "Google",
-        "Chrome",
-        "Application",
-        "chrome.exe",
-      ),
+    path.join(
+      process.env.PROGRAMFILES,
+      "Google",
+      "Chrome",
+      "Application",
+      "chrome.exe",
+    ),
     process.env["PROGRAMFILES(X86)"] &&
-      path.join(
-        process.env["PROGRAMFILES(X86)"],
-        "Google",
-        "Chrome",
-        "Application",
-        "chrome.exe",
-      ),
+    path.join(
+      process.env["PROGRAMFILES(X86)"],
+      "Google",
+      "Chrome",
+      "Application",
+      "chrome.exe",
+    ),
     process.env.LOCALAPPDATA &&
-      path.join(
-        process.env.LOCALAPPDATA,
-        "Chromium",
-        "Application",
-        "chrome.exe",
-      ),
+    path.join(
+      process.env.LOCALAPPDATA,
+      "Chromium",
+      "Application",
+      "chrome.exe",
+    ),
     process.env.PROGRAMFILES &&
-      path.join(
-        process.env.PROGRAMFILES,
-        "Microsoft",
-        "Edge",
-        "Application",
-        "msedge.exe",
-      ),
+    path.join(
+      process.env.PROGRAMFILES,
+      "Microsoft",
+      "Edge",
+      "Application",
+      "msedge.exe",
+    ),
     process.env["PROGRAMFILES(X86)"] &&
-      path.join(
-        process.env["PROGRAMFILES(X86)"],
-        "Microsoft",
-        "Edge",
-        "Application",
-        "msedge.exe",
-      ),
+    path.join(
+      process.env["PROGRAMFILES(X86)"],
+      "Microsoft",
+      "Edge",
+      "Application",
+      "msedge.exe",
+    ),
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   const macCandidates = [
@@ -107,7 +116,7 @@ function buildDefaultClientOptions(options?: ClientOptions): ClientOptions {
   };
 }
 
-export class WWebJSMessagingTransport implements MessagingTransport {
+export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPayload> {
   private readonly client: WhatsAppClient;
   private readonly inboundHandlers = new Set<
     (message: InboundMessage) => Promise<void>
@@ -157,10 +166,11 @@ export class WWebJSMessagingTransport implements MessagingTransport {
     };
   }
 
-  public onAuthQr(handler: (qr: string) => void): () => void {
-    this.client.on("qr", handler);
+  public onAuthRequest(handler: (payload: WWebJSAuthPayload) => void): () => void {
+    const wrappedHandler = (qr: string) => handler({ type: 'qr', qrString: qr });
+    this.client.on("qr", wrappedHandler);
     return () => {
-      this.client.removeListener("qr", handler);
+      this.client.removeListener("qr", wrappedHandler);
     };
   }
 
@@ -242,7 +252,7 @@ export class WWebJSMessagingTransport implements MessagingTransport {
       };
 
       for (const handler of this.inboundHandlers) {
-        handler(inbound).catch(() => {});
+        handler(inbound).catch(() => { });
       }
     };
 
