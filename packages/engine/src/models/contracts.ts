@@ -15,12 +15,6 @@ export interface CreateInitialRuntimeContextInput {
   runtimeResources: RuntimeEngineResources;
 }
 
-/** Legacy mutation-based node interface. */
-export interface RuntimeEngineLegacyNode {
-  name: EngineNodeName;
-  run(context: RuntimeEngineContext): Promise<void>;
-}
-
 /** Pregel-native graph node contract. */
 export interface RuntimeEngineNode {
   name: EngineNodeName;

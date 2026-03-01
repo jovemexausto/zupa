@@ -129,6 +129,46 @@ export const builtinCommands = {
                 'Usage stats are not available yet in Zupa.'
             );
         }
+    },
+    text: {
+        description: 'Force text replies (ignore voice)',
+        handler: async (ctx: AgentContext) => {
+            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+                ...ctx.user.preferences,
+                preferredReplyFormat: 'text'
+            });
+            await ctx.resources.transport.sendText(ctx.replyTarget, 'Preference updated: I will now only reply with text.');
+        }
+    },
+    voice: {
+        description: 'Force voice replies (TTS)',
+        handler: async (ctx: AgentContext) => {
+            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+                ...ctx.user.preferences,
+                preferredReplyFormat: 'voice'
+            });
+            await ctx.resources.transport.sendText(ctx.replyTarget, 'Preference updated: I will now reply with voice (audio).');
+        }
+    },
+    mirror: {
+        description: 'Mirror your input modality (default)',
+        handler: async (ctx: AgentContext) => {
+            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+                ...ctx.user.preferences,
+                preferredReplyFormat: 'mirror'
+            });
+            await ctx.resources.transport.sendText(ctx.replyTarget, 'Preference updated: I will now mirror your input modality.');
+        }
+    },
+    dynamic: {
+        description: 'Intelligently decide modality per-turn',
+        handler: async (ctx: AgentContext) => {
+            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+                ...ctx.user.preferences,
+                preferredReplyFormat: 'dynamic'
+            });
+            await ctx.resources.transport.sendText(ctx.replyTarget, 'Preference updated: I will now intelligently choose between text and voice.');
+        }
     }
 };
 
@@ -142,6 +182,10 @@ export function buildCommandRegistry(
 
     registry.set('reset', builtinCommands.reset as CommandDefinition<z.ZodType>);
     registry.set('usage', builtinCommands.usage as CommandDefinition<z.ZodType>);
+    registry.set('text', builtinCommands.text as CommandDefinition<z.ZodType>);
+    registry.set('voice', builtinCommands.voice as CommandDefinition<z.ZodType>);
+    registry.set('mirror', builtinCommands.mirror as CommandDefinition<z.ZodType>);
+    registry.set('dynamic', builtinCommands.dynamic as CommandDefinition<z.ZodType>);
 
     for (const [name, definition] of Object.entries(consumer)) {
         if (definition === false) {

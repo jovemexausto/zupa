@@ -16,4 +16,7 @@
 - [ ] Implement Phase 2 of Production Readiness RFC: Circuit breaker per provider — fail fast during prolonged outages.
 - [ ] Implement Phase 3 of Production Readiness RFC: Plumb correlation IDs (`requestId`, `sessionId`, `userId`, `eventId`) through `RuntimeEngineContext` and all telemetry/ledger events.
 - [ ] Implement Phase 3 of Production Readiness RFC: Build Audit Ledger — immutable record of tool invocations, command dispatches, and `onResponse` events.
-
+- [ ] migrate from agent.on('auth:qr') ti agent.on('auth:request') with generic type based on Transport passed, so we make it transport agnostic and each can define what to pass to it.
+- [ ] move TEST_USER_FROM and TEST_USER_ID to @zupa/tests
+- [ ] why do we still have audioStoragePath references in the codebase?
+- [ ] fromMe is not used, we should remove it

@@ -1,5 +1,5 @@
 import { defineNode } from '@zupa/engine';
-import { type RuntimeEngineContext, applyLengthPreference, type AgentContext, type ActiveSession } from '@zupa/core';
+import { type RuntimeEngineContext, applyLengthPreference, applyModalityPreference, type AgentContext, type ActiveSession } from '@zupa/core';
 import nunjucks from 'nunjucks';
 import { type RuntimeState } from './index';
 
@@ -38,7 +38,8 @@ export const promptBuildNode = defineNode<RuntimeState, RuntimeEngineContext>(as
     state: state
   });
 
-  const finalPrompt = applyLengthPreference(prompt, state.user.preferences);
+  let finalPrompt = applyLengthPreference(prompt, state.user.preferences);
+  finalPrompt = applyModalityPreference(finalPrompt, state.user.preferences);
 
   return {
     stateDiff: { builtPrompt: finalPrompt },

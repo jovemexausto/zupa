@@ -48,7 +48,8 @@ describe('Tools Capability Slice', () => {
     await runtime.runInbound({
       from: DEFAULT_USER.externalUserId,
       body: 'What is the weather in London?',
-      fromMe: false
+      fromMe: false,
+      messageId: ''
     });
 
     const transport = deps.transport as FakeMessagingTransport;

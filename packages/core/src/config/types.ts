@@ -4,6 +4,13 @@ import { AgentContext } from "../contracts/engine";
 import { Tool } from "../contracts/modules";
 import { CommandDefinition } from "../contracts/modules";
 
+export type Modality = 'text' | 'voice' | 'auto';
+
+export type DynamicModalityExtractor<T = any> = (
+  state: any,
+  ctx: AgentContext<T>
+) => 'text' | 'voice' | undefined;
+
 export interface RuntimeConfig<T = unknown> {
   prompt: string | ((ctx: AgentContext<T>) => string | Promise<string>);
   singleUser?: string;
@@ -13,6 +20,8 @@ export interface RuntimeConfig<T = unknown> {
   commands?: Record<string, false | CommandDefinition>;
   context?: (ctx: AgentContext<T>) => Promise<Record<string, unknown>>;
   onResponse?: (structured: T, ctx: AgentContext<T>) => Promise<void>;
+  modality?: Modality;
+  dynamicModalityExtractor?: DynamicModalityExtractor<T>;
   maxToolIterations?: number;
   maxWorkingMemory?: number;
   maxEpisodicMemory?: number;
