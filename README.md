@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![NPM Version](https://img.shields.io/npm/v/zupa.svg)](https://www.npmjs.com/package/zupa)
 
-Zupa is a full-stack conversational framework designed for building production-grade AI agents. While it is built to be **transport-agnostic**, it targets **WhatsApp** as its primary first-class citizen to deliver immediate, high-impact value for developers.
+Zupa is a full-stack conversational framework designed for building production-grade conversational AI agents. While it is built to be **transport-agnostic**, it targets **WhatsApp** as its primary first-class citizen to deliver immediate, high-impact value for developers.
 
 Built on the **Bulk Synchronous Parallel (BSP)** model (inspired by LangGraph’s Pregel), Zupa ensures your agents aren't just toys—they are **Durable AI Workflows** that can survive crashes, maintain infinite audit trails, and handle multi-modal interactions (Voice/Text) out of the box.
 
