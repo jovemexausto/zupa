@@ -12,3 +12,4 @@ examples/english-buddy/data/
 tasks/
 .worktrees/
 .turbo
+.DS_Store
