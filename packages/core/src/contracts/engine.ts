@@ -12,7 +12,7 @@ import {
 import { InboundMessage } from '../ports/transport';
 import { RuntimeConfig } from '../config/types';
 import { User } from '../entities/user';
-import { ActiveSession } from '../entities/session';
+import { ActiveSession, Session } from '../entities/session';
 import { AgentLanguage } from '../entities/agent';
 
 export type EngineNodeName =
@@ -29,13 +29,17 @@ export type EngineNodeName =
     | 'persistence_hooks'
     | 'telemetry_emit';
 
+export type RouterNodeName =
+    | 'identity_resolution'
+    | 'session_resolution';
+
 export interface RuntimeContextMeta {
     requestId: string;
     startedAt: Date;
 }
 
 export interface RuntimeTelemetryContext {
-    nodeDurationsMs: Partial<Record<EngineNodeName, number>>;
+    nodeDurationsMs: Partial<Record<EngineNodeName | RouterNodeName, number>>;
 }
 
 export interface RuntimeEngineContext<T = unknown> {
@@ -48,6 +52,12 @@ export interface RuntimeEngineContext<T = unknown> {
     resources: RuntimeEngineResources;
     state: Record<string, unknown>;
     telemetry: RuntimeTelemetryContext;
+}
+
+export interface RouterState {
+    user?: User;
+    session?: Session;
+    inbound?: InboundMessage;
 }
 
 export interface RuntimeEngineResources {

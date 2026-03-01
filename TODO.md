@@ -22,3 +22,5 @@
 - [x] fromMe is not used, we should remove it
 - [x] Esure graceful shutdown of all resources on SIGINT and SIGTERM
 - [ ] clean-up 'as any' casts on the codebase
+- [ ] seek for TODO on codebase and update root TODO.md with tasks / discussion and a bit of context
+- [ ] plan how to make orizontal scalability possible with multiple instances cordination (maybe using redis, or something else), etc. this also unlocks fault tolerance and recovery to be more robust. For wwebjs this will introduce a chanllange to handle multiple qrcodes, which leads us to other problemn: right now every agent ships with an ui/api (wip) but with multi instances we probably want/need a single UI/API instance for managing all replicas / agents. This also unlocks the multi qrcode problem. This is touch "Zupa Cloud" territory.
