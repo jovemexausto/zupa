@@ -49,7 +49,7 @@ describe("Enhanced Modality Preferences", () => {
 
     const sent = transport.getSentMessages();
     expect(sent.some((m) => !!m.audio)).toBe(false);
-    expect(sent[0].text).toBe("Text reply");
+    expect(sent[0]!.text).toBe("Text reply");
     await runtime.close();
   });
 
@@ -110,7 +110,7 @@ describe("Enhanced Modality Preferences", () => {
       body: "Text input",
     });
     const textSent = transport.getSentMessages();
-    expect(textSent[textSent.length - 1].audio).toBeUndefined();
+    expect(textSent[textSent.length - 1]!.audio).toBeUndefined();
 
     // 2. Voice -> Voice
     await runtime.runInbound({
@@ -127,7 +127,7 @@ describe("Enhanced Modality Preferences", () => {
         }) as any,
     });
     const voiceSent = transport.getSentMessages();
-    expect(voiceSent[voiceSent.length - 1].audio).toBeDefined();
+    expect(voiceSent[voiceSent.length - 1]!.audio).toBeDefined();
 
     await runtime.close();
   });
@@ -239,7 +239,7 @@ describe("Enhanced Modality Preferences", () => {
 
     const sent = transport.getSentMessages();
     expect(sent.some((m) => !!m.audio)).toBe(false);
-    expect(sent[0].text).toBe("Enforced text");
+    expect(sent[0]!.text).toBe("Enforced text");
     await runtime.close();
   });
 
