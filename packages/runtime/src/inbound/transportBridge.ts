@@ -52,14 +52,14 @@ export function bindTransportInbound(input: BindTransportInboundInput): Transpor
   };
 }
 
-export interface BindTransportAuthInput<TAuthPayload = unknown> {
-  transport: MessagingTransport<TAuthPayload>;
-  onAuthRequest?(payload: TAuthPayload): void;
+export interface BindTransportAuthInput {
+  transport: MessagingTransport<unknown>;
+  onAuthRequest?(payload: unknown): void;
   onAuthReady?(): void;
   onAuthFailure?(message: string): void;
 }
 
-export function bindTransportAuth<TAuthPayload = unknown>(input: BindTransportAuthInput<TAuthPayload>): (() => void) | null {
+export function bindTransportAuth(input: BindTransportAuthInput): (() => void) | null {
   const unsubs: Array<() => void> = [];
 
   if (input.transport.onAuthRequest) {

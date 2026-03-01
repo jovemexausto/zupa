@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { createAgent, WWebJSMessagingTransport } from 'zupa';
+import { createAgent, WWebJSAuthPayload, WWebJSMessagingTransport } from 'zupa';
 
 import { scheduleReminder, sendPronunciationClip, sendVocabCard } from './tools';
 import { getRecurringMistakes, getVocabularyHistory } from './queries';
 //
-import qrcode from 'qrcode-terminal';
 import { config } from 'dotenv';
+import { generateAsciiQR } from './qr';
 config()
 //
 
@@ -65,7 +65,7 @@ const agent = createAgent<AgentReply>({
   }
 });
 
-agent.on('auth:request', (payload) => console.log(payload));
+agent.on<WWebJSAuthPayload>('auth:request', (payload) => generateAsciiQR(payload.qrString).then(console.log));
 agent.on('auth:ready', () => console.log('Sam is online'));
 
 void agent.start().catch(console.error)
