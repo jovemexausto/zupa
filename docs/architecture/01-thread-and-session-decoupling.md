@@ -38,3 +38,7 @@ Why?
 ## Consequences
 - `AgentRuntime` now becomes a pure orchestrator of Graphs, rather than a monolithic domain service mixing database queries and engine invocations.
 - We formally define **Session** as a purely chronological business-logic grouping, whereas **Thread** is the physical execution scope the `CheckpointSaver` operates on. Through the Router Pattern, they can map 1:1, or 1:N depending on the user's workflow.
+
+---
+*Date: 2026-02-28*
+*Status: Implemented*
