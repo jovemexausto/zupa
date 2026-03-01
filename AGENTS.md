@@ -1,3 +1,0 @@
-- DO NOT USE "as any" IN THE CODE
-- DO NOT USE "@typescript-eslint/no-explicit-any"
-- DO NOT USE "eslint-disable-next-line"

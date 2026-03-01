@@ -1,6 +1,7 @@
 {
     "name": "@zupa/adapters",
     "version": "0.1.0",
+    "license": "MIT",
     "description": "External Integrations and Adapters for Zupa",
     "type": "module",
     "exports": {

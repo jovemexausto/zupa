@@ -1,6 +1,7 @@
 {
     "name": "@zupa/testing",
     "version": "0.1.0",
+    "license": "MIT",
     "description": "Testing utilities for Zupa",
     "type": "module",
     "exports": {
