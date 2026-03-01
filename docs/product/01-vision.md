@@ -11,8 +11,10 @@ This manifesto outlines the core technical opinions and architectural foundation
 ## 1. The Paradigm Shift: Durable AI Workflows
 The industry standard of slapping an LLM inside an Express request handler is fundamentally flawed. If a database query or an API call timeouts at minute 3 of a complex agent reasoning chain, the entire request dies. The context is lost, the tokens are wasted, and the user is left hanging.
 
-**Zupa's Answer: The BSP Engine**
-Zupa’s core execution engine is built on the **Bulk Synchronous Parallel (BSP)** model, heavily inspired by LangGraph’s Pregel architecture. Execution happens in atomic, discretely checkpointed pulses (Super-steps). 
+Likewise, while modern execution engines (like LangGraph) have revolutionized *how* reasoning graphs are mathematically executed via the **Bulk Synchronous Parallel (BSP)** model, they largely abandon the developer when it comes to the complex reality of real-world deployment. How do you handle WhatsApp voice notes? How do you map a phone number to a specific conversational session? How do you persist memory across deployments?
+
+**Zupa's Answer: Full-Stack Orchestration**
+Zupa takes the robust, time-tested BSP execution model and wraps it in a complete, opinionated framework designed specifically for real-world conversational products.
 
 - **Resumability**: If the server crashes mid-flight, Zupa doesn't care. Upon restart, the engine loads the last checkpoint and resumes the agent exactly where it left off.
 - **Pure State Channels**: There is no mutable "Global Context". State is separated into defined **Channels**. Nodes take read-only snapshots and return pure **Writes**.
