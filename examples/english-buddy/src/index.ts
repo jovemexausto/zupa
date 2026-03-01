@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createAgent } from 'zupa';
+import { createAgent, WWebJSMessagingTransport } from 'zupa';
 
 import { scheduleReminder, sendPronunciationClip, sendVocabCard } from './tools';
 import { getRecurringMistakes, getVocabularyHistory } from './queries';
@@ -60,9 +60,12 @@ const agent = createAgent<AgentReply>({
       await ctx.endSession();
     }
   },
+  providers: {
+    transport: new WWebJSMessagingTransport()
+  }
 });
 
-agent.on('auth:qr', (qr) => qrcode.generate(qr as string, { small: true }, console.log));
+agent.on('auth:request', (payload) => console.log(payload));
 agent.on('auth:ready', () => console.log('Sam is online'));
 
 void agent.start().catch(console.error)
