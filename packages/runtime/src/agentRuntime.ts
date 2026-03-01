@@ -10,7 +10,8 @@ import {
   InboundMessage,
 } from "@zupa/core";
 
-import { EngineExecutor, createInitialRuntimeContext, TransientCheckpointSaver } from "@zupa/engine";
+import { EngineExecutor, createInitialRuntimeContext } from "@zupa/engine";
+import { MemoryCheckpointSaver } from "@zupa/adapters";
 
 import { buildEngineGraphSpec } from "./engine/graph";
 
@@ -75,7 +76,7 @@ export class AgentRuntime<T = unknown> {
     RouterState,
     RuntimeEngineContext<T>
   >;
-  private readonly routerSaver: TransientCheckpointSaver<RouterState>;
+  private readonly routerSaver: MemoryCheckpointSaver<RouterState>;
   private inboundBridge: TransportInboundBinding | null = null;
   private stopAuthBridge: (() => void) | null = null;
   private lifecycleResources: RuntimeResource[] = [];
@@ -103,7 +104,7 @@ export class AgentRuntime<T = unknown> {
 
     const routerGraph = buildRouterGraphSpec<T>();
     this.routerExecutor = new EngineExecutor(routerGraph);
-    this.routerSaver = new TransientCheckpointSaver<RouterState>();
+    this.routerSaver = new MemoryCheckpointSaver<RouterState>();
     // UI server will be resolved asynchronously in start()
   }
 

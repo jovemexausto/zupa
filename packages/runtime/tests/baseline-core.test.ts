@@ -38,10 +38,11 @@ describe("Zupa Baseline Core Functionality", () => {
     const messages = await db.getRecentMessages(session!.id, 10);
 
     expect(messages.length).toBe(2);
-    expect(messages[0].role).toBe("user");
-    expect(messages[0].contentText).toBe("Hi");
-    expect(messages[1].role).toBe("assistant");
-    expect(messages[1].contentText).toBe("Hello there!");
+    expect(messages.length).toBe(2);
+    expect(messages[0]!.role).toBe("user");
+    expect(messages[0]!.contentText).toBe("Hi");
+    expect(messages[1]!.role).toBe("assistant");
+    expect(messages[1]!.contentText).toBe("Hello there!");
 
     await runtime.close();
   });
@@ -81,7 +82,7 @@ describe("Zupa Baseline Core Functionality", () => {
     });
 
     // The second call to LLM should have the first turn in messages
-    const secondCallArgs = completeSpy.mock.calls[1][0];
+    const secondCallArgs = completeSpy.mock.calls[1]![0];
     const messages = secondCallArgs.messages;
 
     expect(messages.length).toBeGreaterThanOrEqual(1);
@@ -130,7 +131,7 @@ describe("Zupa Baseline Core Functionality", () => {
     const user = await db.findUser(TEST_USER_ID);
     const session = await db.findActiveSession(user!.id);
     const messages = await db.getRecentMessages(session!.id, 10);
-    expect(messages[0].contentText).toBe("I am feeling great");
+    expect(messages[0]!.contentText).toBe("I am feeling great");
 
     // 2. Check TTS was used (outputModality mirroring)
     const sent = transport.getSentMessages();
@@ -179,7 +180,7 @@ describe("Zupa Baseline Core Functionality", () => {
     const sent = transport.getSentMessages();
     // Should NOT have audio because of preference
     expect(sent.some((m) => !!m.audio)).toBe(false);
-    expect(sent[0].text).toBe("Plain text reply.");
+    expect(sent[0]!.text).toBe("Plain text reply.");
 
     await runtime.close();
   });

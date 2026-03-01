@@ -11,7 +11,7 @@ class AuthAwareTransport extends FakeMessagingTransport {
   private readonly readyHandlers = new Set<() => void>();
   private readonly failureHandlers = new Set<(message: string) => void>();
 
-  public override onAuthQr(handler: (qr: string) => void): () => void {
+  public override onAuthRequest(handler: (payload: unknown) => void): () => void {
     this.qrHandlers.add(handler);
     return () => this.qrHandlers.delete(handler);
   }

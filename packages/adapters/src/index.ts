@@ -9,3 +9,4 @@ export * from './stt/fake';
 export * from './tts/fake';
 export * from './logger/fake';
 export * from './logger/pino';
+export * from './checkpoint/memory';

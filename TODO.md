@@ -11,7 +11,7 @@
 - [x] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
 - [x] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
 - [ ] Document capabilities and aspects of the runtime and engine, features, opinions, design choices, etc for future reference of the project ideology.
-- [ ] Implement Phase 2 of Production Readiness RFC: Implement `sessionIdleTimeoutMinutes` in `session_attach` — auto-finalize expired/zombie sessions.
+- [x] Implement Phase 2 of Production Readiness RFC: Implement `sessionIdleTimeoutMinutes` in `session_attach` — auto-finalize expired/zombie sessions.
 - [ ] Implement Phase 2 of Production Readiness RFC: Error taxonomy — classify Transient vs Terminal errors, apply `retryIdempotent` to LLM/Database/Transport calls accordingly.
 - [ ] Implement Phase 2 of Production Readiness RFC: Circuit breaker per provider — fail fast during prolonged outages.
 - [ ] Implement Phase 3 of Production Readiness RFC: Plumb correlation IDs (`requestId`, `sessionId`, `userId`, `eventId`) through `RuntimeEngineContext` and all telemetry/ledger events.
@@ -23,4 +23,5 @@
 - [x] Esure graceful shutdown of all resources on SIGINT and SIGTERM
 - [ ] clean-up 'as any' casts on the codebase
 - [ ] seek for TODO on codebase and update root TODO.md with tasks / discussion and a bit of context
-- [ ] plan how to make orizontal scalability possible with multiple instances cordination (maybe using redis, or something else), etc. this also unlocks fault tolerance and recovery to be more robust. For wwebjs this will introduce a chanllange to handle multiple qrcodes, which leads us to other problemn: right now every agent ships with an ui/api (wip) but with multi instances we probably want/need a single UI/API instance for managing all replicas / agents. This also unlocks the multi qrcode problem. This is touch "Zupa Cloud" territory.
+- [ ] plan how to make orizontal scalability possible with multiple instances cordination (maybe using redis, or something else), etc. this also unlocks fault tolerance and recovery to be more robust. For wwebjs this will introduce a chanllange to handle multiple qrcodes, which leads us to other problemn: right now every agent ships with an ui/api (wip) but with multi instances we probably want/need a single UI/API instance for managing all replicas / agents. This also unlocks the multi qrcode problem. This is touch "Zupa Cloud" territory. Also, we're deciding to build upon wwebjs to gain velocity and make it easier to end users to run their own instances.
+- [ ] - move out from 'database' semantics. Something like ZupaPersistanceAPI or a PersistanceProvider. The name must reflect that it, along with checkpointer can be implemented and used separately, but as a betteries included framework, we should provide a default implementation that merges both checkpointer and persistance interfaces into a single implementation, providing libsql and pg intilially.
