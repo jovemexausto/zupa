@@ -7,7 +7,9 @@ import {
     STTProvider,
     TTSProvider,
     TelemetrySink,
-    VectorStore
+    VectorStore,
+    DashboardProvider,
+    ReactiveUiProvider,
 } from '../ports';
 import { InboundMessage } from '../ports/transport';
 import { RuntimeConfig } from '../config/types';
@@ -26,6 +28,7 @@ export type EngineNodeName =
     | 'llm_node'
     | 'tool_execution_node'
     | 'response_finalize'
+    | 'interactive_streaming_node'
     | 'persistence_hooks'
     | 'telemetry_emit';
 
@@ -70,6 +73,10 @@ export interface RuntimeEngineResources {
     database: DatabaseProvider;
     telemetry: TelemetrySink;
     logger: Logger;
+    /** Optional: streams system events to the built-in dashboard UI */
+    dashboard?: DashboardProvider;
+    /** Optional: WebSocket bridge for reactive UI clients (AG-UI / CopilotKit style) */
+    reactiveUi?: ReactiveUiProvider;
 }
 
 export interface AgentContext<T = unknown> {

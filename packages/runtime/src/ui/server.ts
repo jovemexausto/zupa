@@ -24,6 +24,14 @@ interface LatestQrState {
   updatedAt: string;
 }
 
+/**
+ * @deprecated Use `@zupa/api` middleware and SSE broadcaster instead.
+ * Maintaining backward compatibility for existing deployments.
+ * TODO: maybe streamlining an internal emit / event api
+ * used for telemetry and dashboard events.
+ * The idea is to have a external store (reducer) that decides where each event go.
+ * This way with stick with a slick api and can put sse endpoioins on the express middleware.
+ */
 export class RuntimeUiServer {
   public readonly options: RuntimeUiServerOptions;
   private readonly clients = new Map<string, SseClient>();

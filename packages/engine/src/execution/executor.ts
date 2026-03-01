@@ -36,6 +36,7 @@ export interface EngineExecutorConfig<TState = Record<string, unknown>> {
     threadId: string;
     saver: CheckpointSaver<TState> & LedgerWriter;
     entrypoint?: string;
+    onStepComplete?: (checkpoint: StateSnapshot<TState>, writes: Partial<TState>) => void | Promise<void>;
 }
 
 export class EngineExecutor<TState extends object, TContext = unknown> {
@@ -166,6 +167,10 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
                 await saver.appendLedgerEvent(threadId, ledgerEvents[0]!); // Simple single event for now, should be bulk
             }
             await saver.putCheckpoint(threadId, nextCheckpoint);
+
+            if (config.onStepComplete) {
+                await config.onStepComplete(nextCheckpoint, writes);
+            }
 
             currentCheckpoint = nextCheckpoint;
 

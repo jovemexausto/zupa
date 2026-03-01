@@ -2,12 +2,10 @@ import { defineNode } from '@zupa/engine';
 import {
     type RuntimeEngineContext,
     type AgentContext,
-    type ActiveSession,
-    dispatchToolCall,
-    withTimeout,
-    retryIdempotent
+    type ActiveSession
 } from '@zupa/core';
-import { type RuntimeState } from './index';
+import { executeTools } from './utils/executeTools';
+import { RuntimeState } from '.';
 
 /**
  * tool_execution_node
@@ -35,30 +33,16 @@ export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineConte
         }
     };
 
-    const toolResults: Array<{ toolCallId: string; result: string }> = [];
-    for (const toolCall of llmResponse.toolCalls) {
-        const result = await withTimeout({
-            timeoutMs: config.toolTimeoutMs ?? 10_000,
-            label: `Tool '${toolCall.name}'`,
-            run: () => retryIdempotent({
-                maxRetries: config.maxIdempotentRetries ?? 2,
-                baseDelayMs: config.retryBaseDelayMs ?? 75,
-                jitterMs: config.retryJitterMs ?? 25,
-                run: () => dispatchToolCall({ toolCall, tools, context: agentContext })
-            })
-        });
-
-        resources.logger.debug({
-            toolCallId: toolCall.id,
-            toolName: toolCall.name,
-            status: result.status
-        }, 'Tool execution completed');
-
-        toolResults.push({
-            toolCallId: toolCall.id,
-            result: result.status === 'ok' ? result.result : result.formatted
-        });
-    }
+    const toolResults = await executeTools({
+        toolCalls: llmResponse.toolCalls,
+        tools,
+        agentContext,
+        logger: resources.logger,
+        toolTimeoutMs: config.toolTimeoutMs,
+        maxIdempotentRetries: config.maxIdempotentRetries,
+        retryBaseDelayMs: config.retryBaseDelayMs,
+        retryJitterMs: config.retryJitterMs
+    });
 
     return {
         stateDiff: { toolResults },

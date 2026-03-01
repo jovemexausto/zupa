@@ -28,7 +28,7 @@ export function buildEngineGraphSpec<T = unknown>(
         resolvedContent: lastWriteWinsReducer(),
         inbound: lastWriteWinsReducer(),
         commandHandled: lastWriteWinsReducer(),
-        kv: lastWriteWinsReducer(),
+        agentState: lastWriteWinsReducer(),
         assembledContext: lastWriteWinsReducer(),
         builtPrompt: lastWriteWinsReducer(),
         llmResponse: lastWriteWinsReducer(),

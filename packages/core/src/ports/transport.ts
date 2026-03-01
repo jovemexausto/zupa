@@ -23,6 +23,13 @@ export interface InboundMessage {
   body: string;
   hasMedia?: boolean;
   type?: string;
+
+  /** Discriminates between external messaging platforms and the internal Reactive UI WebSocket */
+  source: 'transport' | 'ui_channel';
+
+  /** If source is 'ui_channel', identifies the specific connected WebSocket client */
+  clientId?: string;
+
   downloadMedia?: () => Promise<InboundMedia | undefined>;
 }
 

@@ -41,8 +41,15 @@ export const promptBuildNode = defineNode<RuntimeState, RuntimeEngineContext>(as
   let finalPrompt = applyLengthPreference(prompt, state.user.preferences);
   finalPrompt = applyModalityPreference(finalPrompt, state.user.preferences);
 
+  let nextTasks = ['llm_node'];
+
+  // Route to the interactive streaming node if conditions are met
+  if (config.finalizationStrategy === 'streaming' && context.inbound.source === 'ui_channel') {
+    nextTasks = ['interactive_streaming_node'];
+  }
+
   return {
     stateDiff: { builtPrompt: finalPrompt },
-    nextTasks: ['llm_node']
+    nextTasks
   };
 });

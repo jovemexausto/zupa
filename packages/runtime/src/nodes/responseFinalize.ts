@@ -1,5 +1,5 @@
 import { defineNode } from '@zupa/engine';
-import { finalizeResponse, type RuntimeEngineContext } from '@zupa/core';
+import { ActiveSession, finalizeResponse, retryIdempotent, withTimeout, type RuntimeEngineContext, type LLMResponse, type AgentContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
@@ -7,13 +7,6 @@ import { type RuntimeState } from './index';
  */
 export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, state, config } = context;
-  const llmResponse = state.llmResponse;
-
-  if (!llmResponse) return { stateDiff: {}, nextTasks: ['persistence_hooks'] };
-
-  const structured = llmResponse.structured;
-  const structuredRecord = (structured !== null && typeof structured === 'object') ? structured as Record<string, unknown> : undefined;
-  const replyText = llmResponse.content || (typeof structuredRecord?.reply === 'string' ? structuredRecord.reply : undefined);
 
   const replyTarget = state.replyTarget;
   const user = state.user;
@@ -21,9 +14,9 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
 
   if (!user || !session || !replyTarget) return { stateDiff: {}, nextTasks: ['persistence_hooks'] };
 
-  const agentContext = {
+  const agentContext: AgentContext<unknown> = {
     user,
-    session: session as import('@zupa/core').ActiveSession,
+    session: session as ActiveSession,
     inbound: context.inbound!,
     resources: context.resources,
     config: context.config,
@@ -34,19 +27,78 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
     }
   };
 
+  let llmResponse = state.llmResponse;
+
+  // Step 1: Handle deferred streaming logic
+  if (!llmResponse) {
+    if (config.finalizationStrategy === 'streaming' && context.inbound.source === 'ui_channel' && resources.reactiveUi && resources.llm.stream && state.builtPrompt) {
+
+      // Predetermine voice vs text to see if we fall back to buffered
+      const preference = user.preferences.preferredReplyFormat || 'mirror';
+      const enforcer = config.modality || 'auto';
+      let prefersVoice = false;
+
+      if (enforcer === 'voice') prefersVoice = true;
+      else if (enforcer === 'text') prefersVoice = false;
+      else if (preference === 'voice') prefersVoice = true;
+      else if (preference === 'text') prefersVoice = false;
+      else if (preference === 'mirror') prefersVoice = (state.inputModality === 'voice');
+      else if (preference === 'dynamic') {
+        const hasVoiceReq = /voice|audio|speak|falar|áudio/i.test(state.resolvedContent || '');
+        const hasTextReq = /text|texto|escreve/i.test(state.resolvedContent || '');
+        if (hasVoiceReq && !hasTextReq) prefersVoice = true;
+        else if (hasTextReq && !hasVoiceReq) prefersVoice = false;
+        else prefersVoice = (state.inputModality === 'voice');
+      }
+
+      const messages = state.assembledContext?.history.map(m => ({ role: m.role, content: m.contentText })) || [];
+
+      if (prefersVoice) {
+        // Fall back to buffered if voice
+        llmResponse = await withTimeout({
+          timeoutMs: config.llmTimeoutMs ?? 30_000,
+          label: 'LLM complete',
+          run: () => retryIdempotent({
+            maxRetries: config.maxIdempotentRetries ?? 2,
+            baseDelayMs: config.retryBaseDelayMs ?? 75,
+            jitterMs: config.retryJitterMs ?? 25,
+            run: () => resources.llm.complete({ messages, systemPrompt: state.builtPrompt!, outputSchema: config.outputSchema, tools: config.tools })
+          })
+        })
+      } else {
+        // Stream text
+        const stream = resources.llm.stream({ messages, systemPrompt: state.builtPrompt!, outputSchema: config.outputSchema, tools: config.tools });
+        const clientId = context.inbound.clientId!;
+        let resolvedResponse: LLMResponse | undefined;
+        while (true) {
+          const res = await stream.next();
+          if (res.done) {
+            resolvedResponse = res.value;
+            break;
+          }
+          resources.reactiveUi.emitTokenChunk(clientId, res.value);
+        }
+        if (!resolvedResponse) throw new Error("Stream finalized without completion response.");
+        llmResponse = resolvedResponse;
+      }
+    } else {
+      return { stateDiff: {}, nextTasks: ['persistence_hooks'] };
+    }
+  }
+
+  if (!llmResponse) return { stateDiff: {}, nextTasks: ['persistence_hooks'] };
+
+  const structured = llmResponse.structured;
+  const structuredRecord = (structured !== null && typeof structured === 'object') ? structured as Record<string, unknown> : undefined;
+  const replyText = llmResponse.content || (typeof structuredRecord?.reply === 'string' ? structuredRecord.reply : undefined);
+
   if (structured !== undefined && structured !== null && config.onResponse) {
-    // structured and agentContext are typed as unknown at this layer;
-    // onResponse is called with the runtime context, types verified at config level
     await (config.onResponse as (s: unknown, ctx: unknown) => Promise<void>)(structured, agentContext);
   }
 
   // 2. Finalize messaging if we have a reply and necessary context
   let outputModality: 'text' | 'voice' = 'text';
   if (replyText) {
-    const replyTarget = state.replyTarget;
-    const user = state.user;
-    const session = state.session;
-
     if (replyTarget && user && session) {
       // 2. Decide output modality
       const preference = user.preferences.preferredReplyFormat || 'mirror';
@@ -123,7 +175,7 @@ export const responseFinalizeNode = defineNode<RuntimeState, RuntimeEngineContex
   }
 
   return {
-    stateDiff: { outputModality },
+    stateDiff: { outputModality, llmResponse },
     nextTasks: ['persistence_hooks']
   };
 });

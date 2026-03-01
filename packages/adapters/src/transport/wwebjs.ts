@@ -240,6 +240,7 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
         body: message.body,
         hasMedia: message.hasMedia,
         type: message.type,
+        source: 'transport',
         downloadMedia: async () => {
           const media = await message.downloadMedia();
           if (!media) return undefined;

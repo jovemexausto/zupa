@@ -7,3 +7,4 @@ export * from './stt';
 export * from './tts';
 export * from './logger';
 export * from './checkpoint';
+export * from './reactive-ui';

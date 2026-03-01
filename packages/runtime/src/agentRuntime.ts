@@ -292,6 +292,14 @@ export class AgentRuntime<T = unknown> {
         threadId,
         saver,
         entrypoint: "turn_setup",
+        onStepComplete: async (_, writes) => {
+          if (writes.agentState && this.runtimeResources.reactiveUi && inbound.clientId) {
+            this.runtimeResources.reactiveUi.emitStateDelta(
+              inbound.clientId,
+              writes.agentState
+            );
+          }
+        }
       });
 
       logger.info({ from: inbound.from }, "Inbound message processed");

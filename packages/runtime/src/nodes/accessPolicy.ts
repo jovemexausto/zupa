@@ -1,5 +1,5 @@
 import { defineNode } from '@zupa/engine';
-import { normalizeExternalUserId, resolveReplyTarget, type RuntimeEngineContext, GraphKVStore, type ActiveSession } from '@zupa/core';
+import { normalizeExternalUserId, resolveReplyTarget, type RuntimeEngineContext, GraphAgentStateStore, type ActiveSession } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
@@ -27,17 +27,17 @@ export const accessPolicyNode = defineNode<RuntimeState, RuntimeEngineContext>(a
     };
   }
 
-  // 2. Hydrate ActiveSession with KV store
+  // 2. Hydrate ActiveSession with agent state store
   // The session record was pre-loaded by AgentRuntime.
-  // We wrap the state's `kv` field (loaded from checkpoint) into the GraphKVStore manager.
+  // We wrap the state's `agentState` field (loaded from checkpoint) into the GraphAgentStateStore manager.
   if (state.session) {
-    const kv = new GraphKVStore(state.kv ?? {});
-    const activeSession: ActiveSession = { ...state.session, kv };
+    const stateStore = new GraphAgentStateStore(state.agentState ?? {});
+    const activeSession: ActiveSession = { ...state.session, agentState: stateStore };
 
     return {
       stateDiff: {
         session: activeSession,
-        kv: await kv.all()
+        agentState: await stateStore.all()
       },
       nextTasks: ['command_dispatch_gate']
     };

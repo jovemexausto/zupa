@@ -54,6 +54,7 @@ describe("Tools Capability Slice", () => {
       from: DEFAULT_USER.externalUserId,
       body: "What is the weather in London?",
       messageId: "",
+      source: "transport",
     });
 
     const transport = deps.transport as FakeMessagingTransport;

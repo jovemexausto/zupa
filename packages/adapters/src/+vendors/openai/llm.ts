@@ -5,6 +5,7 @@ import {
     type LLMCompleteOptions,
     type LLMProvider,
     type LLMResponse,
+    type LLMStreamChunk,
     type Tool,
     type ToolCall
 } from '@zupa/core';
@@ -126,6 +127,91 @@ export class OpenAILLMProvider implements LLMProvider {
                 completionTokens: response.usage?.completion_tokens ?? 0
             },
             model: response.model,
+            latencyMs: Date.now() - start
+        };
+    }
+
+    public async *stream(options: LLMCompleteOptions): AsyncGenerator<LLMStreamChunk, LLMResponse, unknown> {
+        const start = Date.now();
+
+        const params: OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming = {
+            model: this.opts.model,
+            messages: toOpenAIMessages(options.systemPrompt, options.messages),
+            stream: true,
+            stream_options: { include_usage: true }
+        };
+
+        const tools = toOpenAITools(options.tools);
+        if (tools) {
+            params.tools = tools;
+        }
+
+        const stream = await this.client.chat.completions.create(params);
+
+        let fullContent = '';
+        let model = this.opts.model;
+        let promptTokens = 0;
+        let completionTokens = 0;
+
+        const accumulatedToolCalls: Record<number, { id: string; name: string; arguments: string }> = {};
+
+        for await (const chunk of stream) {
+            const choice = chunk.choices[0];
+            const content = choice?.delta?.content || '';
+            const toolCallsDelta = choice?.delta?.tool_calls;
+
+            if (content) {
+                fullContent += content;
+                yield { id: chunk.id, content };
+            }
+
+            if (toolCallsDelta && toolCallsDelta.length > 0) {
+                for (const tc of toolCallsDelta) {
+                    const index = tc.index;
+                    if (!accumulatedToolCalls[index]) {
+                        accumulatedToolCalls[index] = { id: tc.id || '', name: tc.function?.name || '', arguments: '' };
+                    }
+                    if (tc.function?.arguments) {
+                        accumulatedToolCalls[index].arguments += tc.function.arguments;
+                    }
+
+                    yield {
+                        id: chunk.id,
+                        content: '',
+                        toolCallDelta: {
+                            index,
+                            id: tc.id,
+                            name: tc.function?.name,
+                            arguments: tc.function?.arguments || ''
+                        }
+                    };
+                }
+            }
+
+            if (chunk.model) {
+                model = chunk.model;
+            }
+            if (chunk.usage) {
+                promptTokens = chunk.usage.prompt_tokens;
+                completionTokens = chunk.usage.completion_tokens;
+            }
+        }
+
+        const finalToolCalls: ToolCall[] = Object.values(accumulatedToolCalls).map(tc => ({
+            id: tc.id,
+            name: tc.name,
+            arguments: parseToolArguments(tc.arguments)
+        }));
+
+        return {
+            content: fullContent,
+            structured: null, // Streaming structured output is not supported yet
+            toolCalls: finalToolCalls,
+            tokensUsed: {
+                promptTokens,
+                completionTokens
+            },
+            model,
             latencyMs: Date.now() - start
         };
     }

@@ -1,0 +1,26 @@
+{
+    "name": "@zupa/dashboard",
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Built-in Dashboard for Zupa agents (SSE broadcaster + admin UI)",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@zupa/core": "workspace:*",
+        "@zupa/api": "workspace:*"
+    },
+    "devDependencies": {
+        "@types/node": "^24.4.0",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.2"
+    }
+}

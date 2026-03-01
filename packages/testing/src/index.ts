@@ -7,6 +7,7 @@ import {
   FakeFileStorage,
   FakeVectorStore,
   FakeLogger,
+  FakeReactiveUiProvider,
 } from "@zupa/adapters";
 import {
   type RuntimeEngineResources,
@@ -27,6 +28,7 @@ export {
   FakeFileStorage,
   FakeVectorStore,
   FakeLogger,
+  FakeReactiveUiProvider,
 };
 
 export const TEST_USER_FROM = "5511999999999@c.us";
@@ -56,6 +58,7 @@ export const DEFAULT_INBOUND: InboundMessage = {
   messageId: "test-msg-001",
   from: "user123",
   body: "hello",
+  source: "transport",
 };
 
 export function createFakeRuntimeConfig(
@@ -116,5 +119,6 @@ export function createFakeRuntimeDeps(): RuntimeEngineResources {
     telemetry: { emit() { } },
     database,
     logger: new FakeLogger(),
+    reactiveUi: new FakeReactiveUiProvider(),
   };
 }

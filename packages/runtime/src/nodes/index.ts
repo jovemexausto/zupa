@@ -9,11 +9,13 @@ import {
   LLMResponse,
   Message,
   VectorSearchResult,
-  KVStore
+  KVStore,
+  AgentState,
+  JsonValue
 } from '@zupa/core';
 import { accessPolicyNode } from './accessPolicy';
 import { eventDedupGateNode } from './eventDedupGate';
-import { llmNodeNode } from './llmNode';
+import { llmNode } from './llmNode';
 import { toolExecutionNodeNode } from './toolExecutionNode';
 import { commandDispatchGateNode } from './commandDispatchGate';
 import { contentResolutionNode } from './contentResolution';
@@ -22,12 +24,13 @@ import { persistenceHooksNode } from './persistenceHooks';
 import { promptBuildNode } from './promptBuild';
 import { responseFinalizeNode } from './responseFinalize';
 import { telemetryEmitNode } from './telemetryEmit';
+import { interactiveStreamingNode } from './interactiveStreamingNode';
 
 /**
  * Defines the shared state schema for the Zupa agent runtime graph.
  */
-export interface RuntimeState {
-  session?: Session | ActiveSession;
+export interface RuntimeState<TAgentState extends Record<string, JsonValue> = KVStore> {
+  session?: Session | ActiveSession<TAgentState>;
   user?: User;
   replyTarget?: string;
   inboundDuplicate?: boolean | undefined;
@@ -36,12 +39,12 @@ export interface RuntimeState {
   inbound?: InboundMessage | undefined;
   commandHandled?: boolean | undefined;
   /**
-   * Session scratchpad — developer-owned KV store.
+   * Session scratchpad — developer-owned KV store / generic state object.
    * Lives as a top-level graph state field so it is checkpointed at every
    * node transition, guaranteeing deterministic time-travel and resumability.
-   * Values must be strictly JSON-serializable (validated by GraphKVStore).
+   * Values must be strictly JSON-serializable (validated by GraphAgentStateStore).
    */
-  kv?: KVStore | undefined;
+  agentState?: AgentState<TAgentState> | undefined;
   assembledContext?: {
     history: Message[];
     relevantMemories?: VectorSearchResult[];
@@ -70,9 +73,10 @@ export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T
     content_resolution: contentResolutionNode as RuntimeNodeHandler<T>,
     context_assembly: contextAssemblyNode as RuntimeNodeHandler<T>,
     prompt_build: promptBuildNode as RuntimeNodeHandler<T>,
-    llm_node: llmNodeNode as RuntimeNodeHandler<T>,
+    llm_node: llmNode as RuntimeNodeHandler<T>,
     tool_execution_node: toolExecutionNodeNode as RuntimeNodeHandler<T>,
     response_finalize: responseFinalizeNode as RuntimeNodeHandler<T>,
+    interactive_streaming_node: interactiveStreamingNode as RuntimeNodeHandler<T>,
     persistence_hooks: persistenceHooksNode as RuntimeNodeHandler<T>,
     telemetry_emit: telemetryEmitNode as RuntimeNodeHandler<T>
   };
