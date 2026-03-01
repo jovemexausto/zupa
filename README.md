@@ -117,7 +117,7 @@ await agent.start();
 Zupa is not just a library; it is a production engineering framework with strong opinions.
 
 ### Purity of Boundaries (Ports & Adapters)
-In Hexagonal Architecture we trust. The half-life of an LLM model or a platform API (like Meta/WhatsApp) is measured in months. Your core business logic must outlive them all.
+LLM providers deprecate models. Messaging platforms change APIs overnight. Zupa isolates every external dependency behind a strict Port so that your agent's reasoning code never rots when a vendor does.
 
 - **The Engine**: A mathematically pure DAG executor. It has zero knowledge of transport protocols, LLM providers, or database schemas. It only orchestrates atomic super-steps and checkpoints.
 - **The Runtime**: The domain-aware bridge. It translates real-world inputs (WhatsApp messages, audio blobs) into structured Graph inputs and manages the lifecycle of the agent.
