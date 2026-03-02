@@ -7,16 +7,8 @@
     "declarationDir": "dist/types",
     "rootDir": "src",
     "paths": {},
-    "types": [
-      "node"
-    ]
+    "types": ["node"]
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "tests",
-    "dist",
-    "node_modules"
-  ]
+  "include": ["src"],
+  "exclude": ["tests", "dist", "node_modules"]
 }

@@ -20,7 +20,7 @@
   "sideEffects": false,
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "pnpm run clean && pnpm run build:esm && pnpm run build:cjs && pnpm run build:types",
+    "build": "pnpm run build:esm && pnpm run build:cjs && pnpm run build:types",
     "build:esm": "tsup src/index.ts src/integrations/index.ts src/testing/fakes.ts src/integrations/providers/llm/fake.ts src/integrations/providers/llm/openai.ts src/integrations/providers/stt/fake.ts src/integrations/providers/stt/openai.ts src/integrations/providers/tts/fake.ts src/integrations/providers/tts/openai.ts src/integrations/transport/fake.ts src/integrations/transport/wwebjs.ts src/integrations/storage/db/fake.ts --format esm --out-dir dist/esm --sourcemap",
     "build:cjs": "tsup src/index.ts src/integrations/index.ts src/testing/fakes.ts src/integrations/providers/llm/fake.ts src/integrations/providers/llm/openai.ts src/integrations/providers/stt/fake.ts src/integrations/providers/stt/openai.ts src/integrations/providers/tts/fake.ts src/integrations/providers/tts/openai.ts src/integrations/transport/fake.ts src/integrations/transport/wwebjs.ts src/integrations/storage/db/fake.ts --format cjs --out-dir dist/cjs --sourcemap",
     "build:types": "tsc -p tsconfig.build.types.json",

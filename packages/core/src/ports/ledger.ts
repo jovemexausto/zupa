@@ -6,7 +6,7 @@ import { LedgerEvent, LedgerWriter } from "../contracts/ledger";
  * It is an append-only stream of events for compliance and observability.
  */
 export interface Ledger extends LedgerWriter, RuntimeResource {
-    // Ledger is a specialization of LedgerWriter that satisfies our resource lifecycle
+  // Ledger is a specialization of LedgerWriter that satisfies our resource lifecycle
 }
 
 export { LedgerEvent, LedgerWriter };

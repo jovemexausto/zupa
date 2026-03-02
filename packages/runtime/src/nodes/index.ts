@@ -11,20 +11,20 @@ import {
   VectorSearchResult,
   KVStore,
   AgentState,
-  JsonValue
-} from '@zupa/core';
-import { turnSetupNode } from './turnSetup';
-import { accessPolicyNode } from './accessPolicy';
-import { eventDedupGateNode } from './eventDedupGate';
-import { llmNode } from './llmNode';
-import { toolExecutionNodeNode } from './toolExecutionNode';
-import { commandDispatchGateNode } from './commandDispatchGate';
-import { contentResolutionNode } from './contentResolution';
-import { contextAssemblyNode } from './contextAssembly';
-import { persistenceHooksNode } from './persistenceHooks';
-import { promptBuildNode } from './promptBuild';
-import { responseFinalizeNode } from './responseFinalize';
-import { interactiveStreamingNode } from './interactiveStreamingNode';
+  JsonValue,
+} from "@zupa/core";
+import { turnSetupNode } from "./turnSetup";
+import { accessPolicyNode } from "./accessPolicy";
+import { eventDedupGateNode } from "./eventDedupGate";
+import { llmNode } from "./llmNode";
+import { toolExecutionNodeNode } from "./toolExecutionNode";
+import { commandDispatchGateNode } from "./commandDispatchGate";
+import { contentResolutionNode } from "./contentResolution";
+import { contextAssemblyNode } from "./contextAssembly";
+import { persistenceHooksNode } from "./persistenceHooks";
+import { promptBuildNode } from "./promptBuild";
+import { responseFinalizeNode } from "./responseFinalize";
+import { interactiveStreamingNode } from "./interactiveStreamingNode";
 
 /**
  * Defines the shared state schema for the Zupa agent runtime graph.
@@ -45,21 +45,24 @@ export interface RuntimeState<TAgentState extends Record<string, JsonValue> = KV
    * Values must be strictly JSON-serializable (validated by GraphAgentStateStore).
    */
   agentState?: AgentState<TAgentState> | undefined;
-  assembledContext?: {
-    history: Message[];
-    relevantMemories?: VectorSearchResult[];
-    summaries?: string[];
-  } | undefined;
+  history?: Message[];
+  status?: "idle" | "busy" | "error";
+  assembledContext?:
+    | {
+        relevantMemories?: VectorSearchResult[];
+        summaries?: string[];
+      }
+    | undefined;
   builtPrompt?: string | undefined;
   llmResponse?: LLMResponse | undefined;
   toolResults?: Array<{ toolCallId: string; result: string }> | undefined;
-  inputModality?: 'text' | 'voice' | undefined;
-  outputModality?: 'text' | 'voice' | undefined;
+  inputModality?: "text" | "voice" | undefined;
+  outputModality?: "text" | "voice" | undefined;
 }
 
 /** Handler type for the Pregel executor – returns a NodeResult. */
 export type RuntimeNodeHandler<T = unknown> = (
-  context: RuntimeEngineContext<T> & { state: Readonly<RuntimeState> }
+  context: RuntimeEngineContext<T> & { state: Readonly<RuntimeState> },
 ) => Promise<NodeResult<Partial<RuntimeState>>>;
 
 export type RuntimeNodeHandlerMap<T = unknown> = Record<EngineNodeName, RuntimeNodeHandler<T>>;
@@ -77,7 +80,7 @@ export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T
     tool_execution_node: toolExecutionNodeNode as RuntimeNodeHandler<T>,
     response_finalize: responseFinalizeNode as RuntimeNodeHandler<T>,
     interactive_streaming_node: interactiveStreamingNode as RuntimeNodeHandler<T>,
-    persistence_hooks: persistenceHooksNode as RuntimeNodeHandler<T>
+    persistence_hooks: persistenceHooksNode as RuntimeNodeHandler<T>,
   };
 }
 

@@ -1,19 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { EngineExecutor, createInitialRuntimeContext } from "../src/index";
 import { createFakeRuntimeDeps, createFakeRuntimeConfig } from "@zupa/testing";
-import {
-  type Checkpointer,
-  type Ledger,
-} from "@zupa/core";
+import { type Checkpointer, type Ledger } from "@zupa/core";
 
 const createMockSaver = (): Checkpointer<any> & Ledger => ({
-  putCheckpoint: vi.fn(async () => { }),
+  putCheckpoint: vi.fn(async () => {}),
   getCheckpoint: vi.fn(async () => null),
   getCheckpointById: vi.fn(async () => null),
   getCheckpointHistory: vi.fn(async () => []),
-  appendLedgerEvent: vi.fn(async () => { }),
-  start: async () => { },
-  close: async () => { },
+  appendLedgerEvent: vi.fn(async () => {}),
+  start: async () => {},
+  close: async () => {},
 });
 
 describe("EngineExecutor (Pregel)", () => {

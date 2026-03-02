@@ -1,4 +1,4 @@
-import { type RuntimeResource } from '../lifecycle';
+import { type RuntimeResource } from "../lifecycle";
 
 export interface VectorSearchResult {
   id: string;

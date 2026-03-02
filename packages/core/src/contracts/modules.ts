@@ -18,10 +18,7 @@ export interface Tool<TParameters extends z.ZodTypeAny = z.ZodTypeAny> {
     params: z.infer<TParameters>,
     context: AgentContext,
   ) => Promise<z.infer<TParameters> | void>;
-  handler: (
-    params: z.infer<TParameters>,
-    context: AgentContext,
-  ) => Promise<string>;
+  handler: (params: z.infer<TParameters>, context: AgentContext) => Promise<string>;
   after?: (
     params: z.infer<TParameters>,
     result: string,

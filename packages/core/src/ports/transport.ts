@@ -24,7 +24,12 @@ export interface InboundMessage {
   type?: string;
 
   /** Discriminates between external messaging platforms and the internal Reactive UI WebSocket */
-  source: 'transport' | 'ui_channel';
+  source: "transport" | "ui_channel";
+
+  /** Optional: metadata provided by the transport layer (e.g. WhatsApp push name) */
+  senderProfile?: {
+    displayName?: string;
+  };
 
   /** If source is 'ui_channel', identifies the specific connected WebSocket client */
   clientId?: string;
@@ -34,10 +39,7 @@ export interface InboundMessage {
 
 export interface MessagingTransport<TAuthPayload = unknown> extends RuntimeResource {
   sendText(to: string, text: string): Promise<void>;
-  sendVoice(
-    to: string,
-    media: { buffer: Buffer; mimetype: string },
-  ): Promise<void>;
+  sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void>;
   sendMedia(
     to: string,
     media: { buffer: Buffer; mimetype: string; filename?: string },

@@ -1,3 +1,3 @@
-export * from './fake';
-export * from './pino';
-export * from './resource';
+export * from "./fake";
+export * from "./pino";
+export * from "./resource";

@@ -1,1 +1,1 @@
-export * from '@zupa/core';
+export * from "@zupa/core";

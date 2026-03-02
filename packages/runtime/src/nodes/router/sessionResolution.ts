@@ -1,46 +1,43 @@
-import { defineNode, type PregelNode } from '@zupa/engine';
-import {
-    type RuntimeEngineContext,
-    type RouterState
-} from '@zupa/core';
+import { defineNode, type PregelNode } from "@zupa/engine";
+import { type RuntimeEngineContext, type RouterState } from "@zupa/core";
 
 /**
  * session_resolution
- * 
+ *
  * Attaches the interaction to an active session.
  * Handles idle timeout auto-finalization and new session creation.
  */
 export const sessionResolutionNode = <T>(): PregelNode<RouterState, RuntimeEngineContext<T>> =>
-    defineNode<RouterState, RuntimeEngineContext<T>>(async (context) => {
-        const { resources, config, state, logger } = context;
-        const { domainStore } = resources;
-        const user = state.user;
+  defineNode<RouterState, RuntimeEngineContext<T>>(async (context) => {
+    const { resources, config, state, logger } = context;
+    const { domainStore } = resources;
+    const user = state.user;
 
-        if (!user) {
-            throw new Error("Logic Error: session_resolution executed without a resolved user");
-        }
+    if (!user) {
+      throw new Error("Logic Error: session_resolution executed without a resolved user");
+    }
 
-        let session = await domainStore.findActiveSession(user.id);
+    let session = await domainStore.findActiveSession(user.id);
 
-        if (session && config.sessionIdleTimeoutMinutes) {
-            const idleMinutes = (Date.now() - session.lastActiveAt.getTime()) / 60000;
-            if (idleMinutes >= config.sessionIdleTimeoutMinutes) {
-                logger.info({ sessionId: session.id, idleMinutes }, "Auto-finalizing idle session");
-                await domainStore.endSession(
-                    session.id,
-                    "Session automatically finalized due to inactivity limit reached."
-                );
-                session = null;
-            }
-        }
+    if (session && config.sessionIdleTimeoutMinutes) {
+      const idleMinutes = (Date.now() - session.lastActiveAt.getTime()) / 60000;
+      if (idleMinutes >= config.sessionIdleTimeoutMinutes) {
+        logger.info({ sessionId: session.id, idleMinutes }, "Auto-finalizing idle session");
+        await domainStore.endSession(
+          session.id,
+          "Session automatically finalized due to inactivity limit reached.",
+        );
+        session = null;
+      }
+    }
 
-        if (!session) {
-            logger.info({ userId: user.id }, "Creating new session");
-            session = await domainStore.createSession(user.id);
-        }
+    if (!session) {
+      logger.info({ userId: user.id }, "Creating new session");
+      session = await domainStore.createSession(user.id);
+    }
 
-        return {
-            stateDiff: { user, session },
-            nextTasks: []
-        };
-    });
+    return {
+      stateDiff: { user, session },
+      nextTasks: [],
+    };
+  });

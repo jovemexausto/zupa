@@ -17,23 +17,21 @@ import { type RuntimeState } from "./index";
  *
  * Dedup key: `inbound.messageId` (required since the InboundMessage RFC update)
  */
-export const eventDedupGateNode = defineNode<
-  RuntimeState,
-  RuntimeEngineContext
->(async (context) => {
-  const messageId = context.inbound.messageId;
-  const result =
-    await context.resources.domainStore.claimInboundEvent(messageId);
+export const eventDedupGateNode = defineNode<RuntimeState, RuntimeEngineContext>(
+  async (context) => {
+    const messageId = context.inbound.messageId;
+    const result = await context.resources.domainStore.claimInboundEvent(messageId);
 
-  if (result === "duplicate") {
+    if (result === "duplicate") {
+      return {
+        stateDiff: { inboundDuplicate: true },
+        nextTasks: [],
+      };
+    }
+
     return {
-      stateDiff: { inboundDuplicate: true },
-      nextTasks: [],
+      stateDiff: { inboundDuplicate: false },
+      nextTasks: ["access_policy"],
     };
-  }
-
-  return {
-    stateDiff: { inboundDuplicate: false },
-    nextTasks: ["access_policy"],
-  };
-});
+  },
+);

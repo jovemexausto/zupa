@@ -5,4 +5,4 @@
  * It connects to the @zupa/api backend for SSE logs, metrics,
  * and QR/auth flows.
  */
-export { };
+export {};

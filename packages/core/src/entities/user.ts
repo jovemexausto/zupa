@@ -3,7 +3,7 @@ export interface User {
   externalUserId: string;
   displayName: string;
   preferences: {
-    preferredReplyFormat?: 'text' | 'voice' | 'mirror' | 'dynamic';
+    preferredReplyFormat?: "text" | "voice" | "mirror" | "dynamic";
     [key: string]: unknown;
   };
   createdAt: Date;

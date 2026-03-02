@@ -187,9 +187,7 @@ describe("Enhanced Modality Preferences", () => {
     });
 
     const llm = deps.llm as FakeLLMProvider;
-    llm.setResponses([
-      createFakeLLMResponse({ content: "Heuristic voice reply" }),
-    ]);
+    llm.setResponses([createFakeLLMResponse({ content: "Heuristic voice reply" })]);
 
     await runtime.start();
     // Text input explicitly asking for audio

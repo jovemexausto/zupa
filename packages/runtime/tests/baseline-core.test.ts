@@ -85,9 +85,7 @@ describe("Zupa Baseline Core Functionality", () => {
     const messages = secondCallArgs.messages;
 
     expect(messages.length).toBeGreaterThanOrEqual(1);
-    expect(messages.some((m: any) => m.content === "My name is Marcus")).toBe(
-      true,
-    );
+    expect(messages.some((m: any) => m.content === "My name is Marcus")).toBe(true);
 
     await runtime.close();
   });
@@ -105,9 +103,7 @@ describe("Zupa Baseline Core Functionality", () => {
     });
 
     const llm = deps.llm as FakeLLMProvider;
-    llm.setResponses([
-      createFakeLLMResponse({ content: "Glad to hear that!" }),
-    ]);
+    llm.setResponses([createFakeLLMResponse({ content: "Glad to hear that!" })]);
 
     await runtime.start();
 
@@ -209,7 +205,7 @@ describe("Zupa Baseline Core Functionality", () => {
     await runtime.runInbound({
       ...DEFAULT_INBOUND,
       from: TEST_USER_FROM,
-      body: "Hello first turn"
+      body: "Hello first turn",
     });
 
     const user = await db.findUser(TEST_USER_FROM);
@@ -225,7 +221,7 @@ describe("Zupa Baseline Core Functionality", () => {
     await runtime.runInbound({
       ...DEFAULT_INBOUND,
       from: TEST_USER_FROM,
-      body: "Hello second turn"
+      body: "Hello second turn",
     });
 
     const session2 = await db.findActiveSession(user!.id);

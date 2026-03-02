@@ -1,6 +1,6 @@
-import { z } from 'zod';
-import { type ChatMessage, type Tool, type ToolCall } from '../contracts/modules';
-import { type RuntimeResource } from '../lifecycle';
+import { z } from "zod";
+import { type ChatMessage, type Tool, type ToolCall } from "../contracts/modules";
+import { type RuntimeResource } from "../lifecycle";
 
 export interface LLMCompleteOptions {
   messages: ChatMessage[];
@@ -24,12 +24,14 @@ export interface LLMResponse {
 export interface LLMStreamChunk {
   id: string;
   content: string;
-  toolCallDelta?: {
-    index: number;
-    id?: string | undefined;
-    name?: string | undefined;
-    arguments?: string | undefined;
-  } | undefined;
+  toolCallDelta?:
+    | {
+        index: number;
+        id?: string | undefined;
+        name?: string | undefined;
+        arguments?: string | undefined;
+      }
+    | undefined;
 }
 
 export interface LLMProvider extends RuntimeResource {

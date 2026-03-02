@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('core placeholder', () => {
-    it('should be true', () => {
-        expect(true).toBe(true);
-    });
+describe("core placeholder", () => {
+  it("should be true", () => {
+    expect(true).toBe(true);
+  });
 });

@@ -1,27 +1,28 @@
 {
-    "name": "@zupa/testing",
-    "version": "0.1.0",
-    "license": "MIT",
-    "description": "Testing utilities for Zupa",
-    "type": "module",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
-        }
-    },
-    "scripts": {
-        "build": "tsup src/index.ts --format esm --dts",
-        "typecheck": "tsc --noEmit"
-    },
-    "dependencies": {
-        "zod": "^4.1.11"
-    },
-    "devDependencies": {
-        "@types/node": "^24.4.0",
-        "@zupa/adapters": "workspace:*",
-        "@zupa/core": "workspace:*",
-        "tsup": "^8.5.0",
-        "typescript": "^5.9.2"
+  "name": "@zupa/testing",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Testing utilities for Zupa",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "tsup src/index.ts --format esm --dts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.4.0",
+    "@zupa/adapters": "workspace:*",
+    "@zupa/core": "workspace:*",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
+  }
 }

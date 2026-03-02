@@ -4,8 +4,8 @@ import type {
   RuntimeResourceSet,
   InboundMessage,
   RuntimeConfig,
-  NodeResult
-} from '@zupa/core';
+  NodeResult,
+} from "@zupa/core";
 
 export interface CreateInitialRuntimeContextInput {
   requestId: string;
@@ -23,6 +23,14 @@ export interface RuntimeEngineNode {
 
 export interface RuntimeEngineNodeHooks {
   onNodeStart?(event: { node: EngineNodeName; context: RuntimeEngineContext }): void;
-  onNodeEnd?(event: { node: EngineNodeName; context: RuntimeEngineContext; durationMs: number }): void;
-  onNodeError?(event: { node: EngineNodeName; context: RuntimeEngineContext; error: unknown }): void;
+  onNodeEnd?(event: {
+    node: EngineNodeName;
+    context: RuntimeEngineContext;
+    durationMs: number;
+  }): void;
+  onNodeError?(event: {
+    node: EngineNodeName;
+    context: RuntimeEngineContext;
+    error: unknown;
+  }): void;
 }

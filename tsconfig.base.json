@@ -14,36 +14,16 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@zupa/core": [
-        "packages/core/src"
-      ],
-      "@zupa/engine": [
-        "packages/engine/src"
-      ],
-      "@zupa/runtime": [
-        "packages/runtime/src"
-      ],
-      "@zupa/adapters": [
-        "packages/adapters/src"
-      ],
-      "@zupa/testing": [
-        "packages/testing/src"
-      ],
-      "zupa": [
-        "packages/zupa/src"
-      ],
-      "@zupa/api": [
-        "packages/api/src"
-      ],
-      "@zupa/dashboard": [
-        "packages/dashboard/src"
-      ],
-      "@zupa/reactive-ui": [
-        "packages/reactive-ui/src"
-      ],
-      "@zupa/react": [
-        "packages/react/src"
-      ]
+      "@zupa/core": ["packages/core/src"],
+      "@zupa/engine": ["packages/engine/src"],
+      "@zupa/runtime": ["packages/runtime/src"],
+      "@zupa/adapters": ["packages/adapters/src"],
+      "@zupa/testing": ["packages/testing/src"],
+      "zupa": ["packages/zupa/src"],
+      "@zupa/api": ["packages/api/src"],
+      "@zupa/dashboard": ["packages/dashboard/src"],
+      "@zupa/reactive-ui": ["packages/reactive-ui/src"],
+      "@zupa/react": ["packages/react/src"]
     }
   }
 }

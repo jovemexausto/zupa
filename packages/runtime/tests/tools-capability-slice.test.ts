@@ -19,8 +19,7 @@ describe("Tools Capability Slice", () => {
           name: "get_weather",
           description: "Get weather",
           parameters: z.object({ location: z.string() }),
-          handler: async (params: any) =>
-            `Weather in ${params.location} is 25 degrees`,
+          handler: async (params: any) => `Weather in ${params.location} is 25 degrees`,
         },
       ],
     });

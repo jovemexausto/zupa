@@ -1,12 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { createAgent } from '../src/index';
-import { createFakeRuntimeDeps } from '@zupa/testing';
+import { describe, expect, it } from "vitest";
+import { createAgent } from "../src/index";
+import { createFakeRuntimeDeps } from "@zupa/testing";
 
-describe('createAgent types and interface', () => {
-  it('should be correctly typed and exportable', () => {
+describe("createAgent types and interface", () => {
+  it("should be correctly typed and exportable", () => {
     const deps = createFakeRuntimeDeps();
     const config = {
-      prompt: 'hello',
+      prompt: "hello",
       providers: {
         llm: deps.llm,
         stt: deps.stt,
@@ -16,8 +16,8 @@ describe('createAgent types and interface', () => {
         vectors: deps.vectors,
         checkpointer: deps.checkpointer,
         ledger: deps.ledger,
-        domainStore: deps.domainStore
-      }
+        domainStore: deps.domainStore,
+      },
     };
 
     const agent = createAgent(config);

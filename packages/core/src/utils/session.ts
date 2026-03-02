@@ -1,27 +1,32 @@
-import { type AgentState, type JsonValue, type KVStore, type SessionState } from '../entities/session';
-import { type StateProvider } from '../ports/state';
+import {
+  type AgentState,
+  type JsonValue,
+  type KVStore,
+  type SessionState,
+} from "../entities/session";
+import { type StateProvider } from "../ports/state";
 
 /**
  * Validates that a value is strictly JSON-serializable.
  * Throws a TypeError for functions, class instances, undefined, Sets, Maps, etc.
  */
 function assertJsonValue(key: string, value: unknown): asserts value is JsonValue {
-    if (value === null) return;
-    const t = typeof value;
-    if (t === 'string' || t === 'number' || t === 'boolean') return;
-    if (Array.isArray(value)) {
-        value.forEach((item, i) => assertJsonValue(`${key}[${i}]`, item));
-        return;
+  if (value === null) return;
+  const t = typeof value;
+  if (t === "string" || t === "number" || t === "boolean") return;
+  if (Array.isArray(value)) {
+    value.forEach((item, i) => assertJsonValue(`${key}[${i}]`, item));
+    return;
+  }
+  if (t === "object") {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      assertJsonValue(`${key}.${k}`, v);
     }
-    if (t === 'object') {
-        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-            assertJsonValue(`${key}.${k}`, v);
-        }
-        return;
-    }
-    throw new TypeError(
-        `session.kv.set("${key}"): value must be a JSON-serializable type (string, number, boolean, null, array, or plain object). Got: ${t}`
-    );
+    return;
+  }
+  throw new TypeError(
+    `session.kv.set("${key}"): value must be a JSON-serializable type (string, number, boolean, null, array, or plain object). Got: ${t}`,
+  );
 }
 
 /**
@@ -34,27 +39,30 @@ function assertJsonValue(key: string, value: unknown): asserts value is JsonValu
  * safely serializable for SQLite checkpointing.
  * Dictionary strictly constrained to JSON-safeness.
  */
-export class GraphAgentStateStore<TState extends Record<string, JsonValue> = KVStore> implements SessionState<TState> {
-    public constructor(
-        private readonly store: TState
-    ) { }
+export class GraphAgentStateStore<TState extends Record<string, JsonValue> = KVStore>
+  implements SessionState<TState>
+{
+  public constructor(private readonly store: TState) {}
 
-    public async get<K extends Extract<keyof TState, string>>(key: K): Promise<TState[K] | null> {
-        return (this.store[key] as TState[K] | undefined) ?? null;
-    }
+  public async get<K extends Extract<keyof TState, string>>(key: K): Promise<TState[K] | null> {
+    return (this.store[key] as TState[K] | undefined) ?? null;
+  }
 
-    public async set<K extends Extract<keyof TState, string>>(key: K, value: TState[K]): Promise<void> {
-        assertJsonValue(key, value);
-        this.store[key] = value;
-    }
+  public async set<K extends Extract<keyof TState, string>>(
+    key: K,
+    value: TState[K],
+  ): Promise<void> {
+    assertJsonValue(key, value);
+    this.store[key] = value;
+  }
 
-    public async delete<K extends Extract<keyof TState, string>>(key: K): Promise<void> {
-        delete this.store[key];
-    }
+  public async delete<K extends Extract<keyof TState, string>>(key: K): Promise<void> {
+    delete this.store[key];
+  }
 
-    public async all(): Promise<TState> {
-        return { ...this.store };
-    }
+  public async all(): Promise<TState> {
+    return { ...this.store };
+  }
 }
 
 /**
@@ -63,41 +71,41 @@ export class GraphAgentStateStore<TState extends Record<string, JsonValue> = KVS
  * StateProvider abstraction is still desired (e.g., as a non-graph-native fallback).
  */
 class MemoryKVStore implements SessionState {
-    public constructor(
-        private readonly sessionId: string,
-        private readonly cache: KVStore
-    ) { }
+  public constructor(
+    private readonly sessionId: string,
+    private readonly cache: KVStore,
+  ) {}
 
-    public async get<T extends JsonValue>(key: string): Promise<T | null> {
-        return (this.cache[key] as T | undefined) ?? null;
-    }
+  public async get<T extends JsonValue>(key: string): Promise<T | null> {
+    return (this.cache[key] as T | undefined) ?? null;
+  }
 
-    public async set<T extends JsonValue>(key: string, value: T): Promise<void> {
-        assertJsonValue(key, value);
-        this.cache[key] = value;
-    }
+  public async set<T extends JsonValue>(key: string, value: T): Promise<void> {
+    assertJsonValue(key, value);
+    this.cache[key] = value;
+  }
 
-    public async delete(key: string): Promise<void> {
-        delete this.cache[key];
-    }
+  public async delete(key: string): Promise<void> {
+    delete this.cache[key];
+  }
 
-    public async all(): Promise<KVStore> {
-        return { ...this.cache };
-    }
+  public async all(): Promise<KVStore> {
+    return { ...this.cache };
+  }
 }
 
 export class MemoryStateProvider implements StateProvider {
-    readonly metadata = { name: 'memory-state-provider', version: '1.0.0' };
-    private stores: Record<string, KVStore> = {};
+  readonly metadata = { name: "memory-state-provider", version: "1.0.0" };
+  private stores: Record<string, KVStore> = {};
 
-    public attach(sessionId: string): SessionState {
-        if (!this.stores[sessionId]) {
-            this.stores[sessionId] = {};
-        }
-        return new MemoryKVStore(sessionId, this.stores[sessionId]);
+  public attach(sessionId: string): SessionState {
+    if (!this.stores[sessionId]) {
+      this.stores[sessionId] = {};
     }
+    return new MemoryKVStore(sessionId, this.stores[sessionId]);
+  }
 
-    public async destroy(): Promise<void> {
-        this.stores = {};
-    }
+  public async destroy(): Promise<void> {
+    this.stores = {};
+  }
 }

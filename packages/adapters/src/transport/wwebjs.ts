@@ -1,16 +1,18 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
-import WhatsAppWeb, {
-  type Client as WhatsAppClient,
-  type ClientOptions,
-} from "whatsapp-web.js";
-import { type InboundMessage, type MessagingTransport, type EventBus, type RuntimeResourceContext } from "@zupa/core";
+import WhatsAppWeb, { type Client as WhatsAppClient, type ClientOptions } from "whatsapp-web.js";
+import {
+  type InboundMessage,
+  type MessagingTransport,
+  type EventBus,
+  type RuntimeResourceContext,
+} from "@zupa/core";
 
 /**
  * Auth payload emitted by WWebJSMessagingTransport during the QR-code authentication flow.
  */
 export interface WWebJSAuthPayload {
-  type: 'qr';
+  type: "qr";
   /** The raw QR code string — pass this to a QR library such as `qrcode-terminal`. */
   qrString: string;
 }
@@ -29,52 +31,17 @@ function resolveBrowserExecutablePath(): string | undefined {
 
   const windowsCandidates = [
     process.env.LOCALAPPDATA &&
-    path.join(
-      process.env.LOCALAPPDATA,
-      "Google",
-      "Chrome",
-      "Application",
-      "chrome.exe",
-    ),
+      path.join(process.env.LOCALAPPDATA, "Google", "Chrome", "Application", "chrome.exe"),
     process.env.PROGRAMFILES &&
-    path.join(
-      process.env.PROGRAMFILES,
-      "Google",
-      "Chrome",
-      "Application",
-      "chrome.exe",
-    ),
+      path.join(process.env.PROGRAMFILES, "Google", "Chrome", "Application", "chrome.exe"),
     process.env["PROGRAMFILES(X86)"] &&
-    path.join(
-      process.env["PROGRAMFILES(X86)"],
-      "Google",
-      "Chrome",
-      "Application",
-      "chrome.exe",
-    ),
+      path.join(process.env["PROGRAMFILES(X86)"], "Google", "Chrome", "Application", "chrome.exe"),
     process.env.LOCALAPPDATA &&
-    path.join(
-      process.env.LOCALAPPDATA,
-      "Chromium",
-      "Application",
-      "chrome.exe",
-    ),
+      path.join(process.env.LOCALAPPDATA, "Chromium", "Application", "chrome.exe"),
     process.env.PROGRAMFILES &&
-    path.join(
-      process.env.PROGRAMFILES,
-      "Microsoft",
-      "Edge",
-      "Application",
-      "msedge.exe",
-    ),
+      path.join(process.env.PROGRAMFILES, "Microsoft", "Edge", "Application", "msedge.exe"),
     process.env["PROGRAMFILES(X86)"] &&
-    path.join(
-      process.env["PROGRAMFILES(X86)"],
-      "Microsoft",
-      "Edge",
-      "Application",
-      "msedge.exe",
-    ),
+      path.join(process.env["PROGRAMFILES(X86)"], "Microsoft", "Edge", "Application", "msedge.exe"),
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   const macCandidates = [
@@ -111,8 +78,7 @@ function buildDefaultClientOptions(options?: ClientOptions): ClientOptions {
       executablePath: resolveBrowserExecutablePath(),
       ...(options?.puppeteer ?? {}),
     },
-    authStrategy:
-      options?.authStrategy ?? new LocalAuth({ dataPath: ".wwebjs_auth" }),
+    authStrategy: options?.authStrategy ?? new LocalAuth({ dataPath: ".wwebjs_auth" }),
   };
 }
 
@@ -131,9 +97,7 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
     if (!this.startPromise) {
       this.startPromise = new Promise<void>((resolve, reject) => {
         this.client.once("ready", () => resolve());
-        this.client.once("auth_failure", (message: string) =>
-          reject(new Error(message)),
-        );
+        this.client.once("auth_failure", (message: string) => reject(new Error(message)));
         this.client.initialize().catch(reject);
       });
     }
@@ -178,6 +142,9 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
         hasMedia: message.hasMedia,
         type: message.type,
         source: "transport",
+        senderProfile: {
+          displayName: (message as any)._data?.notifyName || (message as any).pushname,
+        },
         downloadMedia: async () => {
           const media = await message.downloadMedia();
           if (!media) return undefined;
@@ -201,10 +168,7 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
     await this.client.sendMessage(toChatId(to), text);
   }
 
-  public async sendVoice(
-    to: string,
-    media: { buffer: Buffer; mimetype: string },
-  ): Promise<void> {
+  public async sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void> {
     const messageMedia = new MessageMedia(
       media.mimetype,
       media.buffer.toString("base64"),
@@ -225,11 +189,7 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
       media.buffer.toString("base64"),
       media.filename || "media.bin",
     );
-    await this.client.sendMessage(
-      toChatId(to),
-      messageMedia,
-      caption ? { caption } : undefined,
-    );
+    await this.client.sendMessage(toChatId(to), messageMedia, caption ? { caption } : undefined);
   }
 
   public async sendTyping(to: string, durationMs: number): Promise<void> {
@@ -238,11 +198,8 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
     await new Promise((resolve) => setTimeout(resolve, durationMs));
     await chat.clearState();
   }
-
 }
 
-export function createWWebJSTransport(
-  options?: ClientOptions,
-): WWebJSMessagingTransport {
+export function createWWebJSTransport(options?: ClientOptions): WWebJSMessagingTransport {
   return new WWebJSMessagingTransport(options);
 }

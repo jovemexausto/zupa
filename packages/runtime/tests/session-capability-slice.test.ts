@@ -1,44 +1,41 @@
-import { describe, expect, it, vi } from 'vitest';
-import {
-  createFakeRuntimeDeps,
-  DEFAULT_SESSION
-} from '@zupa/testing';
-import { GraphAgentStateStore } from '@zupa/core';
-import { endSessionWithKvHandoff } from '../src/index';
+import { describe, expect, it, vi } from "vitest";
+import { createFakeRuntimeDeps, DEFAULT_SESSION } from "@zupa/testing";
+import { GraphAgentStateStore } from "@zupa/core";
+import { endSessionWithKvHandoff } from "../src/index";
 
-describe('session capability slice', () => {
-  it('GraphAgentStateStore gets, sets and deletes cleanly', async () => {
+describe("session capability slice", () => {
+  it("GraphAgentStateStore gets, sets and deletes cleanly", async () => {
     const store: Record<string, any> = {};
     const kv = new GraphAgentStateStore(store);
 
-    await kv.set('name', 'voxpal');
-    await kv.set('count', 2);
-    await kv.delete('name');
+    await kv.set("name", "zupa");
+    await kv.set("count", 2);
+    await kv.delete("name");
 
-    expect(await kv.get('count')).toBe(2);
+    expect(await kv.get("count")).toBe(2);
     expect(await kv.all()).toEqual({ count: 2 });
   });
 
-  it('GraphAgentStateStore supports nested JSON objects and arrays', async () => {
+  it("GraphAgentStateStore supports nested JSON objects and arrays", async () => {
     const store: Record<string, any> = {};
     const kv = new GraphAgentStateStore(store);
 
-    await kv.set('tags', ['a', 'b', 'c']);
-    await kv.set('meta', { x: 1, nested: { y: true } });
+    await kv.set("tags", ["a", "b", "c"]);
+    await kv.set("meta", { x: 1, nested: { y: true } });
 
-    expect(await kv.get('tags')).toEqual(['a', 'b', 'c']);
-    expect(await kv.get('meta')).toEqual({ x: 1, nested: { y: true } });
+    expect(await kv.get("tags")).toEqual(["a", "b", "c"]);
+    expect(await kv.get("meta")).toEqual({ x: 1, nested: { y: true } });
   });
 
-  it('GraphAgentStateStore rejects non-JSON values', async () => {
+  it("GraphAgentStateStore rejects non-JSON values", async () => {
     const store: Record<string, any> = {};
     const kv = new GraphAgentStateStore(store);
 
-    await expect(kv.set('fn', (() => { }) as never)).rejects.toThrow(TypeError);
-    await expect(kv.set('undef', undefined as never)).rejects.toThrow(TypeError);
+    await expect(kv.set("fn", (() => {}) as never)).rejects.toThrow(TypeError);
+    await expect(kv.set("undef", undefined as never)).rejects.toThrow(TypeError);
   });
 
-  it('hands off kv snapshot when ending the active session', async () => {
+  it("hands off kv snapshot when ending the active session", async () => {
     const endSessionWithSummary = vi.fn(async () => {
       return;
     });
@@ -47,19 +44,19 @@ describe('session capability slice', () => {
       session: {
         id: DEFAULT_SESSION.id,
         agentState: {
-          all: async () => ({ correctionCount: 3 })
-        }
+          all: async () => ({ correctionCount: 3 }),
+        },
       },
-      endedAt: new Date('2026-02-24T00:00:00.000Z'),
+      endedAt: new Date("2026-02-24T00:00:00.000Z"),
       sessionManager: {
-        endSessionWithSummary
-      }
+        endSessionWithSummary,
+      },
     });
 
     expect(endSessionWithSummary).toHaveBeenCalledWith(
       DEFAULT_SESSION.id,
-      new Date('2026-02-24T00:00:00.000Z'),
-      JSON.stringify({ correctionCount: 3 })
+      new Date("2026-02-24T00:00:00.000Z"),
+      JSON.stringify({ correctionCount: 3 }),
     );
   });
 });

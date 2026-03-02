@@ -1,28 +1,28 @@
-import { describe, expect, it } from 'vitest';
-import { createAgent } from '../src/index';
+import { describe, expect, it } from "vitest";
+import { createAgent } from "../src/index";
 import {
   FakeMessagingTransport,
   FakeLLMProvider,
   createFakeRuntimeDeps,
   createFakeLLMResponse,
-  DEFAULT_INBOUND
-} from '@zupa/testing';
+  DEFAULT_INBOUND,
+} from "@zupa/testing";
 
-describe('Zupa E2E (Simulated)', () => {
-  it('should process a message end-to-end with fakes', async () => {
+describe("Zupa E2E (Simulated)", () => {
+  it("should process a message end-to-end with fakes", async () => {
     const deps = createFakeRuntimeDeps();
     const transport = deps.transport as FakeMessagingTransport;
     const llm = deps.llm as FakeLLMProvider;
 
     llm.setResponses([
       createFakeLLMResponse({
-        content: 'I am helping you!',
-        structured: { reply: 'I am helping you!' }
-      })
+        content: "I am helping you!",
+        structured: { reply: "I am helping you!" },
+      }),
     ]);
 
     const agent = createAgent({
-      prompt: 'You are a help assistant',
+      prompt: "You are a help assistant",
       ui: false,
       providers: {
         transport,
@@ -33,8 +33,8 @@ describe('Zupa E2E (Simulated)', () => {
         stt: deps.stt,
         tts: deps.tts,
         storage: deps.storage,
-        vectors: deps.vectors
-      }
+        vectors: deps.vectors,
+      },
     });
 
     await agent.start();
@@ -43,12 +43,12 @@ describe('Zupa E2E (Simulated)', () => {
     await transport.emitInbound(DEFAULT_INBOUND);
 
     // Give EventBus processing time
-    await new Promise(r => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 250));
 
     // Verify outbound
     const sent = transport.getSentMessages();
     expect(sent.length).toBeGreaterThan(0);
-    expect(sent[0]?.text).toBe('I am helping you!');
+    expect(sent[0]?.text).toBe("I am helping you!");
 
     await agent.close();
   });

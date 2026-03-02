@@ -13,12 +13,12 @@ export type UiConfig = {
   sseHeartbeatMs?: number;
 };
 
-export type Modality = 'text' | 'voice' | 'auto';
+export type Modality = "text" | "voice" | "auto";
 
 export type DynamicModalityExtractor<T = unknown> = (
   state: unknown,
-  ctx: AgentContext<T>
-) => 'text' | 'voice' | undefined;
+  ctx: AgentContext<T>,
+) => "text" | "voice" | undefined;
 
 export interface RuntimeConfig<T = unknown> {
   prompt: string | ((ctx: AgentContext<T>) => string | Promise<string>);
@@ -43,6 +43,7 @@ export interface RuntimeConfig<T = unknown> {
   overloadMessage?: string;
   sessionIdleTimeoutMinutes?: number;
   toolTimeoutMs?: number;
+  maxRecursionSteps?: number;
   llmTimeoutMs?: number;
   sttTimeoutMs?: number;
   ttsTimeoutMs?: number;
@@ -58,5 +59,5 @@ export interface RuntimeConfig<T = unknown> {
    * or if the transport does not support streaming.
    * @default 'buffered'
    */
-  finalizationStrategy?: 'streaming' | 'buffered';
+  finalizationStrategy?: "streaming" | "buffered";
 }

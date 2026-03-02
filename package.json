@@ -1,14 +1,15 @@
 {
-  "name": "voxpal-monorepo",
+  "name": "zupa-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "Voxpal pnpm workspace",
+  "description": "Zupa pnpm workspace",
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run clean && turbo run build",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
-    "dev": "pnpm --filter voxpal build && pnpm --filter english-buddy dev",
-    "dev:stack": "docker compose -f examples/english-buddy/docker-compose.yml up --build"
+    "lint": "biome lint .",
+    "format": "biome format . --write",
+    "check": "biome check --write ."
   },
   "engines": {
     "node": ">=20"
@@ -19,6 +20,7 @@
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
     "@zupa/testing": "workspace:*",
     "turbo": "^2.8.12"
   }

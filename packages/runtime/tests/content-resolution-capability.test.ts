@@ -61,9 +61,7 @@ describe("content resolution capability slice", () => {
       inputModality: "voice",
     });
     expect(transcribe).toHaveBeenCalledTimes(1);
-    const calls = transcribe.mock.calls as unknown as Array<
-      [{ language: string }]
-    >;
+    const calls = transcribe.mock.calls as unknown as Array<[{ language: string }]>;
     expect(calls[0]?.[0]).toMatchObject({ language: "pt" });
   });
 
