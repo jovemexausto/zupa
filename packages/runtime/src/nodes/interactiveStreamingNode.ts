@@ -185,9 +185,13 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
       outputModality = result.outputModality;
     } else if (finalLlmResponse.content) {
       // Technically for a UI channel we've ALREADY streamed the text to them.
-      // We might not need to `transport.sendText` at all if `ui_channel` implies no transport send,
+      // We might not need to `transport.sendMessage` at all if `ui_channel` implies no transport send,
       // but we'll do it to maintain parity with responseFinalize unless `ui_channel` ignores it.
-      await resources.transport.sendText(state.replyTarget, finalLlmResponse.content);
+      await resources.transport.sendMessage({
+        to: state.replyTarget,
+        type: "text",
+        body: finalLlmResponse.content,
+      });
     }
 
     return {

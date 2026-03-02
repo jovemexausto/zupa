@@ -16,7 +16,11 @@ describe("commands capability slice", () => {
         info: {
           description: "Show info",
           handler: async (ctx: AgentContext) => {
-            await ctx.resources.transport.sendText(ctx.replyTarget, "Info is here!");
+            await ctx.resources.transport.sendMessage({
+              to: ctx.replyTarget,
+              type: "text",
+              body: "Info is here!",
+            });
           },
         },
       },

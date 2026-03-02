@@ -21,10 +21,11 @@ export const accessPolicyNode = defineNode<RuntimeState, RuntimeEngineContext>(a
   // 1. Check restrictions
   if (singleUser && inboundExternalUserId !== singleUser) {
     const replyTarget = resolveReplyTarget(inboundFrom, inboundExternalUserId);
-    await resources.transport.sendText(
-      replyTarget,
-      "This agent is currently restricted to a single configured user.",
-    );
+    await resources.transport.sendMessage({
+      to: replyTarget,
+      type: "text",
+      body: "This agent is currently restricted to a single configured user.",
+    });
     return {
       stateDiff: {},
       nextTasks: [], // exit graph

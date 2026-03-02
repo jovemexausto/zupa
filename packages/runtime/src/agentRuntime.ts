@@ -109,7 +109,11 @@ export class AgentRuntime<T = unknown> {
           this.runtimeConfig.rateLimitMessage?.trim() ||
           "You are sending messages too quickly. Please wait a moment and try again.";
         await this.runtimeResources.transport
-          .sendText(event.payload.inbound.from, message)
+          .sendMessage({
+            to: event.payload.inbound.from,
+            type: "text",
+            body: message,
+          })
           .catch((err) => {
             this.logger.error(
               { err, inbound: event.payload.inbound },
@@ -126,7 +130,11 @@ export class AgentRuntime<T = unknown> {
         const message = this.runtimeConfig.overloadMessage?.trim();
         if (message) {
           await this.runtimeResources.transport
-            .sendText(event.payload.inbound.from, message)
+            .sendMessage({
+              to: event.payload.inbound.from,
+              type: "text",
+              body: message,
+            })
             .catch((err) => {
               this.logger.error(
                 { err, inbound: event.payload.inbound },

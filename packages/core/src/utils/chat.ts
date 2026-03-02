@@ -84,7 +84,11 @@ export async function finalizeResponse(input: FinalizeResponseInput): Promise<{
   contentAudioUrl: string | null;
 }> {
   const textReply = async () => {
-    await input.messaging.sendText(input.input.replyTarget, input.input.replyText);
+    await input.messaging.sendMessage({
+      to: input.input.replyTarget,
+      type: "text",
+      body: input.input.replyText,
+    });
     return { outputModality: "text" as const, contentAudioUrl: null };
   };
 
@@ -111,9 +115,13 @@ export async function finalizeResponse(input: FinalizeResponseInput): Promise<{
         }),
     });
 
-    await input.messaging.sendVoice(input.input.replyTarget, {
-      buffer: synthesized.audio,
-      mimetype: synthesized.format,
+    await input.messaging.sendMessage({
+      to: input.input.replyTarget,
+      type: "voice",
+      media: {
+        data: synthesized.audio,
+        mimetype: synthesized.format,
+      },
     });
 
     return {
