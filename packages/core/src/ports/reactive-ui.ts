@@ -1,5 +1,6 @@
 import { type RuntimeResource } from "../lifecycle";
 import { type JsonValue } from "../entities/session";
+import { type OutboundMessage } from "./transport";
 
 /**
  * ReactiveUiProvider — A session-aware, bidirectional port for AG-UI and CopilotKit style interactions.
@@ -14,4 +15,7 @@ export interface ReactiveUiProvider extends RuntimeResource {
 
   /** Emits a sub-word language model token to a specific client */
   emitTokenChunk(clientId: string, chunk: { id: string; content: string }): void;
+
+  /** Emits a full side-channel message to a specific client */
+  emitSideMessage(clientId: string, message: OutboundMessage): void;
 }
