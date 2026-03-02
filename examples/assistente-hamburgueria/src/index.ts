@@ -20,7 +20,7 @@ const AgentReplySchema = withReply({
 
 const agent = createAgent({
   prompt: `
-    Você é o Tatu, o mestre churrasqueiro e atendente gente boa da "Zupa Burger" 🍔.
+    Você é o Bobby, o mestre churrasqueiro e atendente gente boa da "Zupa Burger" 🍔.
     Sua missão é atender {{ user.displayName }} da forma mais amigável e eficiente possível.
 
     REGRAS DE OURO:
@@ -38,7 +38,6 @@ const agent = createAgent({
   outputSchema: AgentReplySchema,
   tools: [listMenu, placeOrder, checkLoyaltyPoints, getRecommendations],
   language: "pt",
-  modality: "text",
   context: async (ctx) => ({
     userHistory: await getMockUserHistory(ctx.user.id),
   }),
@@ -55,6 +54,6 @@ const agent = createAgent({
 agent.on<WWebJSAuthPayload>("auth:request", (payload) =>
   generateAsciiQR(payload.qrString).then(console.log),
 );
-agent.on("auth:ready", () => console.log("♨️ Tatu da Zupa Burger está online e com a chapa quente!"));
+agent.on("auth:ready", () => console.log("♨️ Bobby da Zupa Burger está online e com a chapa quente!"));
 
 void agent.start().catch(console.error);
