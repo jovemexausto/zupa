@@ -12,9 +12,6 @@ import { type RuntimeState } from "./index";
  * If a command matches the command registry, it executes the command handler
  * and short-circuits the LLM flow. Otherwise, continues to LLM processing.
  *
- * Also applies per-user rate limiting (rateLimitPerUserPerMinute) to prevent
- * abuse. If a user exceeds the rate limit, they receive a throttling message.
- *
  * Preconditions: user, session, and replyTarget must be set by earlier nodes.
  */
 export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineContext>(
@@ -34,19 +31,6 @@ export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineCon
     const replyTarget = state.replyTarget;
 
     if (!user || !session || !replyTarget) {
-      return { stateDiff: { commandHandled: true }, nextTasks: [] };
-    }
-
-    const recentMessagesCount = await resources.domainStore.countUserMessagesSince(
-      user.id,
-      new Date(Date.now() - 60_000),
-    );
-
-    if (recentMessagesCount >= (config.rateLimitPerUserPerMinute ?? 20)) {
-      await resources.transport.sendText(
-        replyTarget,
-        "You are sending messages too quickly. Please wait a moment and try again.",
-      );
       return { stateDiff: { commandHandled: true }, nextTasks: [] };
     }
 

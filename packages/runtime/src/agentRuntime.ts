@@ -16,6 +16,7 @@ import { MemoryCheckpointer } from "@zupa/adapters";
 import { buildEngineGraphSpec } from "./engine/graph";
 import { createEventBusLogger } from "./bus/logger";
 import { createInboundConcurrencyLimiter } from "./bus/InboundConcurrencyLimiter";
+import { createInboundUserRateLimiter } from "./bus/InboundUserRateLimiter";
 
 import {
   closeResources,
@@ -92,6 +93,30 @@ export class AgentRuntime<T = unknown> {
     const maxConcurrent = this.runtimeConfig.maxInboundConcurrency ?? 32;
     this.runtimeResources.bus.use(
       createInboundConcurrencyLimiter(this.runtimeResources.bus, maxConcurrent),
+    );
+
+    // Per-user rate limiting via Middleware
+    const maxPerMinute = this.runtimeConfig.rateLimitPerUserPerMinute ?? 20;
+    this.runtimeResources.bus.use(
+      createInboundUserRateLimiter(this.runtimeResources.bus, maxPerMinute),
+    );
+
+    // Response to rate limiting events
+    this.runtimeResources.bus.subscribe<{ inbound: InboundMessage }>(
+      "transport:inbound:ratelimited",
+      async (event) => {
+        const message =
+          this.runtimeConfig.rateLimitMessage?.trim() ||
+          "You are sending messages too quickly. Please wait a moment and try again.";
+        await this.runtimeResources.transport
+          .sendText(event.payload.inbound.from, message)
+          .catch((err) => {
+            this.logger.error(
+              { err, inbound: event.payload.inbound },
+              "Failed to send rate limit message",
+            );
+          });
+      },
     );
 
     // Response to overload events
