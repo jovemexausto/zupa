@@ -6,6 +6,8 @@ import {
   type MessagingTransport,
   type EventBus,
   type RuntimeResourceContext,
+  type OutboundMessage,
+  type OutboundMedia,
 } from "@zupa/core";
 
 /**
@@ -31,17 +33,17 @@ function resolveBrowserExecutablePath(): string | undefined {
 
   const windowsCandidates = [
     process.env.LOCALAPPDATA &&
-      path.join(process.env.LOCALAPPDATA, "Google", "Chrome", "Application", "chrome.exe"),
+    path.join(process.env.LOCALAPPDATA, "Google", "Chrome", "Application", "chrome.exe"),
     process.env.PROGRAMFILES &&
-      path.join(process.env.PROGRAMFILES, "Google", "Chrome", "Application", "chrome.exe"),
+    path.join(process.env.PROGRAMFILES, "Google", "Chrome", "Application", "chrome.exe"),
     process.env["PROGRAMFILES(X86)"] &&
-      path.join(process.env["PROGRAMFILES(X86)"], "Google", "Chrome", "Application", "chrome.exe"),
+    path.join(process.env["PROGRAMFILES(X86)"], "Google", "Chrome", "Application", "chrome.exe"),
     process.env.LOCALAPPDATA &&
-      path.join(process.env.LOCALAPPDATA, "Chromium", "Application", "chrome.exe"),
+    path.join(process.env.LOCALAPPDATA, "Chromium", "Application", "chrome.exe"),
     process.env.PROGRAMFILES &&
-      path.join(process.env.PROGRAMFILES, "Microsoft", "Edge", "Application", "msedge.exe"),
+    path.join(process.env.PROGRAMFILES, "Microsoft", "Edge", "Application", "msedge.exe"),
     process.env["PROGRAMFILES(X86)"] &&
-      path.join(process.env["PROGRAMFILES(X86)"], "Microsoft", "Edge", "Application", "msedge.exe"),
+    path.join(process.env["PROGRAMFILES(X86)"], "Microsoft", "Edge", "Application", "msedge.exe"),
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   const macCandidates = [
@@ -164,32 +166,55 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
     });
   }
 
-  public async sendText(to: string, text: string): Promise<void> {
-    await this.client.sendMessage(toChatId(to), text);
+  public async sendMessage(message: OutboundMessage): Promise<void> {
+    const chatId = toChatId(message.to);
+
+    // Emit outbound event before sending
+    this.bus?.emit({
+      channel: "transport",
+      name: "outbound",
+      payload: message,
+    });
+
+    switch (message.type) {
+      case "text":
+        await this.sendInternalText(chatId, message.body);
+        break;
+      case "voice":
+        await this.sendInternalVoice(chatId, message.media);
+        break;
+      case "media":
+        await this.sendInternalMedia(chatId, message.media, message.caption);
+        break;
+    }
   }
 
-  public async sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void> {
+  private async sendInternalText(chatId: string, body: string): Promise<void> {
+    await this.client.sendMessage(chatId, body);
+  }
+
+  private async sendInternalVoice(chatId: string, media: OutboundMedia): Promise<void> {
     const messageMedia = new MessageMedia(
       media.mimetype,
-      media.buffer.toString("base64"),
-      "voice.ogg",
+      media.data.toString("base64"),
+      media.filename ?? "voice.ogg",
     );
-    await this.client.sendMessage(toChatId(to), messageMedia, {
+    await this.client.sendMessage(chatId, messageMedia, {
       sendAudioAsVoice: true,
     });
   }
 
-  public async sendMedia(
-    to: string,
-    media: { buffer: Buffer; mimetype: string; filename?: string },
+  private async sendInternalMedia(
+    chatId: string,
+    media: OutboundMedia,
     caption?: string,
   ): Promise<void> {
     const messageMedia = new MessageMedia(
       media.mimetype,
-      media.buffer.toString("base64"),
-      media.filename || "media.bin",
+      media.data.toString("base64"),
+      media.filename ?? "media.bin",
     );
-    await this.client.sendMessage(toChatId(to), messageMedia, caption ? { caption } : undefined);
+    await this.client.sendMessage(chatId, messageMedia, caption ? { caption } : undefined);
   }
 
   public async sendTyping(to: string, durationMs: number): Promise<void> {

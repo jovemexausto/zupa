@@ -118,16 +118,21 @@ export const builtinCommands = {
     description: "Clear session and start fresh",
     handler: async (ctx: AgentContext) => {
       await ctx.endSession();
-      await ctx.resources.transport.sendText(ctx.replyTarget, "Session cleared. Starting fresh!");
+      await ctx.resources.transport.sendMessage({
+        to: ctx.replyTarget,
+        type: "text",
+        body: "Session cleared. Starting fresh!",
+      });
     },
   },
   usage: {
     description: "Show usage status.",
     handler: async (ctx: AgentContext) => {
-      await ctx.resources.transport.sendText(
-        ctx.replyTarget,
-        "Usage stats are not available yet in Zupa.",
-      );
+      await ctx.resources.transport.sendMessage({
+        to: ctx.replyTarget,
+        type: "text",
+        body: "Usage stats are not available yet in Zupa.",
+      });
     },
   },
   text: {
@@ -137,10 +142,11 @@ export const builtinCommands = {
         ...ctx.user.preferences,
         preferredReplyFormat: "text",
       });
-      await ctx.resources.transport.sendText(
-        ctx.replyTarget,
-        "Preference updated: I will now only reply with text.",
-      );
+      await ctx.resources.transport.sendMessage({
+        to: ctx.replyTarget,
+        type: "text",
+        body: "Preference updated: I will now only reply with text.",
+      });
     },
   },
   voice: {
@@ -150,10 +156,11 @@ export const builtinCommands = {
         ...ctx.user.preferences,
         preferredReplyFormat: "voice",
       });
-      await ctx.resources.transport.sendText(
-        ctx.replyTarget,
-        "Preference updated: I will now reply with voice (audio).",
-      );
+      await ctx.resources.transport.sendMessage({
+        to: ctx.replyTarget,
+        type: "text",
+        body: "Preference updated: I will now reply with voice (audio).",
+      });
     },
   },
   mirror: {
@@ -163,10 +170,11 @@ export const builtinCommands = {
         ...ctx.user.preferences,
         preferredReplyFormat: "mirror",
       });
-      await ctx.resources.transport.sendText(
-        ctx.replyTarget,
-        "Preference updated: I will now mirror your input modality.",
-      );
+      await ctx.resources.transport.sendMessage({
+        to: ctx.replyTarget,
+        type: "text",
+        body: "Preference updated: I will now mirror your input modality.",
+      });
     },
   },
   dynamic: {
@@ -176,10 +184,11 @@ export const builtinCommands = {
         ...ctx.user.preferences,
         preferredReplyFormat: "dynamic",
       });
-      await ctx.resources.transport.sendText(
-        ctx.replyTarget,
-        "Preference updated: I will now intelligently choose between text and voice.",
-      );
+      await ctx.resources.transport.sendMessage({
+        to: ctx.replyTarget,
+        type: "text",
+        body: "Preference updated: I will now intelligently choose between text and voice.",
+      });
     },
   },
 };
@@ -250,29 +259,32 @@ export async function dispatchCommandIfPresent(input: DispatchCommandInput): Pro
     for (const [name, definition] of input.commandRegistry.entries()) {
       lines.push(`/${name}  — ${definition.description}`);
     }
-    await input.commandContext.resources.transport.sendText(
-      input.commandContext.replyTarget,
-      lines.join("\n"),
-    );
+    await input.commandContext.resources.transport.sendMessage({
+      to: input.commandContext.replyTarget,
+      type: "text",
+      body: lines.join("\n"),
+    });
     return true;
   }
 
   const command = input.commandRegistry.get(parsed.name);
   if (!command) {
-    await input.commandContext.resources.transport.sendText(
-      input.commandContext.replyTarget,
-      "Unknown command. Try /help",
-    );
+    await input.commandContext.resources.transport.sendMessage({
+      to: input.commandContext.replyTarget,
+      type: "text",
+      body: "Unknown command. Try /help",
+    });
     return true;
   }
 
   if (!command.args) {
     await (command.handler as (ctx: AgentContext) => Promise<void>)(input.commandContext);
   } else {
-    await input.commandContext.resources.transport.sendText(
-      input.commandContext.replyTarget,
-      `Command ${parsed.name} requires arguments.`,
-    );
+    await input.commandContext.resources.transport.sendMessage({
+      to: input.commandContext.replyTarget,
+      type: "text",
+      body: `Command ${parsed.name} requires arguments.`,
+    });
   }
 
   return true;

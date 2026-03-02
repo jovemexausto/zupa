@@ -1,43 +1,68 @@
 import {
   type MessagingTransport,
-  type InboundMessage,
   type EventBus,
   type RuntimeResourceContext,
+  type InboundMessage,
+  type OutboundMessage,
   ensureMessageId,
 } from "@zupa/core";
 
 export class FakeMessagingTransport implements MessagingTransport {
-  public sentMessages: Array<{ to: string; text?: string; audio?: Buffer; media?: Buffer }> = [];
+  public sentMessages: Array<{
+    to: string;
+    text?: string;
+    audio?: Buffer;
+    media?: Buffer;
+    caption?: string;
+  }> = [];
   private bus: EventBus | null = null;
   public sentText: Array<{ to: string; text: string }> = [];
   public sentVoice: Array<{ to: string; media: { buffer: Buffer; mimetype: string } }> = [];
   public sentMedia: Array<{
     to: string;
-    media: { buffer: Buffer; mimetype: string; filename?: string };
+    media: { buffer: Buffer; mimetype: string; filename?: string | null };
   }> = [];
 
   public async start(context: RuntimeResourceContext): Promise<void> {
     this.bus = context.bus;
   }
-  public async close(): Promise<void> {}
+  public async close(): Promise<void> { }
 
-  public async sendText(to: string, text: string): Promise<void> {
-    this.sentMessages.push({ to, text });
-    this.sentText.push({ to, text });
-  }
+  public async sendMessage(message: OutboundMessage): Promise<void> {
+    this.bus?.emit({
+      channel: "transport",
+      name: "outbound",
+      payload: message,
+    });
 
-  public async sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void> {
-    this.sentMessages.push({ to, audio: media.buffer });
-    this.sentVoice.push({ to, media });
-  }
-
-  public async sendMedia(
-    to: string,
-    media: { buffer: Buffer; mimetype: string; filename?: string },
-    _caption?: string,
-  ): Promise<void> {
-    this.sentMessages.push({ to, media: media.buffer });
-    this.sentMedia.push({ to, media });
+    switch (message.type) {
+      case "text":
+        this.sentMessages.push({ to: message.to, text: message.body });
+        this.sentText.push({ to: message.to, text: message.body });
+        break;
+      case "voice":
+        this.sentMessages.push({ to: message.to, audio: message.media.data });
+        this.sentVoice.push({
+          to: message.to,
+          media: { buffer: message.media.data, mimetype: message.media.mimetype },
+        });
+        break;
+      case "media":
+        this.sentMessages.push({
+          to: message.to,
+          media: message.media.data,
+          ...(message.caption !== undefined && { caption: message.caption }),
+        });
+        this.sentMedia.push({
+          to: message.to,
+          media: {
+            buffer: message.media.data,
+            mimetype: message.media.mimetype,
+            ...(message.media.filename !== undefined && { filename: message.media.filename }),
+          },
+        });
+        break;
+    }
   }
 
   public async sendTyping(_to: string, _durationMs: number): Promise<void> {

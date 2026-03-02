@@ -55,8 +55,12 @@ describe("fake adapters", () => {
 
   it("records outbound transport events", async () => {
     const messaging = new FakeMessagingTransport();
-    await messaging.sendText("u1", "hello");
-    await messaging.sendVoice("u1", { buffer: Buffer.from("fake"), mimetype: "audio/ogg" });
+    await messaging.sendMessage({ to: "u1", type: "text", body: "hello" });
+    await messaging.sendMessage({
+      to: "u1",
+      type: "voice",
+      media: { data: Buffer.from("fake"), mimetype: "audio/ogg" },
+    });
 
     expect(messaging.sentText).toEqual([{ to: "u1", text: "hello" }]);
     expect(messaging.sentVoice[0].to).toBe("u1");

@@ -21,10 +21,11 @@ export const scheduleReminder: Tool<typeof ScheduleReminderSchema> = {
   parameters: ScheduleReminderSchema,
   async handler(params, context) {
     const sendAt = new Date(Date.now() + params.minutes * 60_000);
-    await context.resources.transport.sendText(
-      context.replyTarget,
-      `Reminder set for ${sendAt.toISOString()}: ${params.text}`,
-    );
+    await context.resources.transport.sendMessage({
+      to: context.replyTarget,
+      type: "text",
+      body: `Reminder set for ${sendAt.toISOString()}: ${params.text}`,
+    });
     return `Reminder scheduled for ${sendAt.toISOString()}`;
   },
 };
@@ -34,10 +35,11 @@ export const sendVocabCard: Tool<typeof VocabCardSchema> = {
   description: "Sends a vocabulary card message.",
   parameters: VocabCardSchema,
   async handler(params, context) {
-    await context.resources.transport.sendText(
-      context.replyTarget,
-      `Word: ${params.word}\nDefinition: ${params.definition}`,
-    );
+    await context.resources.transport.sendMessage({
+      to: context.replyTarget,
+      type: "text",
+      body: `Word: ${params.word}\nDefinition: ${params.definition}`,
+    });
     return `Vocab card sent for ${params.word}`;
   },
 };
@@ -47,10 +49,11 @@ export const sendPronunciationClip: Tool<typeof PronunciationClipSchema> = {
   description: "Sends pronunciation guidance text.",
   parameters: PronunciationClipSchema,
   async handler(params, context) {
-    await context.resources.transport.sendText(
-      context.replyTarget,
-      `Pronunciation tip for ${params.word}: break it into syllables and stress the right part.`,
-    );
+    await context.resources.transport.sendMessage({
+      to: context.replyTarget,
+      type: "text",
+      body: `Pronunciation tip for ${params.word}: break it into syllables and stress the right part.`,
+    });
     return `Pronunciation guidance sent for ${params.word}`;
   },
 };

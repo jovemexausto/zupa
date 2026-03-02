@@ -35,7 +35,11 @@ export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineCon
     }
 
     if (state.createdUser === true && config.welcomeMessage?.trim()) {
-      await resources.transport.sendText(replyTarget, config.welcomeMessage.trim());
+      await resources.transport.sendMessage({
+        to: replyTarget,
+        type: "text",
+        body: config.welcomeMessage.trim(),
+      });
     }
 
     const handled = await dispatchCommandIfPresent({

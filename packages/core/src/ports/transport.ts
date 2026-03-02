@@ -37,14 +37,22 @@ export interface InboundMessage {
   downloadMedia?: () => Promise<InboundMedia | undefined>;
 }
 
+export interface OutboundMedia {
+  data: Buffer;
+  mimetype: string;
+  filename?: string | null;
+}
+
+export type OutboundMessage = {
+  to: string;
+} & (
+    | { type: "text"; body: string }
+    | { type: "voice"; media: OutboundMedia }
+    | { type: "media"; media: OutboundMedia; caption?: string }
+  );
+
 export interface MessagingTransport<TAuthPayload = unknown> extends RuntimeResource {
-  sendText(to: string, text: string): Promise<void>;
-  sendVoice(to: string, media: { buffer: Buffer; mimetype: string }): Promise<void>;
-  sendMedia(
-    to: string,
-    media: { buffer: Buffer; mimetype: string; filename?: string },
-    caption?: string,
-  ): Promise<void>;
+  sendMessage(message: OutboundMessage): Promise<void>;
   sendTyping(to: string, durationMs: number): Promise<void>;
 
   /**
