@@ -6,6 +6,13 @@
 
 - [ ] Consolidate DomainStore session ending methods (`@zupa/core/src/ports/domain-store.ts`) — unify `endSession(sessionId, summary)` and `endSessionWithSummary(sessionId, endedAt, summary)` into a single method. This supports the v1 rolling summary retrieval strategy by standardizing how session history is persisted.
 
+- [ ] RESOLVER // TODOs (Review / Refactoring)
+- [ ] Revisar grafos e engine.
+- [ ] Certificar features core funcionando
+- [ ] Escrever e testar agentes ‘reais’.
+- [ ] Interface integrada (builtin on the zupa package)
+- [ ] Streamline zupa builtin API
+
 <!-- DEFERRED -->
 
 - [ ] Implement Phase 2 of Production Readiness RFC: Error taxonomy — classify Transient vs Terminal errors, apply `retryIdempotent` to LLM/Database/Transport calls accordingly.
