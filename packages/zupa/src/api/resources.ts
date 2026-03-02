@@ -8,9 +8,9 @@ import {
     createWWebJSTransport,
     FakeFileStorage,
     FakeVectorStore,
-    FakeDatabaseBackend,
-    PinoLogger
+    FakeDatabaseBackend
 } from '@zupa/adapters';
+import { ReducerEventBus } from '@zupa/runtime';
 
 /**
  * Creates a default set of resources using OpenAI and local fakes.
@@ -18,10 +18,6 @@ import {
  */
 export function createLocalResources(): RuntimeEngineResources {
     const apiKey = process.env.OPENAI_API_KEY ?? '';
-    const logger = new PinoLogger({
-        level: 'info',
-        prettyPrint: process.env.NODE_ENV !== 'production'
-    });
 
     return {
         llm: new OpenAILLMProvider({
@@ -34,18 +30,10 @@ export function createLocalResources(): RuntimeEngineResources {
         tts: new OpenAITTSProvider({
             apiKey
         }),
-        logger,
+        bus: new ReducerEventBus(),
         transport: createWWebJSTransport(),
         storage: new FakeFileStorage(),
         vectors: new FakeVectorStore(),
         database: new FakeDatabaseBackend(),
-        telemetry: {
-            emit(e) {
-                // Default telemetry just logs to console via Pino for now
-                if (process.env.NODE_ENV !== 'test') {
-                    logger.debug({ durationMs: e.durationMs }, `[Telemetry] ${e.node}`);
-                }
-            }
-        }
     };
 }

@@ -25,7 +25,7 @@ export const eventDedupGateNode = defineNode<RuntimeState, RuntimeEngineContext>
     if (result === 'duplicate') {
         return {
             stateDiff: { inboundDuplicate: true },
-            nextTasks: ['telemetry_emit']
+            nextTasks: []
         };
     }
 

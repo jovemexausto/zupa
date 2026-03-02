@@ -9,7 +9,6 @@ import {
   DEFAULT_INBOUND,
   FakeDatabaseBackend,
   TEST_USER_FROM,
-  TEST_USER_ID,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 
@@ -33,7 +32,7 @@ describe("Zupa Baseline Core Functionality", () => {
       messageId: "msg-101",
     });
 
-    const user = await db.findUser(TEST_USER_ID);
+    const user = await db.findUser(TEST_USER_FROM);
     const session = await db.findActiveSession(user!.id);
     const messages = await db.getRecentMessages(session!.id, 10);
 
@@ -128,7 +127,7 @@ describe("Zupa Baseline Core Functionality", () => {
 
     // 1. Check STT was used (resolvedContent should be 'I am feeling great')
     const db = deps.database as FakeDatabaseBackend;
-    const user = await db.findUser(TEST_USER_ID);
+    const user = await db.findUser(TEST_USER_FROM);
     const session = await db.findActiveSession(user!.id);
     const messages = await db.getRecentMessages(session!.id, 10);
     expect(messages[0]!.contentText).toBe("I am feeling great");
@@ -153,7 +152,7 @@ describe("Zupa Baseline Core Functionality", () => {
 
     // Pre-create user with text preference
     const user = await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "Marcus",
       preferences: { preferredReplyFormat: "text" },
     });
@@ -213,7 +212,7 @@ describe("Zupa Baseline Core Functionality", () => {
       body: "Hello first turn"
     });
 
-    const user = await db.findUser(TEST_USER_ID);
+    const user = await db.findUser(TEST_USER_FROM);
     const session1 = await db.findActiveSession(user!.id);
     expect(session1).toBeTruthy();
 

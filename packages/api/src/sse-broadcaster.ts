@@ -1,4 +1,4 @@
-import { DashboardProvider } from '@zupa/core';
+import { DashboardProvider, EventBus } from '@zupa/core';
 import { Response } from 'express';
 
 interface ConnectedClient {
@@ -12,6 +12,7 @@ interface ConnectedClient {
  */
 export class SseDashboardBroadcaster implements DashboardProvider {
     private readonly clients = new Map<string, ConnectedClient>();
+    private unsubscribe: (() => void) | null = null;
 
     /**
      * Express route handler establishing the SSE stream.
@@ -51,8 +52,22 @@ export class SseDashboardBroadcaster implements DashboardProvider {
         }
     }
 
+    public attachToBus(bus: EventBus): void {
+        if (this.unsubscribe) return;
+
+        // Listen to all events and bridge them to the SSE stream
+        this.unsubscribe = bus.subscribe('*', (event) => {
+            // Map bus event names to the dashboard's 'level' concept for backward compatibility
+            this.emitLog(`${event.channel}:${event.name}`, event.payload);
+        });
+    }
+
     /** Cleanup the broadcaster on shutdown */
     public async destroy(): Promise<void> {
+        if (this.unsubscribe) {
+            this.unsubscribe();
+            this.unsubscribe = null;
+        }
         for (const { response } of this.clients.values()) {
             response.end();
         }

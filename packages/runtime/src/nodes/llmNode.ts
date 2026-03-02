@@ -49,7 +49,11 @@ export const llmNode = defineNode<RuntimeState, RuntimeEngineContext>(async (con
         })
     });
 
-    resources.logger.debug({
+    const logger = context.logger;
+
+    logger.debug({
+        prompt,
+        model: response.model,
         toolCalls: response.toolCalls.length,
         promptLength: prompt.length
     }, 'LLM completion successful');

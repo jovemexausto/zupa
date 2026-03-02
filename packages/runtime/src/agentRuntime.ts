@@ -8,12 +8,14 @@ import {
   RuntimeEngineContext,
   RouterState,
   InboundMessage,
+  Logger,
 } from "@zupa/core";
 
 import { EngineExecutor, createInitialRuntimeContext } from "@zupa/engine";
 import { MemoryCheckpointSaver } from "@zupa/adapters";
 
 import { buildEngineGraphSpec } from "./engine/graph";
+import { createEventBusLogger } from "./bus/logger";
 
 import {
   bindTransportInbound,
@@ -82,14 +84,15 @@ export class AgentRuntime<T = unknown> {
   private lifecycleResources: RuntimeResource[] = [];
   private uiServer: RuntimeUiServer | null = null;
   private isClosing = false;
+  private readonly logger: Logger;
 
   private handleShutdown = async (): Promise<void> => {
     try {
-      this.runtimeResources.logger.info("Received termination signal, shutting down gracefully...");
+      this.logger.info("Received termination signal, shutting down gracefully...");
       await this.close();
       process.exit(0);
     } catch (err) {
-      this.runtimeResources.logger.error({ err }, "Error during graceful shutdown");
+      this.logger.error({ err }, "Error during graceful shutdown");
       process.exit(1);
     }
   };
@@ -97,6 +100,7 @@ export class AgentRuntime<T = unknown> {
   public constructor(input: AgentRuntimeInput<T>) {
     this.runtimeConfig = input.runtimeConfig;
     this.runtimeResources = input.runtimeResources;
+    this.logger = createEventBusLogger(this.runtimeResources.bus);
 
     const handlers = input.handlers ?? buildDefaultNodeHandlers<T>();
     const graph = buildEngineGraphSpec<T>(handlers);
@@ -123,7 +127,11 @@ export class AgentRuntime<T = unknown> {
     } else {
       this.uiServer = null;
     }
-    this.runtimeResources.logger.info(
+
+    if (this.runtimeResources.dashboard) {
+      this.runtimeResources.dashboard.attachToBus(this.runtimeResources.bus);
+    }
+    this.logger.info(
       {
         ui: !!this.uiServer,
         ...(this.uiServer && {
@@ -147,6 +155,18 @@ export class AgentRuntime<T = unknown> {
         this.emitRuntimeEvent("auth:failure", message);
       },
     });
+
+    if (this.runtimeResources.reactiveUi) {
+      this.runtimeResources.reactiveUi.onClientEvent(async (clientId, type, payload) => {
+        if (type === 'INBOUND_MESSAGE') {
+          await this.runInbound({
+            ...(payload as any),
+            source: 'ui_channel',
+            clientId
+          });
+        }
+      });
+    }
     this.lifecycleResources = collectLifecycleResources(this.runtimeResources);
     try {
       await startResources(this.lifecycleResources);
@@ -196,7 +216,7 @@ export class AgentRuntime<T = unknown> {
     process.removeListener('SIGINT', this.handleShutdown);
     process.removeListener('SIGTERM', this.handleShutdown);
 
-    this.runtimeResources.logger.info("Closing AgentRuntime");
+    this.logger.info("Closing AgentRuntime");
     if (this.inboundBridge) {
       this.inboundBridge.stop();
       this.inboundBridge = null;
@@ -239,7 +259,7 @@ export class AgentRuntime<T = unknown> {
     inbound: InboundMessage,
   ): Promise<RuntimeEngineContext<T>> {
     const requestId = randomUUID();
-    const logger = this.runtimeResources.logger.child({ requestId });
+    const logger = this.logger.child({ requestId });
 
     logger.info({ inbound }, "Inbound message received");
     this.emitRuntimeEvent("inbound:received", { inbound });
@@ -252,6 +272,7 @@ export class AgentRuntime<T = unknown> {
       runtimeConfig: this.runtimeConfig,
       runtimeResources: this.runtimeResources,
       inbound,
+      logger: this.logger,
     });
 
     const saver = this.runtimeResources.database;

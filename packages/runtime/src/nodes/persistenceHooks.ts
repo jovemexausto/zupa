@@ -28,6 +28,6 @@ export const persistenceHooksNode = defineNode<RuntimeState, RuntimeEngineContex
 
   return {
     stateDiff: {},
-    nextTasks: ['telemetry_emit']
+    nextTasks: []
   };
 });

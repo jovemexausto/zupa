@@ -13,7 +13,7 @@ import { finalizeResponse } from '@zupa/core';
  * text response is produced. It pipes tokens directly to the connected client.
  */
 export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
-    const { resources, state, config } = context;
+    const { resources, state, config, logger } = context;
     const { reactiveUi } = resources;
     const clientId = context.inbound.clientId;
 
@@ -54,23 +54,26 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
 
         let chunkResponse: LLMResponse | undefined;
 
-        for await (const chunk of stream) {
-            // End of stream yields the final LLMResponse object instead of a chunk
-            if ('toolCalls' in chunk && 'structured' in chunk && 'content' in chunk) {
-                chunkResponse = chunk as unknown as LLMResponse;
-                break;
+        const iterator = stream[Symbol.asyncIterator]();
+        let iterResult = await iterator.next();
+
+        while (!iterResult.done) {
+            const chunk = iterResult.value;
+
+            if (chunk.content) {
+                reactiveUi.emitTokenChunk(clientId, {
+                    id: chunk.id || crypto.randomUUID(),
+                    content: chunk.content
+                });
             }
 
-            // Normal chunk
-            reactiveUi.emitTokenChunk(clientId, {
-                id: (chunk as any).id || 'unknown',
-                content: (chunk as any).content || ''
-            });
+            // Tool deltas are accumulated inside the provider's return value
+            // but we could optionally emit them here if the protocol supported it.
 
-            // If the user disconnected, we abort the stream
-            // (Assuming there was an abort signal or state check here in reality)
-            // if (context.inbound.abortSignal?.aborted) break;
+            iterResult = await iterator.next();
         }
+
+        chunkResponse = iterResult.value;
 
         if (!chunkResponse) {
             throw new Error('LLM stream finished without returning a final response object');
@@ -83,7 +86,7 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
                 toolCalls: chunkResponse.toolCalls,
                 tools: config.tools || [],
                 agentContext,
-                logger: resources.logger,
+                logger: logger,
                 toolTimeoutMs: config.toolTimeoutMs,
                 maxIdempotentRetries: config.maxIdempotentRetries,
                 retryBaseDelayMs: config.retryBaseDelayMs,
@@ -140,7 +143,7 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
         try {
             await config.onResponse(finalLlmResponse, agentContext);
         } catch (err) {
-            resources.logger.error({ err }, 'Error in onResponse callback');
+            logger.error({ err }, 'Error in onResponse callback');
         }
     }
 

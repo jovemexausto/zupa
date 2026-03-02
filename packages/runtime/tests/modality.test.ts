@@ -8,7 +8,6 @@ import {
   DEFAULT_INBOUND,
   FakeDatabaseBackend,
   TEST_USER_FROM,
-  TEST_USER_ID,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 
@@ -19,7 +18,7 @@ describe("Enhanced Modality Preferences", () => {
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "text" },
     });
@@ -59,7 +58,7 @@ describe("Enhanced Modality Preferences", () => {
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "voice" },
     });
@@ -138,7 +137,7 @@ describe("Enhanced Modality Preferences", () => {
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "dynamic" },
     });
@@ -177,7 +176,7 @@ describe("Enhanced Modality Preferences", () => {
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "dynamic" },
     });
@@ -213,7 +212,7 @@ describe("Enhanced Modality Preferences", () => {
 
     // User wants voice
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "voice" },
     });
@@ -263,7 +262,7 @@ describe("Enhanced Modality Preferences", () => {
     });
 
     // Find by externalUserId
-    let user = await db.findUser(TEST_USER_ID);
+    let user = await db.findUser(TEST_USER_FROM);
     expect(user!.preferences.preferredReplyFormat).toBe("voice");
 
     // Turn 2: Switch to dynamic
@@ -274,7 +273,7 @@ describe("Enhanced Modality Preferences", () => {
       body: "/dynamic",
     });
 
-    user = await db.findUser(TEST_USER_ID);
+    user = await db.findUser(TEST_USER_FROM);
     expect(user!.preferences.preferredReplyFormat).toBe("dynamic");
 
     await runtime.close();

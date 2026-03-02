@@ -8,6 +8,7 @@ import {
   FakeVectorStore,
   FakeLogger,
   FakeReactiveUiProvider,
+  FakeEventBus,
 } from "@zupa/adapters";
 import {
   type RuntimeEngineResources,
@@ -29,10 +30,10 @@ export {
   FakeVectorStore,
   FakeLogger,
   FakeReactiveUiProvider,
+  FakeEventBus,
 };
 
 export const TEST_USER_FROM = "5511999999999@c.us";
-export const TEST_USER_ID = "+5511999999999";
 
 export const DEFAULT_USER: User = {
   id: "u1",
@@ -116,9 +117,8 @@ export function createFakeRuntimeDeps(): RuntimeEngineResources {
     tts: new FakeTTSProvider(),
     storage: new FakeFileStorage(),
     vectors: new FakeVectorStore(),
-    telemetry: { emit() { } },
+    bus: new FakeEventBus(),
     database,
-    logger: new FakeLogger(),
     reactiveUi: new FakeReactiveUiProvider(),
   };
 }

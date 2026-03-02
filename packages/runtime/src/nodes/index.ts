@@ -23,7 +23,7 @@ import { contextAssemblyNode } from './contextAssembly';
 import { persistenceHooksNode } from './persistenceHooks';
 import { promptBuildNode } from './promptBuild';
 import { responseFinalizeNode } from './responseFinalize';
-import { telemetryEmitNode } from './telemetryEmit';
+
 import { interactiveStreamingNode } from './interactiveStreamingNode';
 
 /**
@@ -77,8 +77,7 @@ export function buildDefaultNodeHandlers<T = unknown>(): RuntimeNodeHandlerMap<T
     tool_execution_node: toolExecutionNodeNode as RuntimeNodeHandler<T>,
     response_finalize: responseFinalizeNode as RuntimeNodeHandler<T>,
     interactive_streaming_node: interactiveStreamingNode as RuntimeNodeHandler<T>,
-    persistence_hooks: persistenceHooksNode as RuntimeNodeHandler<T>,
-    telemetry_emit: telemetryEmitNode as RuntimeNodeHandler<T>
+    persistence_hooks: persistenceHooksNode as RuntimeNodeHandler<T>
   };
 }
 // TODO: Remove this

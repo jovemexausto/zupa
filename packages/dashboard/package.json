@@ -2,25 +2,26 @@
     "name": "@zupa/dashboard",
     "version": "0.1.0",
     "license": "MIT",
-    "description": "Built-in Dashboard for Zupa agents (SSE broadcaster + admin UI)",
+    "description": "Built-in Dashboard for Zupa agents (Admin UI)",
     "type": "module",
-    "exports": {
-        ".": {
-            "types": "./dist/index.d.ts",
-            "import": "./dist/index.js"
-        }
-    },
     "scripts": {
-        "build": "tsup src/index.ts --format esm --dts",
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
         "typecheck": "tsc --noEmit"
     },
     "dependencies": {
         "@zupa/core": "workspace:*",
-        "@zupa/api": "workspace:*"
+        "@zupa/react": "workspace:*",
+        "react": "^19.0.0",
+        "react-dom": "^19.0.0",
+        "lucide-react": "^0.473.0"
     },
     "devDependencies": {
-        "@types/node": "^24.4.0",
-        "tsup": "^8.5.0",
-        "typescript": "^5.9.2"
+        "@types/react": "^19.0.0",
+        "@types/react-dom": "^19.0.0",
+        "@vitejs/plugin-react": "^4.3.4",
+        "typescript": "^5.9.2",
+        "vite": "^6.0.0"
     }
 }

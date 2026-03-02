@@ -37,7 +37,7 @@ export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineConte
         toolCalls: llmResponse.toolCalls,
         tools,
         agentContext,
-        logger: resources.logger,
+        logger: context.logger,
         toolTimeoutMs: config.toolTimeoutMs,
         maxIdempotentRetries: config.maxIdempotentRetries,
         retryBaseDelayMs: config.retryBaseDelayMs,

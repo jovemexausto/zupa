@@ -7,7 +7,6 @@ import {
   DEFAULT_INBOUND,
   FakeDatabaseBackend,
   TEST_USER_FROM,
-  TEST_USER_ID,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 
@@ -72,7 +71,7 @@ describe("Zupa Reliability: Idempotency & Resumability", () => {
       messageId: m1,
     });
 
-    const user = await db.findUser(TEST_USER_ID);
+    const user = await db.findUser(TEST_USER_FROM);
     const session = await db.findActiveSession(user!.id);
 
     // Let's simulate a tool having written to KV in the checkpoint

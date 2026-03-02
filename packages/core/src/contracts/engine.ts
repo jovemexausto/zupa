@@ -6,10 +6,10 @@ import {
     DatabaseProvider,
     STTProvider,
     TTSProvider,
-    TelemetrySink,
     VectorStore,
     DashboardProvider,
     ReactiveUiProvider,
+    EventBus,
 } from '../ports';
 import { InboundMessage } from '../ports/transport';
 import { RuntimeConfig } from '../config/types';
@@ -29,8 +29,7 @@ export type EngineNodeName =
     | 'tool_execution_node'
     | 'response_finalize'
     | 'interactive_streaming_node'
-    | 'persistence_hooks'
-    | 'telemetry_emit';
+    | 'persistence_hooks';
 
 export type RouterNodeName =
     | 'identity_resolution'
@@ -39,10 +38,6 @@ export type RouterNodeName =
 export interface RuntimeContextMeta {
     requestId: string;
     startedAt: Date;
-}
-
-export interface RuntimeTelemetryContext {
-    nodeDurationsMs: Partial<Record<EngineNodeName | RouterNodeName, number>>;
 }
 
 export interface RuntimeEngineContext<T = unknown> {
@@ -54,7 +49,7 @@ export interface RuntimeEngineContext<T = unknown> {
     transport: MessagingTransport;
     resources: RuntimeEngineResources;
     state: Record<string, unknown>;
-    telemetry: RuntimeTelemetryContext;
+    logger: Logger;
 }
 
 export interface RouterState {
@@ -71,8 +66,7 @@ export interface RuntimeEngineResources {
     storage: FileStorage;
     vectors: VectorStore;
     database: DatabaseProvider;
-    telemetry: TelemetrySink;
-    logger: Logger;
+    bus: EventBus;
     /** Optional: streams system events to the built-in dashboard UI */
     dashboard?: DashboardProvider;
     /** Optional: WebSocket bridge for reactive UI clients (AG-UI / CopilotKit style) */

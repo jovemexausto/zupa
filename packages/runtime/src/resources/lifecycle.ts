@@ -9,7 +9,7 @@ export function collectLifecycleResources(resources: RuntimeEngineResources): Ru
     resources.llm,
     resources.stt,
     resources.tts,
-    resources.telemetry,
+    resources.bus,
     resources.transport
   ];
 

@@ -6,7 +6,6 @@ import {
     DEFAULT_INBOUND,
     FakeDatabaseBackend,
     TEST_USER_FROM,
-    TEST_USER_ID,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 import { type RuntimeState } from "../src/nodes";
@@ -41,7 +40,7 @@ describe("Router Pattern & Thread Decoupling", () => {
         expect(findUserSpy).toHaveBeenCalled();
 
         // 2. Database should have been called to resolve session (Router Phase)
-        const user = await db.findUser(TEST_USER_ID);
+        const user = await db.findUser(TEST_USER_FROM);
         const session = await db.findActiveSession(user!.id);
         expect(session).toBeTruthy();
         expect(createSessionSpy).toHaveBeenCalledWith(user!.id);

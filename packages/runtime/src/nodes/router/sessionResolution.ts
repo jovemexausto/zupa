@@ -12,8 +12,8 @@ import {
  */
 export const sessionResolutionNode = <T>(): PregelNode<RouterState, RuntimeEngineContext<T>> =>
     defineNode<RouterState, RuntimeEngineContext<T>>(async (context) => {
-        const { resources, config, state } = context;
-        const { database, logger } = resources;
+        const { resources, config, state, logger } = context;
+        const { database } = resources;
         const user = state.user;
 
         if (!user) {
@@ -39,10 +39,8 @@ export const sessionResolutionNode = <T>(): PregelNode<RouterState, RuntimeEngin
             session = await database.createSession(user.id);
         }
 
-        await database.touchSession(session.id);
-
         return {
-            stateDiff: { session },
-            nextTasks: [] // End of Router Graph
+            stateDiff: { user, session },
+            nextTasks: []
         };
     });

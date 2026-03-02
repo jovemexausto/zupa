@@ -5,11 +5,11 @@ import {
   resolveLanguage,
 } from "@zupa/core";
 import { AgentRuntime, buildDefaultNodeHandlers } from "@zupa/runtime";
-import { PinoLogger } from "@zupa/adapters";
 import { createLocalResources } from "./resources";
-import { LOGGING_DEFAULTS, ModalitySchema, ReplySchema, withReply } from "@zupa/core";
+import { withReply } from "@zupa/core";
+import { PinoLogger } from "@zupa/adapters";
 
-export { ModalitySchema, ReplySchema, withReply };
+export { withReply };
 
 export type WithReply = {
   reply: string;
@@ -59,6 +59,20 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
     for (const listener of preStartListeners) {
       runtime.on(listener.event, listener.handler);
     }
+
+    // Attach external logger sink to the EventBus
+    const externalLogger = new PinoLogger({
+      prettyPrint: true,
+      level: (runtimeConfig as any).logLevel || 'info'
+    });
+
+    resources.bus.subscribe("agent:log:*", (event) => {
+      const level = event.name.split(":")[1] as any;
+      const { message, ...rest } = event.payload as any;
+      if (typeof (externalLogger as any)[level] === "function") {
+        (externalLogger as any)[level](rest, message);
+      }
+    });
 
     return runtime;
   };
@@ -148,12 +162,8 @@ function applyDefaultProviders(
     storage: resources.storage ?? defaults.storage,
     vectors: resources.vectors ?? defaults.vectors,
     database: resources.database ?? defaults.database,
-    telemetry: resources.telemetry ?? defaults.telemetry,
-    logger:
-      resources.logger ??
-      new PinoLogger({
-        level: LOGGING_DEFAULTS.LEVEL,
-        prettyPrint: LOGGING_DEFAULTS.PRETTY_PRINT,
-      }),
+    bus: resources.bus ?? defaults.bus,
+    ...(resources.dashboard && { dashboard: resources.dashboard }),
+    ...(resources.reactiveUi && { reactiveUi: resources.reactiveUi }),
   };
 }

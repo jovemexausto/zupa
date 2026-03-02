@@ -29,8 +29,10 @@ interface LatestQrState {
  * Maintaining backward compatibility for existing deployments.
  * TODO: maybe streamlining an internal emit / event api
  * used for telemetry and dashboard events.
- * The idea is to have a external store (reducer) that decides where each event go.
- * This way with stick with a slick api and can put sse endpoioins on the express middleware.
+ * The idea is to have a external reducer that decides where each event go.
+ * This way with stick with a slick api. We can use a 'channel:event' key pattern.
+ * An it can work asyncronously as defined in the 'TelemetrySink' TODO (internal queue, non-blocking, etc)
+ * This way we declouple telemetry, dashboard events logging etc.
  */
 export class RuntimeUiServer {
   public readonly options: RuntimeUiServerOptions;

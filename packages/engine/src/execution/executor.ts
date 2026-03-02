@@ -4,13 +4,15 @@ import type {
     LedgerEvent,
     LedgerWriter,
     NodeResult,
+    EventBus,
     Logger
 } from '@zupa/core';
 
-interface ExecutorContextWithLogger {
-    resources?: {
-        logger?: Logger;
-    }
+interface ExecutorContextWithResources {
+    logger?: Logger;
+    resources: {
+        bus: EventBus;
+    };
 }
 import type { ChannelReducer } from '../models/checkpoint';
 
@@ -52,7 +54,8 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
         config: EngineExecutorConfig<TState>
     ): Promise<StateSnapshot<TState>> {
         const { threadId, saver } = config;
-        const logger = (context as ExecutorContextWithLogger).resources?.logger?.child({ threadId });
+        const ctx = context as unknown as ExecutorContextWithResources;
+        const logger = ctx.logger?.child({ threadId });
 
         logger?.debug('Starting graph execution');
 
@@ -116,7 +119,9 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
                             throw new Error(`Graph Execution Error: Node ${taskName} not found.`);
                         }
 
+                        const startTime = Date.now();
                         const result = await nodeHandler(snapshotContext);
+                        const durationMs = Date.now() - startTime;
 
                         Object.assign(writes, result.stateDiff);
                         if (result.ledgerEvents) {
@@ -126,7 +131,19 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
                             dynamicNextTasks = result.nextTasks;
                         }
                         completedTasks.push(taskName);
-                        logger?.trace({ node: taskName }, 'Node completed');
+                        logger?.trace({ node: taskName, durationMs }, 'Node completed');
+
+                        // Emit to Bus
+                        ctx.resources.bus?.emit({
+                            channel: 'engine',
+                            name: 'node_complete',
+                            payload: {
+                                threadId,
+                                node: taskName,
+                                durationMs,
+                                result: 'ok'
+                            }
+                        });
                     })
                 );
             } catch (err) {
