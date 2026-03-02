@@ -14,22 +14,23 @@ import {
 export const identityResolutionNode = <T>(): PregelNode<RouterState, RuntimeEngineContext<T>> =>
     defineNode<RouterState, RuntimeEngineContext<T>>(async (context) => {
         const { inbound, resources } = context;
-        const { database, logger } = resources;
+        const logger = context.logger;
+        const { domainStore } = resources;
 
         const inboundFrom = inbound.from;
-        const externalUserId = normalizeExternalUserId(inboundFrom);
+        const externalUserId = inboundFrom;
 
-        let user = await database.findUser(externalUserId);
+        let user = await domainStore.findUser(externalUserId);
         if (!user) {
             logger.info({ externalUserId }, "Creating new user");
-            user = await database.createUser({
+            user = await domainStore.createUser({
                 externalUserId,
-                displayName: inboundFrom.split(':')[0] || 'Unknown User'
+                displayName: externalUserId.split(':')[0] || 'Unknown User'
             });
         }
 
         return {
             stateDiff: { user },
-            nextTasks: ['session_resolution']
+            nextTasks: ["session_resolution"]
         };
     });

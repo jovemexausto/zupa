@@ -1,7 +1,7 @@
 import type {
   EngineNodeName,
   RuntimeEngineContext,
-  RuntimeEngineResources,
+  RuntimeResourceSet,
   InboundMessage,
   RuntimeConfig,
   NodeResult
@@ -12,7 +12,7 @@ export interface CreateInitialRuntimeContextInput {
   startedAt: Date;
   inbound: InboundMessage;
   runtimeConfig: RuntimeConfig;
-  runtimeResources: RuntimeEngineResources;
+  runtimeResources: RuntimeResourceSet;
 }
 
 /** Pregel-native graph node contract. */

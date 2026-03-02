@@ -41,7 +41,7 @@ export interface RuntimeConfig<T = unknown> {
   retryJitterMs?: number;
   maxInboundConcurrency?: number;
   overloadMessage?: string;
-  sessionIdleTimeoutMinutes: number;
+  sessionIdleTimeoutMinutes?: number;
   toolTimeoutMs?: number;
   llmTimeoutMs?: number;
   sttTimeoutMs?: number;
@@ -51,4 +51,12 @@ export interface RuntimeConfig<T = unknown> {
   fallbackReply?: string;
   preferredVoiceReply?: boolean;
   ui?: false | UiConfig;
+  /**
+   * Defines whether to buffer the full LLM response before sending ('buffered')
+   * or stream sub-word tokens as they are generated to a Reactive UI client ('streaming').
+   * Note: 'streaming' automatically falls back to 'buffered' for voice interactions
+   * or if the transport does not support streaming.
+   * @default 'buffered'
+   */
+  finalizationStrategy?: 'streaming' | 'buffered';
 }

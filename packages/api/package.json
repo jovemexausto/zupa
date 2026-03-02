@@ -1,0 +1,31 @@
+{
+    "name": "@zupa/api",
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "REST API middleware for Zupa agents (health, auth, webhooks, observability)",
+    "type": "module",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format esm --dts",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@types/express": "^5.0.6",
+        "@zupa/core": "workspace:*",
+        "express": "^5.2.1"
+    },
+    "devDependencies": {
+        "@types/node": "^24.10.13",
+        "@types/supertest": "^7.2.0",
+        "supertest": "^7.2.2",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.2",
+        "vitest": "^3.2.4"
+    }
+}

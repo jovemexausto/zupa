@@ -4,7 +4,7 @@ import WhatsAppWeb, {
   type Client as WhatsAppClient,
   type ClientOptions,
 } from "whatsapp-web.js";
-import { type InboundMessage, type MessagingTransport } from "@zupa/core";
+import { type InboundMessage, type MessagingTransport, type EventBus, type RuntimeResourceContext } from "@zupa/core";
 
 /**
  * Auth payload emitted by WWebJSMessagingTransport during the QR-code authentication flow.
@@ -118,17 +118,16 @@ function buildDefaultClientOptions(options?: ClientOptions): ClientOptions {
 
 export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPayload> {
   private readonly client: WhatsAppClient;
-  private readonly inboundHandlers = new Set<
-    (message: InboundMessage) => Promise<void>
-  >();
-  private inboundListener: ((message: any) => void) | null = null;
+  private bus: EventBus | null = null;
   private startPromise: Promise<void> | null = null;
 
   public constructor(options?: ClientOptions) {
     this.client = new Client(buildDefaultClientOptions(options));
   }
 
-  public async start(): Promise<void> {
+  public async start(context: RuntimeResourceContext): Promise<void> {
+    this.bus = context.bus;
+    this.setupInternalEvents();
     if (!this.startPromise) {
       this.startPromise = new Promise<void>((resolve, reject) => {
         this.client.once("ready", () => resolve());
@@ -142,50 +141,60 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
   }
 
   public async close(): Promise<void> {
-    if (this.inboundListener) {
-      this.client.removeListener("message", this.inboundListener);
-      this.inboundListener = null;
-    }
-    this.inboundHandlers.clear();
     await this.client.destroy();
     this.startPromise = null;
   }
 
-  public onInbound(
-    handler: (message: InboundMessage) => Promise<void>,
-  ): () => void {
-    this.inboundHandlers.add(handler);
-    this.ensureInboundListener();
+  private setupInternalEvents(): void {
+    this.client.on("qr", (qr: string) => {
+      this.bus?.emit<WWebJSAuthPayload>({
+        channel: "transport",
+        name: "auth:request",
+        payload: { type: "qr", qrString: qr },
+      });
+    });
 
-    return () => {
-      this.inboundHandlers.delete(handler);
-      if (this.inboundHandlers.size === 0 && this.inboundListener) {
-        this.client.removeListener("message", this.inboundListener);
-        this.inboundListener = null;
-      }
-    };
-  }
+    this.client.on("ready", () => {
+      this.bus?.emit({
+        channel: "transport",
+        name: "auth:ready",
+        payload: undefined,
+      });
+    });
 
-  public onAuthRequest(handler: (payload: WWebJSAuthPayload) => void): () => void {
-    const wrappedHandler = (qr: string) => handler({ type: 'qr', qrString: qr });
-    this.client.on("qr", wrappedHandler);
-    return () => {
-      this.client.removeListener("qr", wrappedHandler);
-    };
-  }
+    this.client.on("auth_failure", (message: string) => {
+      this.bus?.emit<string>({
+        channel: "transport",
+        name: "auth:failure",
+        payload: message,
+      });
+    });
 
-  public onAuthReady(handler: () => void): () => void {
-    this.client.on("ready", handler);
-    return () => {
-      this.client.removeListener("ready", handler);
-    };
-  }
+    this.client.on("message", (message: any) => {
+      const inbound: InboundMessage = {
+        messageId: message.id._serialized,
+        from: message.from,
+        body: message.body,
+        hasMedia: message.hasMedia,
+        type: message.type,
+        source: "transport",
+        downloadMedia: async () => {
+          const media = await message.downloadMedia();
+          if (!media) return undefined;
+          return {
+            data: Buffer.from(media.data, "base64"),
+            mimetype: media.mimetype,
+            filename: media.filename ?? null,
+          };
+        },
+      };
 
-  public onAuthFailure(handler: (message: string) => void): () => void {
-    this.client.on("auth_failure", handler);
-    return () => {
-      this.client.removeListener("auth_failure", handler);
-    };
+      this.bus?.emit<InboundMessage>({
+        channel: "transport",
+        name: "inbound",
+        payload: inbound,
+      });
+    });
   }
 
   public async sendText(to: string, text: string): Promise<void> {
@@ -230,34 +239,6 @@ export class WWebJSMessagingTransport implements MessagingTransport<WWebJSAuthPa
     await chat.clearState();
   }
 
-  private ensureInboundListener(): void {
-    if (this.inboundListener) return;
-
-    this.inboundListener = (message: any) => {
-      const inbound: InboundMessage = {
-        messageId: message.id._serialized,
-        from: message.from,
-        body: message.body,
-        hasMedia: message.hasMedia,
-        type: message.type,
-        downloadMedia: async () => {
-          const media = await message.downloadMedia();
-          if (!media) return undefined;
-          return {
-            data: Buffer.from(media.data, "base64"),
-            mimetype: media.mimetype,
-            filename: media.filename ?? null,
-          };
-        },
-      };
-
-      for (const handler of this.inboundHandlers) {
-        handler(inbound).catch(() => { });
-      }
-    };
-
-    this.client.on("message", this.inboundListener);
-  }
 }
 
 export function createWWebJSTransport(

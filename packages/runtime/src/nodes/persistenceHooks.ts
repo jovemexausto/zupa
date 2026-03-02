@@ -3,31 +3,36 @@ import { type RuntimeEngineContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
- * persistence_hooks
+ * Finalizes persistence by recording the assistant's response message and
+ * incrementing the session message count. This node runs at the end of a turn
+ * and stores both the raw response content and token usage metrics.
+ *
+ * Preconditions: session and user must be set; outputModality must be defined.
+ * This node ensures the response is durable even if subsequent cleanup fails.
  */
 export const persistenceHooksNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
   const { resources, state } = context;
   const session = state.session;
+  const user = state.user;
 
-  if (session && state.llmResponse) {
-    await resources.database.incrementSessionMessageCount(session.id);
+  if (session && user && state.outputModality && (state.replyContent || state.llmResponse)) {
+    await resources.domainStore.incrementSessionMessageCount(session.id);
 
-    // Persist assistant reply to the Ledger
-    await resources.database.createMessage({
+    const contentText = (state.replyContent as string) || (state.llmResponse?.content as string) || '';
+    await resources.domainStore.createMessage({
       sessionId: session.id,
-      userId: state.user!.id,
+      userId: user.id,
       role: 'assistant',
-      contentText: state.llmResponse.content || '', // content is null for structured, but we store the text if available
-      inputModality: 'text', // assistant messages don't have input modality
-      outputModality: state.outputModality || 'text',
-      tokensUsed: state.llmResponse.tokensUsed,
-      latencyMs: state.llmResponse.latencyMs,
-      metadata: state.llmResponse.structured as Record<string, unknown> || {}
+      contentText,
+      inputModality: (state.inputModality as 'text' | 'voice') || 'text',
+      outputModality: (state.outputModality as 'text' | 'voice'),
+      tokensUsed: state.llmResponse?.tokensUsed || { promptTokens: 0, completionTokens: 0 },
+      latencyMs: state.llmResponse?.latencyMs || 0
     });
   }
 
   return {
     stateDiff: {},
-    nextTasks: ['telemetry_emit']
+    nextTasks: []
   };
 });

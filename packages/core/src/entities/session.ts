@@ -13,6 +13,12 @@ export type JsonValue =
 
 export type KVStore = Record<string, JsonValue>;
 
+/**
+ * Public agent state. By default, an unstructured key-value store.
+ * Generics allow type-safe access while preserving graph checkpointability.
+ */
+export type AgentState<T extends Record<string, JsonValue> = KVStore> = T;
+
 export interface Session {
   id: string;
   userId: string;
@@ -24,13 +30,13 @@ export interface Session {
   metadata: Record<string, unknown>;
 }
 
-export interface SessionState {
-  get<T extends JsonValue>(key: string): Promise<T | null>;
-  set<T extends JsonValue>(key: string, value: T): Promise<void>;
-  delete(key: string): Promise<void>;
-  all(): Promise<KVStore>;
+export interface SessionState<TState extends Record<string, JsonValue> = KVStore> {
+  get<K extends Extract<keyof TState, string>>(key: K): Promise<TState[K] | null>;
+  set<K extends Extract<keyof TState, string>>(key: K, value: TState[K]): Promise<void>;
+  delete<K extends Extract<keyof TState, string>>(key: K): Promise<void>;
+  all(): Promise<TState>;
 }
 
-export interface ActiveSession extends Session {
-  kv: SessionState;
+export interface ActiveSession<TState extends Record<string, JsonValue> = KVStore> extends Session {
+  agentState: SessionState<TState>;
 }

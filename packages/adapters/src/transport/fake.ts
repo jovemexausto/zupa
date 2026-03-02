@@ -1,42 +1,22 @@
 import {
     type MessagingTransport,
     type InboundMessage,
+    type EventBus,
+    type RuntimeResourceContext,
     ensureMessageId
 } from '@zupa/core';
 
 export class FakeMessagingTransport implements MessagingTransport {
     public sentMessages: Array<{ to: string; text?: string; audio?: Buffer; media?: Buffer }> = [];
-    private handlers = new Set<(message: InboundMessage) => Promise<void>>();
-
+    private bus: EventBus | null = null;
     public sentText: Array<{ to: string; text: string }> = [];
     public sentVoice: Array<{ to: string; media: { buffer: Buffer; mimetype: string } }> = [];
     public sentMedia: Array<{ to: string; media: { buffer: Buffer; mimetype: string; filename?: string } }> = [];
-    public inboundSubscriptions = 0;
-    public inboundUnsubscriptions = 0;
 
-    public async start(): Promise<void> { }
+    public async start(context: RuntimeResourceContext): Promise<void> {
+        this.bus = context.bus;
+    }
     public async close(): Promise<void> { }
-
-    public onInbound(handler: (message: InboundMessage) => Promise<void>): () => void {
-        this.handlers.add(handler);
-        this.inboundSubscriptions++;
-        return () => {
-            this.handlers.delete(handler);
-            this.inboundUnsubscriptions++;
-        };
-    }
-
-    public onAuthRequest?(handler: (payload: unknown) => void): () => void {
-        return () => { };
-    }
-
-    public onAuthReady?(handler: () => void): () => void {
-        return () => { };
-    }
-
-    public onAuthFailure?(handler: (message: string) => void): () => void {
-        return () => { };
-    }
 
     public async sendText(to: string, text: string): Promise<void> {
         this.sentMessages.push({ to, text });
@@ -57,24 +37,42 @@ export class FakeMessagingTransport implements MessagingTransport {
         // No-op
     }
 
-    public async simulateInbound(message: Omit<InboundMessage, 'messageId'> & { messageId?: string }): Promise<void> {
-        const full = ensureMessageId(message);
-        const promises = [];
-        for (const handler of this.handlers) {
-            promises.push(handler(full));
+    public async simulateInbound(message: Omit<InboundMessage, 'messageId' | 'source'> & { messageId?: string, source?: 'transport' | 'ui_channel' }): Promise<void> {
+        const full = ensureMessageId({ source: 'transport', ...message } as InboundMessage);
+        if (this.bus) {
+            this.bus.emit({
+                channel: 'transport',
+                name: 'inbound',
+                payload: full,
+            });
         }
-        await Promise.all(promises);
     }
 
-    public async emitInbound(message: Omit<InboundMessage, 'messageId'> & { messageId?: string }): Promise<void> {
-        await this.simulateInbound(message);
+    public simulateAuthRequest(payload: any): void {
+        if (this.bus) {
+            this.bus.emit({
+                channel: 'transport',
+                name: 'auth:request',
+                payload,
+            });
+        }
+    }
+
+    public simulateAuthReady(): void {
+        if (this.bus) {
+            this.bus.emit({
+                channel: 'transport',
+                name: 'auth:ready',
+                payload: undefined,
+            });
+        }
+    }
+
+    public async emitInbound(message: Omit<InboundMessage, 'messageId' | 'source'> & { messageId?: string, source?: 'transport' | 'ui_channel' }): Promise<void> {
+        await this.simulateInbound({ source: 'transport', ...message });
     }
 
     public getSentMessages() {
         return this.sentMessages;
-    }
-
-    public get inboundHandlerCount(): number {
-        return this.handlers.size;
     }
 }

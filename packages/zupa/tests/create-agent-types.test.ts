@@ -14,7 +14,9 @@ describe('createAgent types and interface', () => {
         transport: deps.transport,
         storage: deps.storage,
         vectors: deps.vectors,
-        database: deps.database
+        checkpointer: deps.checkpointer,
+        ledger: deps.ledger,
+        domainStore: deps.domainStore
       }
     };
 

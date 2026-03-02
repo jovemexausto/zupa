@@ -3,7 +3,7 @@ import { createAgent } from "../src/index";
 import { FakeMessagingTransport, createFakeRuntimeDeps } from "@zupa/testing";
 
 describe("createAgent lifecycle", () => {
-  it("registers inbound callback on start and unregisters on close", async () => {
+  it("can start and close without errors", async () => {
     const deps = createFakeRuntimeDeps();
     const transport = deps.transport as FakeMessagingTransport;
 
@@ -17,22 +17,15 @@ describe("createAgent lifecycle", () => {
         tts: deps.tts,
         storage: deps.storage,
         vectors: deps.vectors,
-        database: deps.database,
-        telemetry: deps.telemetry,
+        checkpointer: deps.checkpointer,
+        ledger: deps.ledger,
+        domainStore: deps.domainStore,
       },
     });
 
-    expect(transport.inboundSubscriptions).toBe(0);
-
     await agent.start();
-    expect(transport.inboundSubscriptions).toBe(1);
-
     await transport.emitInbound({ from: "+15550001111", body: "hello" });
-
     await agent.close();
-    expect(transport.inboundUnsubscriptions).toBe(1);
-
-    await transport.emitInbound({ from: "+15550001111", body: "hello-again" });
   });
 
   it("starts resources in declared order and closes in reverse order", async () => {
@@ -48,12 +41,14 @@ describe("createAgent lifecycle", () => {
       };
     };
 
-    mark("db", deps.database);
     mark("file", deps.storage);
     mark("vector", deps.vectors);
     mark("llm", deps.llm);
     mark("stt", deps.stt);
     mark("tts", deps.tts);
+    mark("checkpoint", deps.checkpointer);
+    mark("ledger", deps.ledger);
+    mark("domain", deps.domainStore);
     mark("transport", deps.transport);
 
     const agent = createAgent({
@@ -66,8 +61,9 @@ describe("createAgent lifecycle", () => {
         tts: deps.tts,
         storage: deps.storage,
         vectors: deps.vectors,
-        database: deps.database,
-        telemetry: deps.telemetry,
+        checkpointer: deps.checkpointer,
+        ledger: deps.ledger,
+        domainStore: deps.domainStore,
       },
     });
 
@@ -75,20 +71,24 @@ describe("createAgent lifecycle", () => {
     await agent.close();
 
     expect(events).toEqual([
-      "start:db",
       "start:file",
       "start:vector",
       "start:llm",
       "start:stt",
       "start:tts",
+      "start:checkpoint",
+      "start:ledger",
+      "start:domain",
       "start:transport",
       "close:transport",
+      "close:domain",
+      "close:ledger",
+      "close:checkpoint",
       "close:tts",
       "close:stt",
       "close:llm",
       "close:vector",
       "close:file",
-      "close:db",
     ]);
   });
 });

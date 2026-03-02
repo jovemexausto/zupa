@@ -1,5 +1,6 @@
 import {
-    type RuntimeEngineResources
+    type RuntimeResourceSet,
+    UI_DEFAULTS
 } from '@zupa/core';
 import {
     OpenAILLMProvider,
@@ -8,21 +9,19 @@ import {
     createWWebJSTransport,
     FakeFileStorage,
     FakeVectorStore,
-    FakeDatabaseBackend,
-    PinoLogger
+    FakeCheckpointer,
+    FakeLedger,
+    FakeDomainStore
 } from '@zupa/adapters';
+import { ReducerEventBus } from '@zupa/runtime';
+import { ZupaApiResource } from '@zupa/api';
 
 /**
  * Creates a default set of resources using OpenAI and local fakes.
  * This is the high-level convenience factory for the main SDK.
  */
-export function createLocalResources(): RuntimeEngineResources {
+export function createLocalResources(): RuntimeResourceSet {
     const apiKey = process.env.OPENAI_API_KEY ?? '';
-    const logger = new PinoLogger({
-        level: 'info',
-        prettyPrint: process.env.NODE_ENV !== 'production'
-    });
-
     return {
         llm: new OpenAILLMProvider({
             apiKey,
@@ -34,18 +33,16 @@ export function createLocalResources(): RuntimeEngineResources {
         tts: new OpenAITTSProvider({
             apiKey
         }),
-        logger,
+        bus: new ReducerEventBus(),
+        dashboard: new ZupaApiResource({
+            port: UI_DEFAULTS.PORT_CONFIG.port,
+            host: UI_DEFAULTS.HOST,
+        }),
         transport: createWWebJSTransport(),
         storage: new FakeFileStorage(),
         vectors: new FakeVectorStore(),
-        database: new FakeDatabaseBackend(),
-        telemetry: {
-            emit(e) {
-                // Default telemetry just logs to console via Pino for now
-                if (process.env.NODE_ENV !== 'test') {
-                    logger.debug({ durationMs: e.durationMs }, `[Telemetry] ${e.node}`);
-                }
-            }
-        }
+        checkpointer: new FakeCheckpointer(),
+        ledger: new FakeLedger(),
+        domainStore: new FakeDomainStore(),
     };
 }

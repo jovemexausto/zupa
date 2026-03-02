@@ -1,67 +1,69 @@
-import { defineNode } from '@zupa/engine';
+import { defineNode } from "@zupa/engine";
 import {
-    type RuntimeEngineContext,
-    type AgentContext,
-    type ActiveSession,
-    dispatchToolCall,
-    withTimeout,
-    retryIdempotent
-} from '@zupa/core';
-import { type RuntimeState } from './index';
+  type RuntimeEngineContext,
+  type AgentContext,
+  type ActiveSession,
+} from "@zupa/core";
+import { executeTools } from "./utils/executeTools";
+import { RuntimeState } from ".";
 
 /**
- * tool_execution_node
- * TODO: Write better docs.
+ * Executes tool calls requested by the LLM. For each tool in the configured
+ * registry, validates inputs, executes the tool with the AgentContext, and
+ * collects results.
+ *
+ * Tool results are persisted to state for the next LLM iteration. If no tools
+ * are configured or no tool calls are present, skips to response_finalize.
+ *
+ * Preconditions: llmResponse with toolCalls, user, session, and replyTarget.
  */
-export const toolExecutionNodeNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
-    const { resources, state, config } = context;
-    const llmResponse = state.llmResponse;
-    const tools = config.tools || [];
+export const toolExecutionNodeNode = defineNode<
+  RuntimeState,
+  RuntimeEngineContext
+>(async (context) => {
+  const { resources, state, config } = context;
+  const llmResponse = state.llmResponse;
+  const tools = config.tools || [];
 
-    if (!llmResponse || !llmResponse.toolCalls.length || !state.user || !state.session || !state.replyTarget) {
-        return { stateDiff: {}, nextTasks: ['response_finalize'] };
-    }
+  if (
+    !llmResponse ||
+    !llmResponse.toolCalls.length ||
+    !state.user ||
+    !state.session ||
+    !state.replyTarget
+  ) {
+    return { stateDiff: {}, nextTasks: ["response_finalize"] };
+  }
 
-    const agentContext: AgentContext<unknown> = {
-        user: state.user,
-        session: state.session as ActiveSession,
-        inbound: context.inbound,
-        language: config.language,
-        replyTarget: state.replyTarget,
-        resources,
-        config,
-        endSession: async () => {
-            await resources.database.endSession(state.session!.id, 'Session ended during tool execution');
-        }
-    };
+  const agentContext: AgentContext<unknown> = {
+    user: state.user,
+    session: state.session as ActiveSession,
+    inbound: context.inbound,
+    language: config.language,
+    replyTarget: state.replyTarget,
+    resources,
+    config,
+    endSession: async () => {
+      await resources.domainStore.endSession(
+        state.session!.id,
+        "Session ended during tool execution",
+      );
+    },
+  };
 
-    const toolResults: Array<{ toolCallId: string; result: string }> = [];
-    for (const toolCall of llmResponse.toolCalls) {
-        const result = await withTimeout({
-            timeoutMs: config.toolTimeoutMs ?? 10_000,
-            label: `Tool '${toolCall.name}'`,
-            run: () => retryIdempotent({
-                maxRetries: config.maxIdempotentRetries ?? 2,
-                baseDelayMs: config.retryBaseDelayMs ?? 75,
-                jitterMs: config.retryJitterMs ?? 25,
-                run: () => dispatchToolCall({ toolCall, tools, context: agentContext })
-            })
-        });
+  const toolResults = await executeTools({
+    toolCalls: llmResponse.toolCalls,
+    tools,
+    agentContext,
+    logger: context.logger,
+    toolTimeoutMs: config.toolTimeoutMs,
+    maxIdempotentRetries: config.maxIdempotentRetries,
+    retryBaseDelayMs: config.retryBaseDelayMs,
+    retryJitterMs: config.retryJitterMs,
+  });
 
-        resources.logger.debug({
-            toolCallId: toolCall.id,
-            toolName: toolCall.name,
-            status: result.status
-        }, 'Tool execution completed');
-
-        toolResults.push({
-            toolCallId: toolCall.id,
-            result: result.status === 'ok' ? result.result : result.formatted
-        });
-    }
-
-    return {
-        stateDiff: { toolResults },
-        nextTasks: ['llm_node'] // Loop back to LLM for final response or more tools
-    };
+  return {
+    stateDiff: { toolResults },
+    nextTasks: ["llm_node"], // Loop back to LLM for final response or more tools
+  };
 });

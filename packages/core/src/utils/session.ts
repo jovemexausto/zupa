@@ -1,4 +1,4 @@
-import { type JsonValue, type KVStore, type SessionState } from '../entities/session';
+import { type AgentState, type JsonValue, type KVStore, type SessionState } from '../entities/session';
 import { type StateProvider } from '../ports/state';
 
 /**
@@ -32,32 +32,33 @@ function assertJsonValue(key: string, value: unknown): asserts value is JsonValu
  *
  * Strict JSON validation on every set() ensures the graph state always remains
  * safely serializable for SQLite checkpointing.
+ * Dictionary strictly constrained to JSON-safeness.
  */
-export class GraphKVStore implements SessionState {
+export class GraphAgentStateStore<TState extends Record<string, JsonValue> = KVStore> implements SessionState<TState> {
     public constructor(
-        private readonly store: KVStore
+        private readonly store: TState
     ) { }
 
-    public async get<T extends JsonValue>(key: string): Promise<T | null> {
-        return (this.store[key] as T | undefined) ?? null;
+    public async get<K extends Extract<keyof TState, string>>(key: K): Promise<TState[K] | null> {
+        return (this.store[key] as TState[K] | undefined) ?? null;
     }
 
-    public async set<T extends JsonValue>(key: string, value: T): Promise<void> {
+    public async set<K extends Extract<keyof TState, string>>(key: K, value: TState[K]): Promise<void> {
         assertJsonValue(key, value);
         this.store[key] = value;
     }
 
-    public async delete(key: string): Promise<void> {
+    public async delete<K extends Extract<keyof TState, string>>(key: K): Promise<void> {
         delete this.store[key];
     }
 
-    public async all(): Promise<KVStore> {
+    public async all(): Promise<TState> {
         return { ...this.store };
     }
 }
 
 /**
- * MemoryStateProvider — provides an in-memory StateProvider backed by GraphKVStore.
+ * MemoryStateProvider — provides an in-memory StateProvider backed by GraphAgentStateStore.
  * Useful for local dev, tests, or single-process deployments where the external
  * StateProvider abstraction is still desired (e.g., as a non-graph-native fallback).
  */

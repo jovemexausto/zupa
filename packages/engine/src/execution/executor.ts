@@ -1,16 +1,18 @@
 import type {
     StateSnapshot,
-    CheckpointSaver,
+    Checkpointer,
+    Ledger,
     LedgerEvent,
-    LedgerWriter,
     NodeResult,
+    EventBus,
     Logger
 } from '@zupa/core';
 
-interface ExecutorContextWithLogger {
-    resources?: {
-        logger?: Logger;
-    }
+interface ExecutorContextWithResources {
+    logger?: Logger;
+    resources: {
+        bus: EventBus;
+    };
 }
 import type { ChannelReducer } from '../models/checkpoint';
 
@@ -34,8 +36,10 @@ export class GraphInterrupt extends Error {
 
 export interface EngineExecutorConfig<TState = Record<string, unknown>> {
     threadId: string;
-    saver: CheckpointSaver<TState> & LedgerWriter;
+    checkpointer: Checkpointer<TState>;
+    ledger?: Ledger;
     entrypoint?: string;
+    onStepComplete?: (checkpoint: StateSnapshot<TState>, writes: Partial<TState>) => void | Promise<void>;
 }
 
 export class EngineExecutor<TState extends object, TContext = unknown> {
@@ -50,12 +54,13 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
         context: TContext,
         config: EngineExecutorConfig<TState>
     ): Promise<StateSnapshot<TState>> {
-        const { threadId, saver } = config;
-        const logger = (context as ExecutorContextWithLogger).resources?.logger?.child({ threadId });
+        const { threadId, checkpointer, ledger } = config;
+        const ctx = context as unknown as ExecutorContextWithResources;
+        const logger = ctx.logger?.child({ threadId });
 
         logger?.debug('Starting graph execution');
 
-        let checkpoint = await saver.getCheckpoint(threadId) as StateSnapshot<TState> | null;
+        let checkpoint = await checkpointer.getCheckpoint(threadId) as StateSnapshot<TState> | null;
 
         if (!checkpoint) {
             // Bootstrap initial checkpoint
@@ -68,7 +73,7 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
                 createdAt: new Date(),
                 nextTasks: startTasks
             };
-            await saver.putCheckpoint(threadId, checkpoint);
+            await checkpointer.putCheckpoint(threadId, checkpoint);
         } else {
             // If we are resuming with new input, apply it as a reducer write before starting
             if (Object.keys(input).length > 0) {
@@ -85,7 +90,7 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
 
         // The Pregel Super-Step Loop
         let loopCount = 0;
-        // TODO: Make this configurable and with safe defaults
+        // TODO (deferred): Make this configurable and with safe defaults
         const MAX_STEPS = 50; // Guard against infinite cycles
 
         while (currentCheckpoint.nextTasks.length > 0) {
@@ -115,7 +120,9 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
                             throw new Error(`Graph Execution Error: Node ${taskName} not found.`);
                         }
 
+                        const startTime = Date.now();
                         const result = await nodeHandler(snapshotContext);
+                        const durationMs = Date.now() - startTime;
 
                         Object.assign(writes, result.stateDiff);
                         if (result.ledgerEvents) {
@@ -125,7 +132,19 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
                             dynamicNextTasks = result.nextTasks;
                         }
                         completedTasks.push(taskName);
-                        logger?.trace({ node: taskName }, 'Node completed');
+                        logger?.trace({ node: taskName, durationMs }, 'Node completed');
+
+                        // Emit to Bus
+                        ctx.resources.bus?.emit({
+                            channel: 'engine',
+                            name: 'node_complete',
+                            payload: {
+                                threadId,
+                                node: taskName,
+                                durationMs,
+                                result: 'ok'
+                            }
+                        });
                     })
                 );
             } catch (err) {
@@ -162,10 +181,14 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
             };
 
             // 3. Dual-Write Persistence
-            if (ledgerEvents.length > 0) {
-                await saver.appendLedgerEvent(threadId, ledgerEvents[0]!); // Simple single event for now, should be bulk
+            if (ledgerEvents.length > 0 && ledger) {
+                await ledger.appendLedgerEvent(threadId, ledgerEvents[0]!); // Simple single event for now, should be bulk
             }
-            await saver.putCheckpoint(threadId, nextCheckpoint);
+            await checkpointer.putCheckpoint(threadId, nextCheckpoint);
+
+            if (config.onStepComplete) {
+                await config.onStepComplete(nextCheckpoint, writes);
+            }
 
             currentCheckpoint = nextCheckpoint;
 
@@ -184,8 +207,8 @@ export class EngineExecutor<TState extends object, TContext = unknown> {
         context: TContext,
         config: EngineExecutorConfig<TState>
     ): Promise<StateSnapshot<TState>> {
-        const { threadId, saver } = config;
-        const checkpoint = await saver.getCheckpoint(threadId);
+        const { threadId, checkpointer } = config;
+        const checkpoint = await checkpointer.getCheckpoint(threadId);
 
         if (!checkpoint) {
             throw new Error(`Cannot resume thread ${threadId}: No checkpoint found.`);
