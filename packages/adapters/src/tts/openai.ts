@@ -1,1 +1,1 @@
-export * from '../+vendors/openai/tts';
+export * from "../+vendors/openai/tts";

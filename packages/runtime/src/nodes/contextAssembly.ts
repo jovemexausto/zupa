@@ -12,34 +12,28 @@ import { type RuntimeState } from "./index";
  *
  * Output: assembledContext in state
  */
-export const contextAssemblyNode = defineNode<
-  RuntimeState,
-  RuntimeEngineContext
->(async (context) => {
-  const { resources, state, config } = context;
-  const user = state.user;
-  const session = state.session;
+export const contextAssemblyNode = defineNode<RuntimeState, RuntimeEngineContext>(
+  async (context) => {
+    const { resources, state, config } = context;
+    const user = state.user;
+    const session = state.session;
 
-  if (!user || !session) {
-    return { stateDiff: {}, nextTasks: ["prompt_build"] };
-  }
+    if (!user || !session) {
+      return { stateDiff: {}, nextTasks: ["prompt_build"] };
+    }
 
-  const recentMessages = await resources.domainStore.getRecentMessages(
-    session.id,
-    config.maxWorkingMemory || 20,
-  );
-  const recentSummaries = await resources.domainStore.getRecentSummaries(
-    user.id,
-    config.maxEpisodicMemory || 3,
-  );
+    const recentSummaries = await resources.domainStore.getRecentSummaries(
+      user.id,
+      config.maxEpisodicMemory || 3,
+    );
 
-  const assembledContext = {
-    history: recentMessages,
-    summaries: recentSummaries,
-  };
+    const assembledContext = {
+      summaries: recentSummaries,
+    };
 
-  return {
-    stateDiff: { assembledContext },
-    nextTasks: ["prompt_build"],
-  };
-});
+    return {
+      stateDiff: { assembledContext },
+      nextTasks: ["prompt_build"],
+    };
+  },
+);

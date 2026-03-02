@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { createAgent } from '../src/index';
-import { createFakeRuntimeDeps } from '@zupa/testing';
+import { describe, expect, it } from "vitest";
+import { createAgent } from "../src/index";
+import { createFakeRuntimeDeps } from "@zupa/testing";
 
 const baseDeps = createFakeRuntimeDeps();
 
 const baseConfig: any = {
-  prompt: 'hello',
+  prompt: "hello",
   providers: {
     llm: baseDeps.llm,
     stt: baseDeps.stt,
@@ -15,21 +15,21 @@ const baseConfig: any = {
     vectors: baseDeps.vectors,
     checkpointer: baseDeps.checkpointer,
     ledger: baseDeps.ledger,
-    domainStore: baseDeps.domainStore
-  }
+    domainStore: baseDeps.domainStore,
+  },
 };
 
-describe('createAgent config resolution', () => {
-  it('creates an agent with defaults', () => {
+describe("createAgent config resolution", () => {
+  it("creates an agent with defaults", () => {
     const agent = createAgent(baseConfig);
     expect(agent).toBeDefined();
-    expect(typeof agent.start).toBe('function');
+    expect(typeof agent.start).toBe("function");
   });
 
-  it('accepts language override', () => {
+  it("accepts language override", () => {
     const agent = createAgent({
       ...baseConfig,
-      language: 'es'
+      language: "es",
     });
     expect(agent).toBeDefined();
   });

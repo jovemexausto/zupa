@@ -13,10 +13,10 @@ export { withReply };
 
 export type WithReply = {
   reply: string;
-  modality?: 'text' | 'voice' | null;
+  modality?: "text" | "voice" | null;
 };
 
-export type AgentProvidersConfig = Partial<Omit<RuntimeResourceSet, 'transport'>> & {
+export type AgentProvidersConfig = Partial<Omit<RuntimeResourceSet, "transport">> & {
   transport?: MessagingTransport<unknown>;
 };
 
@@ -50,7 +50,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
     if (!resources.logger) {
       const pino = new PinoLogger({
         prettyPrint: true,
-        level: (runtimeConfig as any).logLevel || 'info'
+        level: (runtimeConfig as any).logLevel || "info",
       });
       resources.logger = new EventLoggerResource(pino);
     }
@@ -69,14 +69,18 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
     stop,
     close,
     bus,
-    /** 
+    /**
      * Typesafe facade for the underlying ReducerEventBus.
      * Maps legacy event names (e.g. 'auth:request') to internal channels for backward compatibility.
      */
     on: <TPayload = unknown>(name: string, handler: (payload: TPayload) => void) => {
       // Compatibility mapping
-      const busEventName = name === 'auth:request' ? 'transport:auth:request' :
-        name === 'auth:ready' ? 'transport:auth:ready' : name;
+      const busEventName =
+        name === "auth:request"
+          ? "transport:auth:request"
+          : name === "auth:ready"
+            ? "transport:auth:ready"
+            : name;
 
       return bus.subscribe(busEventName, (event) => handler(event.payload as TPayload));
     },
@@ -85,7 +89,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
      */
     use: (reducer: (event: any) => any) => {
       return bus.use(reducer);
-    }
+    },
   };
 
   async function start(): Promise<void> {
@@ -113,7 +117,12 @@ async function resolveRuntimeConfig<T extends WithReply>(
   // Strip providers (public API) to get pure RuntimeConfig fields
   // AgentConfig adds `language` as optional with a wider type and `providers`;
   // RuntimeConfig expects `language` as AgentLanguage — we resolve below.
-  const { providers: _providers, language: _lang, ui, ...rest } = config as AgentConfig<T> & { providers?: unknown };
+  const {
+    providers: _providers,
+    language: _lang,
+    ui,
+    ...rest
+  } = config as AgentConfig<T> & { providers?: unknown };
 
   const resolved: RuntimeConfig<T> = {
     ...rest,
@@ -132,9 +141,7 @@ function validateRuntimeConfig<T>(_config: RuntimeConfig<T>): void {
   }
 }
 
-function applyDefaultProviders(
-  resources: AgentProvidersConfig,
-): RuntimeResourceSet {
+function applyDefaultProviders(resources: AgentProvidersConfig): RuntimeResourceSet {
   const defaults = createLocalResources();
 
   return {

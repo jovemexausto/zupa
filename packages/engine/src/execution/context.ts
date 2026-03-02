@@ -5,8 +5,8 @@ import {
   type InboundMessage,
   type Logger,
   normalizeExternalUserId,
-  resolveReplyTarget
-} from '@zupa/core';
+  resolveReplyTarget,
+} from "@zupa/core";
 
 export interface CreateInitialRuntimeContextInput<T = any> {
   requestId: string;
@@ -17,19 +17,24 @@ export interface CreateInitialRuntimeContextInput<T = any> {
   logger: Logger;
 }
 
-export function createInitialRuntimeContext<T = any>(input: CreateInitialRuntimeContextInput<T>): RuntimeEngineContext<T> {
+export function createInitialRuntimeContext<T = any>(
+  input: CreateInitialRuntimeContextInput<T>,
+): RuntimeEngineContext<T> {
   return {
     meta: {
       requestId: input.requestId,
-      startedAt: input.startedAt
+      startedAt: input.startedAt,
     },
     config: input.runtimeConfig,
     inbound: input.inbound,
     resources: input.runtimeResources,
     state: {
-      replyTarget: resolveReplyTarget(input.inbound.from, normalizeExternalUserId(input.inbound.from))
+      replyTarget: resolveReplyTarget(
+        input.inbound.from,
+        normalizeExternalUserId(input.inbound.from),
+      ),
     },
     transport: input.runtimeResources.transport,
-    logger: input.logger
+    logger: input.logger,
   };
 }

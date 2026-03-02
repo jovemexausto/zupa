@@ -1,2 +1,2 @@
-export * from './memory';
-export * from './fake';
+export * from "./memory";
+export * from "./fake";

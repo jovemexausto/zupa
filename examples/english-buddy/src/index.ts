@@ -1,26 +1,26 @@
-import { z } from 'zod';
-import { createAgent, withReply, WWebJSAuthPayload, WWebJSMessagingTransport } from 'zupa';
+import { z } from "zod";
+import { createAgent, withReply, WWebJSAuthPayload, WWebJSMessagingTransport } from "zupa";
 
-import { scheduleReminder, sendPronunciationClip, sendVocabCard } from './tools';
-import { getRecurringMistakes, getVocabularyHistory } from './queries';
+import { scheduleReminder, sendPronunciationClip, sendVocabCard } from "./tools";
+import { getRecurringMistakes, getVocabularyHistory } from "./queries";
 //
-import { config } from 'dotenv';
-import { generateAsciiQR } from './qr';
-config()
+import { config } from "dotenv";
+import { generateAsciiQR } from "./qr";
+config();
 //
 
 const CorrectionSchema = z.object({
   original: z.string(),
   corrected: z.string(),
   explanation: z.string(),
-  category: z.enum(['grammar', 'vocabulary', 'preposition', 'article', 'other'])
+  category: z.enum(["grammar", "vocabulary", "preposition", "article", "other"]),
 });
 
 const AgentReplySchema = withReply({
   correction: CorrectionSchema.nullable(),
   sessionEnded: z.boolean(),
   vocabularyIntroduced: z.array(z.string()),
-})
+});
 
 const agent = createAgent({
   prompt: `
@@ -40,18 +40,18 @@ const agent = createAgent({
   outputSchema: AgentReplySchema,
   tools: [scheduleReminder, sendVocabCard, sendPronunciationClip],
   //
-  language: 'pt',
-  modality: 'text',
+  language: "pt",
+  modality: "text",
   //
   context: async (ctx) => ({
     recurringMistakes: await getRecurringMistakes(ctx.user.id),
-    vocabularyHistory: await getVocabularyHistory(ctx.user.id)
+    vocabularyHistory: await getVocabularyHistory(ctx.user.id),
   }),
   //
   onResponse: async (response, ctx) => {
     await ctx.resources.domainStore.updateMessageMetadata(ctx.session.id, {
       correction: response.correction,
-      vocabularyIntroduced: response.vocabularyIntroduced
+      vocabularyIntroduced: response.vocabularyIntroduced,
     });
 
     if (response.sessionEnded) {
@@ -59,11 +59,13 @@ const agent = createAgent({
     }
   },
   providers: {
-    transport: new WWebJSMessagingTransport()
-  }
+    transport: new WWebJSMessagingTransport(),
+  },
 });
 
-agent.on<WWebJSAuthPayload>('auth:request', (payload) => generateAsciiQR(payload.qrString).then(console.log));
-agent.on('auth:ready', () => console.log('Sam is online'));
+agent.on<WWebJSAuthPayload>("auth:request", (payload) =>
+  generateAsciiQR(payload.qrString).then(console.log),
+);
+agent.on("auth:ready", () => console.log("Sam is online"));
 
-void agent.start().catch(console.error)
+void agent.start().catch(console.error);

@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { type InboundMessage } from '../ports/transport';
+import { createHash } from "node:crypto";
+import { type InboundMessage } from "../ports/transport";
 
 /**
  * Generates a deterministic message ID from the inbound message's key fields.
@@ -13,9 +13,9 @@ import { type InboundMessage } from '../ports/transport';
  * MUST use that instead of this function.
  */
 export function generateMessageId(from: string, body: string, at: Date = new Date()): string {
-    const secondPrecisionTs = Math.floor(at.getTime() / 1000);
-    const raw = `${from}:${body}:${secondPrecisionTs}`;
-    return createHash('sha256').update(raw).digest('hex').slice(0, 32);
+  const secondPrecisionTs = Math.floor(at.getTime() / 1000);
+  const raw = `${from}:${body}:${secondPrecisionTs}`;
+  return createHash("sha256").update(raw).digest("hex").slice(0, 32);
 }
 
 /**
@@ -24,11 +24,11 @@ export function generateMessageId(from: string, body: string, at: Date = new Dat
  * Useful in tests and for transports that construct InboundMessage without a platform ID.
  */
 export function ensureMessageId(
-    partial: Omit<InboundMessage, 'messageId'> & { messageId?: string },
-    at?: Date
+  partial: Omit<InboundMessage, "messageId"> & { messageId?: string },
+  at?: Date,
 ): InboundMessage {
-    return {
-        ...partial,
-        messageId: partial.messageId ?? generateMessageId(partial.from, partial.body, at)
-    };
+  return {
+    ...partial,
+    messageId: partial.messageId ?? generateMessageId(partial.from, partial.body, at),
+  };
 }

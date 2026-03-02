@@ -1,6 +1,5 @@
 import { RuntimeResourceSet, RuntimeResource, RuntimeResourceContext } from "@zupa/core";
 
-
 export type AnyResource = RuntimeResource<RuntimeResourceContext> | RuntimeResource<void>;
 
 export function collectLifecycleResources(resources: RuntimeResourceSet): AnyResource[] {
@@ -14,7 +13,7 @@ export function collectLifecycleResources(resources: RuntimeResourceSet): AnyRes
     resources.ledger,
     resources.domainStore,
     resources.bus,
-    resources.transport
+    resources.transport,
   ];
 
   const unique = new Set<AnyResource>();
@@ -29,7 +28,7 @@ export function collectLifecycleResources(resources: RuntimeResourceSet): AnyRes
 
 export async function startResources(
   resources: AnyResource[],
-  context: RuntimeResourceContext
+  context: RuntimeResourceContext,
 ): Promise<void> {
   for (const resource of resources) {
     if (resource.start) {

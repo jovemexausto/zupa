@@ -66,9 +66,7 @@ export const DEFAULT_INBOUND: InboundMessage = {
   source: "transport",
 };
 
-export function createFakeRuntimeConfig(
-  overrides?: Partial<RuntimeConfig>,
-): RuntimeConfig {
+export function createFakeRuntimeConfig(overrides?: Partial<RuntimeConfig>): RuntimeConfig {
   return {
     language: resolveLanguage("en"),
     prompt: "You are a helpful assistant",
@@ -95,9 +93,7 @@ export function createFakeRuntimeConfig(
   };
 }
 
-export function createFakeLLMResponse(
-  overrides?: Partial<LLMResponse>,
-): LLMResponse {
+export function createFakeLLMResponse(overrides?: Partial<LLMResponse>): LLMResponse {
   return {
     content: "Fake response",
     structured: null,
@@ -112,9 +108,7 @@ export function createFakeLLMResponse(
 export function createFakeRuntimeDeps(): RuntimeResourceSet {
   return {
     transport: new FakeMessagingTransport(),
-    llm: new FakeLLMProvider([
-      createFakeLLMResponse({ structured: { reply: "ok" } }),
-    ]),
+    llm: new FakeLLMProvider([createFakeLLMResponse({ structured: { reply: "ok" } })]),
     stt: new FakeSTTProvider(),
     tts: new FakeTTSProvider(),
     storage: new FakeFileStorage(),

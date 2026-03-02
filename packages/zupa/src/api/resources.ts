@@ -1,48 +1,45 @@
+import { type RuntimeResourceSet, UI_DEFAULTS } from "@zupa/core";
 import {
-    type RuntimeResourceSet,
-    UI_DEFAULTS
-} from '@zupa/core';
-import {
-    OpenAILLMProvider,
-    OpenAIWhisperSTTProvider,
-    OpenAITTSProvider,
-    createWWebJSTransport,
-    FakeFileStorage,
-    FakeVectorStore,
-    FakeCheckpointer,
-    FakeLedger,
-    FakeDomainStore
-} from '@zupa/adapters';
-import { ReducerEventBus } from '@zupa/runtime';
-import { ZupaApiResource } from '@zupa/api';
+  OpenAILLMProvider,
+  OpenAIWhisperSTTProvider,
+  OpenAITTSProvider,
+  createWWebJSTransport,
+  FakeFileStorage,
+  FakeVectorStore,
+  FakeCheckpointer,
+  FakeLedger,
+  FakeDomainStore,
+} from "@zupa/adapters";
+import { ReducerEventBus } from "@zupa/runtime";
+import { ZupaApiResource } from "@zupa/api";
 
 /**
  * Creates a default set of resources using OpenAI and local fakes.
  * This is the high-level convenience factory for the main SDK.
  */
 export function createLocalResources(): RuntimeResourceSet {
-    const apiKey = process.env.OPENAI_API_KEY ?? '';
-    return {
-        llm: new OpenAILLMProvider({
-            apiKey,
-            model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini'
-        }),
-        stt: new OpenAIWhisperSTTProvider({
-            apiKey
-        }),
-        tts: new OpenAITTSProvider({
-            apiKey
-        }),
-        bus: new ReducerEventBus(),
-        dashboard: new ZupaApiResource({
-            port: UI_DEFAULTS.PORT_CONFIG.port,
-            host: UI_DEFAULTS.HOST,
-        }),
-        transport: createWWebJSTransport(),
-        storage: new FakeFileStorage(),
-        vectors: new FakeVectorStore(),
-        checkpointer: new FakeCheckpointer(),
-        ledger: new FakeLedger(),
-        domainStore: new FakeDomainStore(),
-    };
+  const apiKey = process.env.OPENAI_API_KEY ?? "";
+  return {
+    llm: new OpenAILLMProvider({
+      apiKey,
+      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
+    }),
+    stt: new OpenAIWhisperSTTProvider({
+      apiKey,
+    }),
+    tts: new OpenAITTSProvider({
+      apiKey,
+    }),
+    bus: new ReducerEventBus(),
+    dashboard: new ZupaApiResource({
+      port: UI_DEFAULTS.PORT_CONFIG.port,
+      host: UI_DEFAULTS.HOST,
+    }),
+    transport: createWWebJSTransport(),
+    storage: new FakeFileStorage(),
+    vectors: new FakeVectorStore(),
+    checkpointer: new FakeCheckpointer(),
+    ledger: new FakeLedger(),
+    domainStore: new FakeDomainStore(),
+  };
 }

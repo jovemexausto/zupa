@@ -23,11 +23,7 @@ import {
   startResources,
   type AnyResource,
 } from "./resources/lifecycle";
-import {
-  buildDefaultNodeHandlers,
-  type RuntimeState,
-  type RuntimeNodeHandlerMap,
-} from "./nodes";
+import { buildDefaultNodeHandlers, type RuntimeState, type RuntimeNodeHandlerMap } from "./nodes";
 import { buildRouterGraphSpec } from "./nodes/router";
 
 /**
@@ -49,14 +45,8 @@ export interface AgentRuntimeInput<T = unknown> {
 export class AgentRuntime<T = unknown> {
   private readonly runtimeConfig: RuntimeConfig<T>;
   private readonly runtimeResources: RuntimeResourceSet;
-  private readonly executor: EngineExecutor<
-    RuntimeState,
-    RuntimeEngineContext<T>
-  >;
-  private readonly routerExecutor: EngineExecutor<
-    RouterState,
-    RuntimeEngineContext<T>
-  >;
+  private readonly executor: EngineExecutor<RuntimeState, RuntimeEngineContext<T>>;
+  private readonly routerExecutor: EngineExecutor<RouterState, RuntimeEngineContext<T>>;
   private readonly routerSaver: MemoryCheckpointer<RouterState>;
   private lifecycleResources: AnyResource[] = [];
   private isClosing = false;
@@ -100,21 +90,31 @@ export class AgentRuntime<T = unknown> {
 
     // Concurrency limiting via Middleware
     const maxConcurrent = this.runtimeConfig.maxInboundConcurrency ?? 32;
-    this.runtimeResources.bus.use(createInboundConcurrencyLimiter(this.runtimeResources.bus, maxConcurrent));
+    this.runtimeResources.bus.use(
+      createInboundConcurrencyLimiter(this.runtimeResources.bus, maxConcurrent),
+    );
 
     // Response to overload events
-    this.runtimeResources.bus.subscribe<{ inbound: InboundMessage }>("transport:inbound:overload", async (event) => {
-      const message = this.runtimeConfig.overloadMessage?.trim();
-      if (message) {
-        await this.runtimeResources.transport.sendText(event.payload.inbound.from, message).catch(err => {
-          this.logger.error({ err, inbound: event.payload.inbound }, "Failed to send overload message");
-        });
-      }
-    });
+    this.runtimeResources.bus.subscribe<{ inbound: InboundMessage }>(
+      "transport:inbound:overload",
+      async (event) => {
+        const message = this.runtimeConfig.overloadMessage?.trim();
+        if (message) {
+          await this.runtimeResources.transport
+            .sendText(event.payload.inbound.from, message)
+            .catch((err) => {
+              this.logger.error(
+                { err, inbound: event.payload.inbound },
+                "Failed to send overload message",
+              );
+            });
+        }
+      },
+    );
 
     this.runtimeResources.bus.subscribe<InboundMessage>("transport:inbound", async (event) => {
       // Basic intake - concurrency limiting moves to Phase 3 Middleware
-      await this.runInbound(event.payload).catch(err => {
+      await this.runInbound(event.payload).catch((err) => {
         this.logger.error({ err, inbound: event.payload }, "Inbound processing failed");
       });
     });
@@ -134,8 +134,8 @@ export class AgentRuntime<T = unknown> {
       throw error;
     }
 
-    process.on('SIGINT', this.handleShutdown);
-    process.on('SIGTERM', this.handleShutdown);
+    process.on("SIGINT", this.handleShutdown);
+    process.on("SIGTERM", this.handleShutdown);
   }
 
   /**
@@ -145,8 +145,8 @@ export class AgentRuntime<T = unknown> {
     if (this.isClosing) return;
     this.isClosing = true;
 
-    process.removeListener('SIGINT', this.handleShutdown);
-    process.removeListener('SIGTERM', this.handleShutdown);
+    process.removeListener("SIGINT", this.handleShutdown);
+    process.removeListener("SIGTERM", this.handleShutdown);
 
     this.logger.info("Closing AgentRuntime");
 
@@ -166,14 +166,16 @@ export class AgentRuntime<T = unknown> {
    * Normally used for testing or advanced scenarios, as `start()` automatically
    * binds logic to consume transport messages.
    */
-  public async runInbound(
-    inbound: InboundMessage,
-  ): Promise<RuntimeEngineContext<T>> {
+  public async runInbound(inbound: InboundMessage): Promise<RuntimeEngineContext<T>> {
     const requestId = randomUUID();
     const logger = this.logger.child({ requestId });
 
     logger.info({ inbound }, "Inbound message received");
-    this.runtimeResources.bus.emit({ channel: "runtime", name: "inbound:received", payload: { inbound } });
+    this.runtimeResources.bus.emit({
+      channel: "runtime",
+      name: "inbound:received",
+      payload: { inbound },
+    });
 
     const startedAt = new Date();
 
@@ -186,17 +188,12 @@ export class AgentRuntime<T = unknown> {
       logger: this.logger,
     });
 
-
     // Phase 1: Invoke stateless Router Graph to resolve Identity and Session.
-    const routerResult = await this.routerExecutor.invoke(
-      { inbound },
-      context,
-      {
-        threadId: `router:${requestId}`,
-        checkpointer: this.routerSaver,
-        entrypoint: "identity_resolution"
-      }
-    );
+    const routerResult = await this.routerExecutor.invoke({ inbound }, context, {
+      threadId: `router:${requestId}`,
+      checkpointer: this.routerSaver,
+      entrypoint: "identity_resolution",
+    });
 
     const { user, session } = routerResult.values;
 
@@ -209,7 +206,7 @@ export class AgentRuntime<T = unknown> {
       ...context.state,
       user,
       session,
-      inbound
+      inbound,
     };
 
     const threadId = session.id;
@@ -222,12 +219,9 @@ export class AgentRuntime<T = unknown> {
         entrypoint: "turn_setup",
         onStepComplete: async (_, writes) => {
           if (writes.agentState && this.runtimeResources.reactiveUi && inbound.clientId) {
-            this.runtimeResources.reactiveUi.emitStateDelta(
-              inbound.clientId,
-              writes.agentState
-            );
+            this.runtimeResources.reactiveUi.emitStateDelta(inbound.clientId, writes.agentState);
           }
-        }
+        },
       });
 
       logger.info({ from: inbound.from }, "Inbound message processed");

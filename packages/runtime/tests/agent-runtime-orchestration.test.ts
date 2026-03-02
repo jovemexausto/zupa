@@ -1,13 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { createFakeRuntimeDeps, createFakeRuntimeConfig } from '@zupa/testing';
-import { AgentRuntime } from '../src/index';
+import { describe, expect, it } from "vitest";
+import { createFakeRuntimeDeps, createFakeRuntimeConfig } from "@zupa/testing";
+import { AgentRuntime } from "../src/index";
 
-describe('Agent Runtime Orchestration', () => {
-  it('should start and close resources correctly', async () => {
+describe("Agent Runtime Orchestration", () => {
+  it("should start and close resources correctly", async () => {
     const deps = createFakeRuntimeDeps();
     const runtime = new AgentRuntime({
       runtimeConfig: createFakeRuntimeConfig(),
-      runtimeResources: deps
+      runtimeResources: deps,
     });
 
     await runtime.start();
