@@ -36,6 +36,7 @@ export interface RuntimeConfig<T = unknown> {
   maxEpisodicMemory?: number;
   semanticSearchLimit?: number;
   rateLimitPerUserPerMinute?: number;
+  rateLimitMessage?: string;
   maxIdempotentRetries?: number;
   retryBaseDelayMs?: number;
   retryJitterMs?: number;
