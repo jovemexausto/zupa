@@ -1,8 +1,14 @@
-import { type ReactiveUiProvider, type JsonValue, type RuntimeResourceContext } from "@zupa/core";
+import {
+  type ReactiveUiProvider,
+  type JsonValue,
+  type RuntimeResourceContext,
+  type OutboundMessage,
+} from "@zupa/core";
 
 export class FakeReactiveUiProvider implements ReactiveUiProvider {
   public emittedChunks: Array<{ clientId: string; chunk: { id: string; content: string } }> = [];
   public emittedDeltas: Array<{ clientId: string; delta: Partial<Record<string, JsonValue>> }> = [];
+  public emittedSideMessages: Array<{ clientId: string; message: OutboundMessage }> = [];
   private context: RuntimeResourceContext | null = null;
 
   public emitStateDelta(clientId: string, delta: Partial<Record<string, JsonValue>>): void {
@@ -11,6 +17,10 @@ export class FakeReactiveUiProvider implements ReactiveUiProvider {
 
   public emitTokenChunk(clientId: string, chunk: { id: string; content: string }): void {
     this.emittedChunks.push({ clientId, chunk });
+  }
+
+  public emitSideMessage(clientId: string, message: OutboundMessage): void {
+    this.emittedSideMessages.push({ clientId, message });
   }
 
   /** Helper for testing: simulates an inbound event from the UI */
@@ -29,5 +39,5 @@ export class FakeReactiveUiProvider implements ReactiveUiProvider {
   public async start(context: RuntimeResourceContext): Promise<void> {
     this.context = context;
   }
-  public async close(): Promise<void> {}
+  public async close(): Promise<void> { }
 }
