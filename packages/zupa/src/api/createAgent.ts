@@ -1,29 +1,27 @@
 import {
-  type RuntimeEngineResources,
+  type RuntimeResourceSet,
   type RuntimeConfig,
   type MessagingTransport,
   resolveLanguage,
 } from "@zupa/core";
 import { AgentRuntime, buildDefaultNodeHandlers } from "@zupa/runtime";
-import { PinoLogger } from "@zupa/adapters";
 import { createLocalResources } from "./resources";
-import { LOGGING_DEFAULTS, ModalitySchema, ReplySchema, withReply } from "@zupa/core";
+import { withReply } from "@zupa/core";
+import { PinoLogger, EventLoggerResource } from "@zupa/adapters";
 
-export { ModalitySchema, ReplySchema, withReply };
+export { withReply };
 
 export type WithReply = {
   reply: string;
   modality?: 'text' | 'voice' | null;
 };
 
-export type AgentProvidersConfig = Partial<Omit<RuntimeEngineResources, 'transport'>> & {
+export type AgentProvidersConfig = Partial<Omit<RuntimeResourceSet, 'transport'>> & {
   transport?: MessagingTransport<unknown>;
 };
 
 /**
  * AgentConfig extends RuntimeConfig with additional public API options.
- * The main difference is that `language` and `ui` are optional here,
- * with sensible defaults applied in resolveRuntimeConfig.
  */
 export type AgentConfig<T extends WithReply = WithReply> = Omit<
   RuntimeConfig<T>,
@@ -37,10 +35,8 @@ export type AgentConfig<T extends WithReply = WithReply> = Omit<
 
 export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   let runtime: AgentRuntime<T> | null = null;
-  const preStartListeners: Array<{
-    event: string;
-    handler: ((...args: unknown[]) => void) | ((arg: unknown) => void) | (() => void);
-  }> = [];
+  const defaultResources = applyDefaultProviders(config.providers ?? {});
+  const bus = config.providers?.bus || defaultResources.bus;
 
   const ensureRuntime = async (): Promise<AgentRuntime<T>> => {
     if (runtime) return runtime;
@@ -48,7 +44,16 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
     const runtimeConfig = await resolveRuntimeConfig<T>(config);
     validateRuntimeConfig<T>(runtimeConfig);
 
-    const resources = applyDefaultProviders(config.providers ?? {});
+    const resources = { ...defaultResources };
+
+    // Initialize autonomous logger if not provided
+    if (!resources.logger) {
+      const pino = new PinoLogger({
+        prettyPrint: true,
+        level: (runtimeConfig as any).logLevel || 'info'
+      });
+      resources.logger = new EventLoggerResource(pino);
+    }
 
     runtime = new AgentRuntime<T>({
       runtimeConfig,
@@ -56,40 +61,31 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
       handlers: buildDefaultNodeHandlers<T>(),
     });
 
-    for (const listener of preStartListeners) {
-      runtime.on(listener.event, listener.handler);
-    }
-
     return runtime;
   };
-
-  /**
-   * Subscribes to runtime lifecycle and adapter events.
-   *
-   * For `'auth:request'`, specify the payload type from your transport:
-   * ```ts
-   * agent.on<WWebJSAuthPayload>('auth:request', (payload) => { ... });
-   * ```
-   */
-  function on<TPayload = unknown>(event: 'auth:request', handler: (payload: TPayload) => void): typeof agent;
-  function on(event: 'auth:ready', handler: () => void): typeof agent;
-  function on(event: 'auth:failure', handler: (message: string) => void): typeof agent;
-  function on(event: string, handler: (...args: unknown[]) => void): typeof agent;
-  function on(event: string, handler: unknown): typeof agent {
-    const normalized = handler as (...args: unknown[]) => void;
-    if (runtime) {
-      runtime.on(event, normalized);
-    } else {
-      preStartListeners.push({ event, handler: normalized });
-    }
-    return agent;
-  }
 
   const agent = {
     start,
     stop,
     close,
-    on,
+    bus,
+    /** 
+     * Typesafe facade for the underlying ReducerEventBus.
+     * Maps legacy event names (e.g. 'auth:request') to internal channels for backward compatibility.
+     */
+    on: <TPayload = unknown>(name: string, handler: (payload: TPayload) => void) => {
+      // Compatibility mapping
+      const busEventName = name === 'auth:request' ? 'transport:auth:request' :
+        name === 'auth:ready' ? 'transport:auth:ready' : name;
+
+      return bus.subscribe(busEventName, (event) => handler(event.payload as TPayload));
+    },
+    /**
+     * Registers stateful middleware (Reducer) to the underlying bus.
+     */
+    use: (reducer: (event: any) => any) => {
+      return bus.use(reducer);
+    }
   };
 
   async function start(): Promise<void> {
@@ -108,7 +104,7 @@ export function createAgent<T extends WithReply>(config: AgentConfig<T>) {
   return agent;
 }
 
-// TODO: this seems to not be doing much work, maybe it doesn't belong here
+// TODO (deferred): this seems to not be doing much work, maybe it doesn't belong here
 async function resolveRuntimeConfig<T extends WithReply>(
   config: AgentConfig<T>,
 ): Promise<RuntimeConfig<T>> {
@@ -138,22 +134,32 @@ function validateRuntimeConfig<T>(_config: RuntimeConfig<T>): void {
 
 function applyDefaultProviders(
   resources: AgentProvidersConfig,
-): RuntimeEngineResources {
+): RuntimeResourceSet {
   const defaults = createLocalResources();
+
   return {
-    transport: resources.transport ?? defaults.transport,
+    // AI Providers
     llm: resources.llm ?? defaults.llm,
     stt: resources.stt ?? defaults.stt,
     tts: resources.tts ?? defaults.tts,
+
+    // Messaging Transport
+    transport: resources.transport ?? defaults.transport,
+
+    // Storage Providers
     storage: resources.storage ?? defaults.storage,
     vectors: resources.vectors ?? defaults.vectors,
-    database: resources.database ?? defaults.database,
-    telemetry: resources.telemetry ?? defaults.telemetry,
-    logger:
-      resources.logger ??
-      new PinoLogger({
-        level: LOGGING_DEFAULTS.LEVEL,
-        prettyPrint: LOGGING_DEFAULTS.PRETTY_PRINT,
-      }),
+
+    // Event Bus
+    bus: resources.bus ?? defaults.bus,
+
+    // Persistence Slots
+    checkpointer: resources.checkpointer ?? defaults.checkpointer,
+    ledger: resources.ledger ?? defaults.ledger,
+    domainStore: resources.domainStore ?? defaults.domainStore,
+
+    // UI Resources
+    ...(resources.dashboard && { dashboard: resources.dashboard }),
+    ...(resources.reactiveUi && { reactiveUi: resources.reactiveUi }),
   };
 }

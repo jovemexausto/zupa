@@ -32,8 +32,8 @@ describe('commands capability slice', () => {
     });
 
     await runtime.start();
-    const user = await deps.database.createUser(DEFAULT_USER);
-    const session = await deps.database.createSession(user.id);
+    const user = await deps.domainStore.createUser(DEFAULT_USER);
+    const session = await deps.domainStore.createSession(user.id);
 
     const context: any = {
       message: { from: DEFAULT_USER.externalUserId, body: '/info' },

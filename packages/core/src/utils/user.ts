@@ -1,4 +1,4 @@
-// TODO: this is a concept we need to solidify
+// TODO (deferred): this is a concept we need to solidify
 
 export interface PreferencePatch {
     reply_in_voice?: boolean;
@@ -56,7 +56,7 @@ export function parsePreferencePatch(text: string): PreferencePatch | null {
     return Object.keys(patch).length > 0 ? patch : null;
 }
 
-// TODO: this wasn't planned, and is out of scope
+// TODO (deferred): this wasn't planned, and is out of scope
 export function applyLengthPreference(systemPrompt: string, preference: unknown): string {
     if (preference === 'short') {
         return `${systemPrompt}\n\nKeep replies concise (1-3 short sentences) unless the user asks for more detail.`;

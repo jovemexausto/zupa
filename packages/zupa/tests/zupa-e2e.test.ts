@@ -27,7 +27,9 @@ describe('Zupa E2E (Simulated)', () => {
       providers: {
         transport,
         llm,
-        database: deps.database,
+        checkpointer: deps.checkpointer,
+        ledger: deps.ledger,
+        domainStore: deps.domainStore,
         stt: deps.stt,
         tts: deps.tts,
         storage: deps.storage,
@@ -39,6 +41,9 @@ describe('Zupa E2E (Simulated)', () => {
 
     // Trigger inbound
     await transport.emitInbound(DEFAULT_INBOUND);
+
+    // Give EventBus processing time
+    await new Promise(r => setTimeout(r, 250));
 
     // Verify outbound
     const sent = transport.getSentMessages();

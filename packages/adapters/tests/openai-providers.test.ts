@@ -1,7 +1,3 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -57,6 +53,51 @@ describe('openai providers', () => {
     expect(result.tokensUsed).toEqual({ promptTokens: 12, completionTokens: 5 });
     expect(result.model).toBe('gpt-4o-mini');
     expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('streams llm completion chunks and returns final stats', async () => {
+    async function* mockStream() {
+      yield { id: 'chunk_1', choices: [{ delta: { content: 'hello ' } }], model: 'gpt-4o-mini' };
+      yield { id: 'chunk_2', choices: [{ delta: { content: 'world' } }], model: 'gpt-4o-mini', usage: { prompt_tokens: 10, completion_tokens: 2 } };
+    }
+
+    const create = vi.fn().mockReturnValue(mockStream());
+
+    const provider = new OpenAILLMProvider({
+      apiKey: 'sk-test',
+      model: 'gpt-4o-mini',
+      client: {
+        chat: { completions: { create } }
+      } as unknown as OpenAI
+    });
+
+    const stream = provider.stream({
+      systemPrompt: 'test',
+      messages: [{ role: 'user', content: 'stream this' }]
+    });
+
+    const chunks = [];
+    let finalResult;
+    while (true) {
+      const result = await stream.next();
+      if (result.done) {
+        finalResult = result.value;
+        break;
+      }
+      chunks.push(result.value);
+    }
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ stream: true, stream_options: { include_usage: true } }));
+
+    expect(chunks).toEqual([
+      { id: 'chunk_1', content: 'hello ' },
+      { id: 'chunk_2', content: 'world' }
+    ]);
+
+    expect(finalResult.content).toBe('hello world');
+    expect(finalResult.tokensUsed).toEqual({ promptTokens: 10, completionTokens: 2 });
+    expect(finalResult.model).toBe('gpt-4o-mini');
   });
 
   it('supports nullable schemas in structured outputs without throwing', async () => {

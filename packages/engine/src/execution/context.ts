@@ -1,9 +1,9 @@
 import {
-  type EngineNodeName,
   type RuntimeEngineContext,
   type RuntimeConfig,
-  type RuntimeEngineResources,
+  type RuntimeResourceSet,
   type InboundMessage,
+  type Logger,
   normalizeExternalUserId,
   resolveReplyTarget
 } from '@zupa/core';
@@ -13,26 +13,9 @@ export interface CreateInitialRuntimeContextInput<T = any> {
   startedAt: Date;
   runtimeConfig: RuntimeConfig<T>;
   inbound: InboundMessage;
-  runtimeResources: RuntimeEngineResources;
+  runtimeResources: RuntimeResourceSet;
+  logger: Logger;
 }
-
-/**
- * @deprecated - This constant is not used and should be removed in the future.
- * The node order is defined in the graph specification.
- * Leaving for reference.
- */
-export const ENGINE_NODE_ORDER: readonly EngineNodeName[] = [
-  'access_policy',
-  'command_dispatch_gate',
-  'content_resolution',
-  'context_assembly',
-  'prompt_build',
-  'llm_node',
-  'tool_execution_node',
-  'response_finalize',
-  'persistence_hooks',
-  'telemetry_emit'
-] as const;
 
 export function createInitialRuntimeContext<T = any>(input: CreateInitialRuntimeContextInput<T>): RuntimeEngineContext<T> {
   return {
@@ -47,8 +30,6 @@ export function createInitialRuntimeContext<T = any>(input: CreateInitialRuntime
       replyTarget: resolveReplyTarget(input.inbound.from, normalizeExternalUserId(input.inbound.from))
     },
     transport: input.runtimeResources.transport,
-    telemetry: {
-      nodeDurationsMs: {}
-    }
+    logger: input.logger
   };
 }

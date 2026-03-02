@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "@zupa/adapters": "workspace:*",
+    "@zupa/api": "workspace:*",
     "@zupa/core": "workspace:*",
     "@zupa/engine": "workspace:*",
     "@zupa/runtime": "workspace:*",

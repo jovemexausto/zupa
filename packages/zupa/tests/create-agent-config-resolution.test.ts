@@ -13,7 +13,9 @@ const baseConfig: any = {
     transport: baseDeps.transport,
     storage: baseDeps.storage,
     vectors: baseDeps.vectors,
-    database: baseDeps.database
+    checkpointer: baseDeps.checkpointer,
+    ledger: baseDeps.ledger,
+    domainStore: baseDeps.domainStore
   }
 };
 

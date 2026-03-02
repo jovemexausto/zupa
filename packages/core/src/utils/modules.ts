@@ -133,7 +133,7 @@ export const builtinCommands = {
     text: {
         description: 'Force text replies (ignore voice)',
         handler: async (ctx: AgentContext) => {
-            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+            await ctx.resources.domainStore.updateUserPreferences(ctx.user.id, {
                 ...ctx.user.preferences,
                 preferredReplyFormat: 'text'
             });
@@ -143,7 +143,7 @@ export const builtinCommands = {
     voice: {
         description: 'Force voice replies (TTS)',
         handler: async (ctx: AgentContext) => {
-            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+            await ctx.resources.domainStore.updateUserPreferences(ctx.user.id, {
                 ...ctx.user.preferences,
                 preferredReplyFormat: 'voice'
             });
@@ -153,7 +153,7 @@ export const builtinCommands = {
     mirror: {
         description: 'Mirror your input modality (default)',
         handler: async (ctx: AgentContext) => {
-            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+            await ctx.resources.domainStore.updateUserPreferences(ctx.user.id, {
                 ...ctx.user.preferences,
                 preferredReplyFormat: 'mirror'
             });
@@ -163,7 +163,7 @@ export const builtinCommands = {
     dynamic: {
         description: 'Intelligently decide modality per-turn',
         handler: async (ctx: AgentContext) => {
-            await ctx.resources.database.updateUserPreferences(ctx.user.id, {
+            await ctx.resources.domainStore.updateUserPreferences(ctx.user.id, {
                 ...ctx.user.preferences,
                 preferredReplyFormat: 'dynamic'
             });

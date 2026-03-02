@@ -4,8 +4,8 @@ import {
   FakeSTTProvider,
   FakeTTSProvider,
   FakeMessagingTransport,
-  FakeDatabaseBackend,
-  FakeStateProvider
+  FakeDomainStore,
+  FakeLedger
 } from '../src/index';
 
 describe('fake adapters', () => {
@@ -59,14 +59,14 @@ describe('fake adapters', () => {
     expect(messaging.sentVoice[0].media.mimetype).toBe('audio/ogg');
   });
 
-  it('stores and retrieves users/messages in fake db and kv in state provider', async () => {
-    const db = new FakeDatabaseBackend();
-    const state = new FakeStateProvider();
+  it('stores and retrieves users/messages in fake domain store and ledger', async () => {
+    const ds = new FakeDomainStore();
+    const ledger = new FakeLedger();
 
-    const user = await db.createUser({ externalUserId: '+15550000000', displayName: 'Test User' });
-    const session = await db.createSession(user.id);
+    const user = await ds.createUser({ externalUserId: '+15550000000', displayName: 'Test User' });
+    const session = await ds.createSession(user.id);
 
-    await db.createMessage({
+    await ds.createMessage({
       sessionId: session.id,
       userId: user.id,
       role: 'user',
@@ -77,23 +77,19 @@ describe('fake adapters', () => {
       latencyMs: 0
     });
 
-    const kv = state.attach(session.id);
-    await kv.set('correctionCount', 1);
-
-    const found = await db.findUser('+15550000000');
-    const recent = await db.getRecentMessages(session.id, 5);
-    const kvAll = await kv.all();
+    const found = await ds.findUser('+15550000000');
+    const recent = await ds.getRecentMessages(session.id, 5);
 
     expect(found?.id).toBe(user.id);
     expect(recent).toHaveLength(1);
-    expect(kvAll).toEqual({ correctionCount: 1 });
+    expect(recent[0].contentText).toBe('hello');
   });
 
   it('claims inbound events once and marks duplicates', async () => {
-    const db = new FakeDatabaseBackend();
+    const ds = new FakeDomainStore();
 
-    const first = await db.claimInboundEvent('wa:msg:abc');
-    const second = await db.claimInboundEvent('wa:msg:abc');
+    const first = await ds.claimInboundEvent('wa:msg:abc');
+    const second = await ds.claimInboundEvent('wa:msg:abc');
 
     expect(first).toBe('claimed');
     expect(second).toBe('duplicate');

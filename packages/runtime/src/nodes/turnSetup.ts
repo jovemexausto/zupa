@@ -3,9 +3,7 @@ import { type RuntimeEngineContext } from '@zupa/core';
 import { type RuntimeState } from './index';
 
 /**
- * turn_setup
- * 
- * This node is the common entrypoint for any new turn (new message) in Zupa.
+ * The common entrypoint for any new turn (new message) in Zupa.
  * It resets all ephemeral, turn-specific state fields to ensure the 
  * execution graph starts with a clean slate, while preserving 
  * durable session state like 'user', 'session', and 'kv'.

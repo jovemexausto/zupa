@@ -4,9 +4,9 @@ import {
     createFakeRuntimeConfig,
     createFakeLLMResponse,
     DEFAULT_INBOUND,
-    FakeDatabaseBackend,
+    FakeCheckpointer,
+    FakeDomainStore,
     TEST_USER_FROM,
-    TEST_USER_ID,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 import { type RuntimeState } from "../src/nodes";
@@ -16,7 +16,8 @@ import { FakeLLMProvider } from "@zupa/adapters";
 describe("Router Pattern & Thread Decoupling", () => {
     it("should resolve identity and session via Router Graph before Agent Graph starts", async () => {
         const deps = createFakeRuntimeDeps();
-        const db = deps.database as FakeDatabaseBackend;
+        const ds = deps.domainStore as FakeDomainStore;
+        const cp = deps.checkpointer as FakeCheckpointer;
         const runtime = new AgentRuntime({
             runtimeConfig: createFakeRuntimeConfig(),
             runtimeResources: deps,
@@ -25,9 +26,9 @@ describe("Router Pattern & Thread Decoupling", () => {
         const llm = deps.llm as FakeLLMProvider;
         llm.setResponses([createFakeLLMResponse({ content: "Router is working!" })]);
 
-        // Track database calls to see if they happen in the expected order
-        const findUserSpy = vi.spyOn(db, "findUser");
-        const createSessionSpy = vi.spyOn(db, "createSession");
+        // Track domain store calls to see if they happen in the expected order
+        const findUserSpy = vi.spyOn(ds, "findUser");
+        const createSessionSpy = vi.spyOn(ds, "createSession");
 
         await runtime.start();
         await runtime.runInbound({
@@ -37,24 +38,24 @@ describe("Router Pattern & Thread Decoupling", () => {
             messageId: "router-test-001",
         });
 
-        // 1. Database should have been called to find/create user (Router Phase)
+        // 1. Domain Store should have been called to find/create user (Router Phase)
         expect(findUserSpy).toHaveBeenCalled();
 
-        // 2. Database should have been called to resolve session (Router Phase)
-        const user = await db.findUser(TEST_USER_ID);
-        const session = await db.findActiveSession(user!.id);
+        // 2. Domain Store should have been called to resolve session (Router Phase)
+        const user = await ds.findUser(TEST_USER_FROM);
+        const session = await ds.findActiveSession(user!.id);
         expect(session).toBeTruthy();
         expect(createSessionSpy).toHaveBeenCalledWith(user!.id);
 
         // 3. The main Agent Graph should have used the sessionId as its threadId
         // We can check this by seeing if a checkpoint exists for the sessionId
-        const checkpoint = await db.getCheckpoint(session!.id) as StateSnapshot<RuntimeState> | null;
+        const checkpoint = await cp.getCheckpoint(session!.id) as StateSnapshot<RuntimeState> | null;
         expect(checkpoint).toBeTruthy();
         expect(checkpoint!.values.session!.id).toBe(session!.id);
 
-        // 4. Verify that the Router's transient threadId did NOT leave a checkpoint in the database
+        // 4. Verify that the Router's transient threadId did NOT leave a checkpoint in the persistence layer
         // The router's threadId is `router:${requestId}`
-        const allCheckpoints = (db as any).checkpoints as Map<string, any>;
+        const allCheckpoints = (cp as any).checkpoints as Map<string, any>;
         const routerThreadIds = Array.from(allCheckpoints.keys()).filter(id => id.startsWith('router:'));
         expect(routerThreadIds.length).toBe(0); // TransientCheckpointSaver was used!
 
@@ -63,10 +64,10 @@ describe("Router Pattern & Thread Decoupling", () => {
 
     it("should fail gracefully if Router cannot resolve user or session", async () => {
         const deps = createFakeRuntimeDeps();
-        const db = deps.database as FakeDatabaseBackend;
+        const ds = deps.domainStore as FakeDomainStore;
 
-        // Force database failure for user creation
-        vi.spyOn(db, "createUser").mockRejectedValue(new Error("DB Crash"));
+        // Force domain store failure for user creation
+        vi.spyOn(ds, "createUser").mockRejectedValue(new Error("DB Crash"));
 
         const runtime = new AgentRuntime({
             runtimeConfig: createFakeRuntimeConfig(),

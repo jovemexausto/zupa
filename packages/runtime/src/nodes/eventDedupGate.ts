@@ -1,15 +1,14 @@
-import { defineNode } from '@zupa/engine';
-import { type RuntimeEngineContext } from '@zupa/core';
-import { type RuntimeState } from './index';
+import { defineNode } from "@zupa/engine";
+import { type RuntimeEngineContext } from "@zupa/core";
+import { type RuntimeState } from "./index";
 
 /**
- * event_dedup_gate — the very first node in the runtime graph.
+ * The very first node in the runtime graph.
  *
- * Calls `database.claimInboundEvent(inbound.messageId)` which performs an
+ * Calls `domainStore.claimInboundEvent(inbound.messageId)` which performs an
  * atomic upsert in the backing store (SQLite `processed_events` table or
  * in-memory set for tests). If the event was already processed, the node
- * short-circuits by setting `inboundDuplicate: true` and routing to
- * `telemetry_emit`, skipping all business logic.
+ * short-circuits by setting `inboundDuplicate: true` and skipping all business logic.
  *
  * This guarantees exactly-once effect for all downstream nodes:
  *   - No duplicate messages persisted to history
@@ -18,19 +17,23 @@ import { type RuntimeState } from './index';
  *
  * Dedup key: `inbound.messageId` (required since the InboundMessage RFC update)
  */
-export const eventDedupGateNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
-    const messageId = context.inbound.messageId;
-    const result = await context.resources.database.claimInboundEvent(messageId);
+export const eventDedupGateNode = defineNode<
+  RuntimeState,
+  RuntimeEngineContext
+>(async (context) => {
+  const messageId = context.inbound.messageId;
+  const result =
+    await context.resources.domainStore.claimInboundEvent(messageId);
 
-    if (result === 'duplicate') {
-        return {
-            stateDiff: { inboundDuplicate: true },
-            nextTasks: ['telemetry_emit']
-        };
-    }
-
+  if (result === "duplicate") {
     return {
-        stateDiff: { inboundDuplicate: false },
-        nextTasks: ['access_policy']
+      stateDiff: { inboundDuplicate: true },
+      nextTasks: [],
     };
+  }
+
+  return {
+    stateDiff: { inboundDuplicate: false },
+    nextTasks: ["access_policy"],
+  };
 });

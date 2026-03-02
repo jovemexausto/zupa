@@ -49,7 +49,7 @@ const agent = createAgent({
   }),
   //
   onResponse: async (response, ctx) => {
-    await ctx.resources.database.updateMessageMetadata(ctx.session.id, {
+    await ctx.resources.domainStore.updateMessageMetadata(ctx.session.id, {
       correction: response.correction,
       vocabularyIntroduced: response.vocabularyIntroduced
     });

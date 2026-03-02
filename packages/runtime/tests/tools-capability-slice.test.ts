@@ -49,11 +49,12 @@ describe("Tools Capability Slice", () => {
     ]);
 
     await runtime.start();
-    const user = await deps.database.createUser(DEFAULT_USER);
+    const user = await deps.domainStore.createUser(DEFAULT_USER);
     await runtime.runInbound({
       from: DEFAULT_USER.externalUserId,
       body: "What is the weather in London?",
       messageId: "",
+      source: "transport",
     });
 
     const transport = deps.transport as FakeMessagingTransport;

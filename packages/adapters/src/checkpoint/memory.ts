@@ -1,18 +1,18 @@
 import {
     type StateSnapshot,
-    type CheckpointSaver,
-    type LedgerEvent,
-    type LedgerWriter
+    type Checkpointer,
+    type Ledger,
+    type LedgerEvent
 } from '@zupa/core';
 
 /**
- * An in-memory, transient checkpoint saver.
+ * An in-memory, transient checkpointer.
  * Useful for stateless or short-lived graph executions (like the Router Graph
- * or test environments) to avoid persisting checkpoints to a durable database.
+ * or test environments) to avoid persisting checkpoints to a durable store.
  * 
- * Implements full StateSnapshot history and LedgerEvent arrays.
+ * Implements Checkpointer (State) and Ledger (Audit).
  */
-export class MemoryCheckpointSaver<TState = Record<string, unknown>> implements CheckpointSaver<TState>, LedgerWriter {
+export class MemoryCheckpointer<TState = Record<string, unknown>> implements Checkpointer<TState>, Ledger {
     protected readonly checkpoints = new Map<string, StateSnapshot<TState>[]>();
     protected readonly ledger = new Map<string, LedgerEvent[]>();
 

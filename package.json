@@ -8,9 +8,7 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "dev": "pnpm --filter voxpal build && pnpm --filter english-buddy dev",
-    "dev:stack": "docker compose -f examples/english-buddy/docker-compose.yml up --build",
-    "litellm:up": "docker compose -f examples/english-buddy/docker-compose.yml up -d litellm",
-    "litellm:down": "docker compose -f examples/english-buddy/docker-compose.yml stop litellm"
+    "dev:stack": "docker compose -f examples/english-buddy/docker-compose.yml up --build"
   },
   "engines": {
     "node": ">=20"

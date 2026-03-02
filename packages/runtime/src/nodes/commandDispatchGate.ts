@@ -1,20 +1,30 @@
-import { defineNode } from '@zupa/engine';
+import { defineNode } from "@zupa/engine";
 import {
   buildCommandRegistry,
   dispatchCommandIfPresent,
   type RuntimeEngineContext,
-  type ActiveSession
-} from '@zupa/core';
-import { type RuntimeState } from './index';
+  type ActiveSession,
+} from "@zupa/core";
+import { type RuntimeState } from "./index";
 
 /**
- * command_dispatch_gate
+ * Attempts to dispatch and handle a user command before invoking the LLM.
+ * If a command matches the command registry, it executes the command handler
+ * and short-circuits the LLM flow. Otherwise, continues to LLM processing.
+ *
+ * Also applies per-user rate limiting (rateLimitPerUserPerMinute) to prevent
+ * abuse. If a user exceeds the rate limit, they receive a throttling message.
+ *
+ * Preconditions: user, session, and replyTarget must be set by earlier nodes.
  */
-export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineContext>(async (context) => {
+export const commandDispatchGateNode = defineNode<
+  RuntimeState,
+  RuntimeEngineContext
+>(async (context) => {
   const { state, config, resources, inbound } = context;
 
-  if (typeof state.commandHandled === 'boolean') {
-    return { stateDiff: {}, nextTasks: ['response_finalize'] };
+  if (typeof state.commandHandled === "boolean") {
+    return { stateDiff: {}, nextTasks: ["response_finalize"] };
   }
 
   if (state.inboundDuplicate === true) {
@@ -29,23 +39,25 @@ export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineCon
     return { stateDiff: { commandHandled: true }, nextTasks: [] };
   }
 
-  const recentMessagesCount = await resources.database.countUserMessagesSince(
-    user.id,
-    new Date(Date.now() - 60_000)
-  );
+  const recentMessagesCount =
+    await resources.domainStore.countUserMessagesSince(
+      user.id,
+      new Date(Date.now() - 60_000),
+    );
 
-  // TODO: why are rate limits hardcoded here? right on command dispatch gate?
-  // It's not look like the best place to handle this
   if (recentMessagesCount >= (config.rateLimitPerUserPerMinute ?? 20)) {
     await resources.transport.sendText(
       replyTarget,
-      'You are sending messages too quickly. Please wait a moment and try again.'
+      "You are sending messages too quickly. Please wait a moment and try again.",
     );
     return { stateDiff: { commandHandled: true }, nextTasks: [] };
   }
 
   if (state.createdUser === true && config.welcomeMessage?.trim()) {
-    await resources.transport.sendText(replyTarget, config.welcomeMessage.trim());
+    await resources.transport.sendText(
+      replyTarget,
+      config.welcomeMessage.trim(),
+    );
   }
 
   const handled = await dispatchCommandIfPresent({
@@ -61,14 +73,14 @@ export const commandDispatchGateNode = defineNode<RuntimeState, RuntimeEngineCon
       config,
       endSession: async () => {
         const summary = `Session ended at ${new Date().toISOString()}`;
-        await resources.database.endSession(session.id, summary);
-      }
+        await resources.domainStore.endSession(session.id, summary);
+      },
     },
-    llm: resources.llm
+    llm: resources.llm,
   });
 
   return {
     stateDiff: { commandHandled: handled },
-    nextTasks: handled ? ['response_finalize'] : ['content_resolution']
+    nextTasks: handled ? ["response_finalize"] : ["content_resolution"],
   };
 });

@@ -5,9 +5,9 @@ import {
   createFakeRuntimeConfig,
   createFakeLLMResponse,
   DEFAULT_INBOUND,
-  FakeDatabaseBackend,
+  FakeCheckpointer,
+  FakeDomainStore,
   TEST_USER_FROM,
-  TEST_USER_ID,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 
@@ -49,7 +49,8 @@ describe("Zupa Reliability: Idempotency & Resumability", () => {
 
   it("should persist KV state across turns (Durable Scratchpad)", async () => {
     const deps = createFakeRuntimeDeps();
-    const db = deps.database as FakeDatabaseBackend;
+    const ds = deps.domainStore as FakeDomainStore;
+    const cp = deps.checkpointer as FakeCheckpointer;
 
     const runtime = new AgentRuntime({
       runtimeConfig: createFakeRuntimeConfig(),
@@ -69,20 +70,20 @@ describe("Zupa Reliability: Idempotency & Resumability", () => {
       ...DEFAULT_INBOUND,
       from: TEST_USER_FROM,
       body: "Turn 1",
-      messageId: m1,
+      messageId: "m1",
     });
 
-    const user = await db.findUser(TEST_USER_ID);
-    const session = await db.findActiveSession(user!.id);
+    const user = await ds.findUser(TEST_USER_FROM);
+    const session = await ds.findActiveSession(user!.id);
 
     // Let's simulate a tool having written to KV in the checkpoint
-    const snapshot1 = await db.getCheckpoint(session!.id);
+    const snapshot1 = await cp.getCheckpoint(session!.id);
     expect(snapshot1).toBeDefined();
 
     // Cast values to include kv for index access
     const values = snapshot1!.values as Record<string, any>;
     values.kv = { "test-key": "test-value" };
-    await db.putCheckpoint(session!.id, snapshot1!);
+    await cp.putCheckpoint(session!.id, snapshot1!);
 
     // Turn 2: Should pick up the KV from the checkpoint
     await runtime.runInbound({
@@ -92,7 +93,7 @@ describe("Zupa Reliability: Idempotency & Resumability", () => {
       messageId: "m2",
     });
 
-    const snapshot2 = await db.getCheckpoint(session!.id);
+    const snapshot2 = await cp.getCheckpoint(session!.id);
     const values2 = snapshot2!.values as Record<string, any>;
     expect(values2.kv).toBeDefined();
     expect(values2.kv["test-key"]).toBe("test-value");

@@ -22,7 +22,7 @@ export function withReply<T extends ZodRawShape>(
 }
 
 /**
- * TODO: isn't the .describe() already doing this job? Check it out.
+ * TODO (deferred): isn't the .describe() already doing this job? Check it out.
  * Injects modality instructions into the system prompt for dynamic users.
  */
 export function applyModalityPreference(prompt: string, preferences: any): string {

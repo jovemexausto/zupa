@@ -1,29 +1,33 @@
-- [x] Create a @zupa/testing package for testing utilities, fixtures, etc. Move each test file to the project it really belongs to, refactoring them so use the testing utilities and fixtures / mockups.
-- [x] Fix .d.ts files being generated in the same directory as the source files and clean up the codebase.
-- [x] Chose one: Engine or Kernel, we should ensure a clear semantic.
-- [x] Streamline / improve entities definitions, names and conventions. We're doing real work here, let set clear boundaries of what is or core domain, what is infrastructure, what is a adapter, etc.
-- [x] Setup turbo repo for monorepo management.
-- [x] Do one more assesment pass againt CODEBASE_STATUS_ASSESSMENT.md and current codebase state to ensure we are on the right path, and write a RFC to address the gaps if any. Ensure that the runtime is solid and can be used for production. Plan to resolve technical debt and ensure baseline is solid. At the end remove CODEBASE_STATUS_ASSESSMENT.md, so the RFC cover all needed aspects.
-- [x] Implement Phase 1 of Production Readiness RFC: Add `messageId` to `InboundMessage` mapping.
-- [x] Implement Phase 1 of Production Readiness RFC: Create `event_dedup_gate` node and SQLite `ProcessedEvents` ledger.
-- [x] Implement Phase 1 of Production Readiness RFC: Create and apply universal `withTimeout` wrapper for LLM/STT/TTS calls.
-- [x] Implement Phase 1 of Production Readiness RFC: Add inbound concurrency limiting/backpressure queues.
-- [x] Replace audioPath / mediaPath / outputPath to use the storage abstraction for persistence, maybe with a buffer for transients
-- [x] "access?: { allowed: boolean; reason?: string };" is not used right now, we should decide if we need it or not
-- [x] Document capabilities and aspects of the runtime and engine, features, opinions, design choices, etc for future reference of the project ideology.
-- [x] Implement Phase 2 of Production Readiness RFC: Implement `sessionIdleTimeoutMinutes` in `session_attach` — auto-finalize expired/zombie sessions.
 - [ ] Implement Phase 2 of Production Readiness RFC: Error taxonomy — classify Transient vs Terminal errors, apply `retryIdempotent` to LLM/Database/Transport calls accordingly.
+
 - [ ] Implement Phase 2 of Production Readiness RFC: Circuit breaker per provider — fail fast during prolonged outages.
+
 - [ ] Implement Phase 3 of Production Readiness RFC: Plumb correlation IDs (`requestId`, `sessionId`, `userId`, `eventId`) through `RuntimeEngineContext` and all telemetry/ledger events.
+
 - [ ] Implement Phase 3 of Production Readiness RFC: Build Audit Ledger — immutable record of tool invocations, command dispatches, and `onResponse` events.
-- [x] migrate from agent.on('auth:qr') ti agent.on('auth:request') with generic type based on Transport passed, so we make it transport agnostic and each can define what to pass to it.
-- [x] move TEST_USER_FROM and TEST_USER_ID to @zupa/tests
-- [x] why do we still have audioStoragePath references in the codebase?
-- [x] fromMe is not used, we should remove it
-- [x] Esure graceful shutdown of all resources on SIGINT and SIGTERM
-- [ ] clean-up 'as any' casts on the codebase
+
+- [ ] setup biome and configure to disallow 'as any' and unused imports + best practices.
+
 - [ ] seek for TODO on codebase and update root TODO.md with tasks / discussion and a bit of context
-- [ ] plan how to make orizontal scalability possible with multiple instances cordination (maybe using redis, or something else), etc. this also unlocks fault tolerance and recovery to be more robust. For wwebjs this will introduce a chanllange to handle multiple qrcodes, which leads us to other problemn: right now every agent ships with an ui/api (wip) but with multi instances we probably want/need a single UI/API instance for managing all replicas / agents. This also unlocks the multi qrcode problem. This is touch "Zupa Cloud" territory. Also, we're deciding to build upon wwebjs to gain velocity and make it easier to end users to run their own instances.
-- [ ] - move out from 'database' semantics. Something like PersistanceProvider, but persistence look like it also cover checkpointer (the provided implementation will do, but not the interface responsability). The name must reflect that it, along with checkpointer can be implemented and used separately, but as a betteries included framework, we should provide a default implementation that merges both checkpointer and persistance interfaces into a single implementation, providing libsql and pg intilially. ZupaPersistanceAPI looks like a cloud service, so maybe we should avoid this name now.
+
+- [ ] plan how to make horizontal scalability possible with multiple instances cordination (maybe using redis, or something else), etc. this also unlocks fault tolerance and recovery to be more robust. For wwebjs this will introduce a chanllange to handle multiple qrcodes, which leads us to other problemn: right now every agent ships with an ui/api (wip) but with multi instances we probably want/need a single UI/API instance for managing all replicas / agents. This also unlocks the multi qrcode problem. This is touch "Zupa Cloud" territory. Also, we're deciding to build upon wwebjs to gain velocity and make it easier to end users to run their own instances. This should be kubernetes ready and we should have also a 'control plane' deploy, which will be responsible for managing all replicas / agents with an amazing dashboard. We have a builtin dashboard, but in this case we need to provide a separate UI/API instance for managing multiple replicas / agents. Should builtin dashboard be disabled on this case? the control plane must be a single instance, right? How they connect?
+
 - [ ] add SLA to the project, we should define what is the expected SLA for the project and how we're going to measure it.
+
 - [ ] decide if we should move sessionEnded to withReply helper, instructions must live at zod's .description, and maybe we can check it internally instead of relying on the user to do it.
+
+- [ ] How to reverse proxy (@zupa/api/src/middleware.ts and @zupa/api/src/sse-broadcaster.ts) as a single streamlined API? thats zupa api. What are the trade-offs and what it brings to the table? does we have better alternatives?Does it makes sense or I'm confusing boundaries?
+
+- [ ] Fix the 'Unknown User' problem.
+
+- [ ] Move from 'ctx.resources.transport.sendText(...)' to something like 'ctx.reply(...)' for better dx maybe to auto route to the right place as we introduce 'reactive-ui' resources (deferred) if it makes sense.
+
+- [ ] maybe we should introduce OutboundMedia and/or OutboundMessage ? (from @zupa/core/src/ports/transport.ts)
+
+- [ ] Refactor rate limiting logic from commandDispatchGateNode (@zupa/runtime/src/nodes/commandDispatchGate.ts) — currently hardcoded for per-user rate limiting (rateLimitPerUserPerMinute), but this is not the best place to handle it. We already have createInboundConcurrencyLimiter for global concurrency limiting at the event bus level — consider extending it or creating a similar pattern for per-user rate limiting as a reusable middleware/reducer instead of hardcoding in the command gate.
+
+- [ ] Redesign session summary and memory tier architecture (endSessionWithKvHandoff in @zupa/core) — currently tightly coupling LLM, domainStore, kv, and session manager. The three-tier memory model should be: (1) working memory (checkpoints/context window), (2) episodic memory (session summaries), (3) semantic memory (vector store for similarity-based retrieval). Consider introducing a dedicated summarization node to decouple concerns. Also clarify: should summaries be LLM-generated or just JSON stringification? Should summaries be retrievable by semantic similarity? Rename "sessionManager" parameter to something more accurate since it's actually calling domainStore.endSessionWithSummary.
+
+- [ ] Fix display name extraction in identityResolutionNode (@zupa/runtime/src/nodes/router/identityResolution.ts) — currently attempting to extract displayName by splitting externalUserId on ':' which is fragile and transport-specific. The transport layer should provide the display name directly, or we need a more robust strategy for extracting/normalizing display names from various transport formats (WhatsApp, Telegram, etc.). This is related to the "Unknown User" problem.
+
+- [ ] Consolidate DomainStore session ending methods (@zupa/core/src/ports/domain-store.ts) — we have both `endSession(sessionId, summary)` and `endSessionWithSummary(sessionId, endedAt, summary)`. The first is used in responseFinalize and other nodes for simple string summaries, while the second includes an explicit `endedAt` timestamp. These should be unified into a single method with optional timestamp handling, or the distinction should be clarified. This is part of the broader session summary and memory architecture redesign.

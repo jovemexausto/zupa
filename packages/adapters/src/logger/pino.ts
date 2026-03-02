@@ -35,10 +35,6 @@ export class PinoLogger implements Logger {
         this.pino = pino(pinoOptions);
     }
 
-    private constructorChild(childInstance: PinoInstance) {
-        this.pino = childInstance;
-    }
-
     public trace(obj: Record<string, unknown>, msg?: string): void;
     public trace(msg: string): void;
     public trace(arg1: Record<string, unknown> | string, arg2?: string): void {

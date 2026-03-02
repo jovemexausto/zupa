@@ -118,7 +118,7 @@ await agent.start();
 
 ## Architecture
 
-Zupa is not just a library; it is a production engineering framework with strong opinions.
+Zupa is not just a library; it is a production-grade agent engineering framework with strong opinions. Detailed design decisions are documented in our [Architecture ADRs](./docs/architecture/).
 
 ### Purity of Boundaries (Ports & Adapters)
 LLM providers deprecate models. Messaging platforms change APIs overnight. Zupa isolates every external dependency behind a strict Port so that your agent's reasoning code never rots when a vendor does.

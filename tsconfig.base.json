@@ -31,6 +31,18 @@
       ],
       "zupa": [
         "packages/zupa/src"
+      ],
+      "@zupa/api": [
+        "packages/api/src"
+      ],
+      "@zupa/dashboard": [
+        "packages/dashboard/src"
+      ],
+      "@zupa/reactive-ui": [
+        "packages/reactive-ui/src"
+      ],
+      "@zupa/react": [
+        "packages/react/src"
       ]
     }
   }

@@ -1,6 +1,5 @@
 import { RuntimeResource } from "../lifecycle";
 
-// TODO: maybe we should introduce OutboundMedia and/or OutboundMessage ?
 export interface InboundMedia {
   data: Buffer;
   mimetype: string;
@@ -23,21 +22,17 @@ export interface InboundMessage {
   body: string;
   hasMedia?: boolean;
   type?: string;
+
+  /** Discriminates between external messaging platforms and the internal Reactive UI WebSocket */
+  source: 'transport' | 'ui_channel';
+
+  /** If source is 'ui_channel', identifies the specific connected WebSocket client */
+  clientId?: string;
+
   downloadMedia?: () => Promise<InboundMedia | undefined>;
 }
 
 export interface MessagingTransport<TAuthPayload = unknown> extends RuntimeResource {
-  onInbound?(handler: (message: InboundMessage) => Promise<void>): () => void;
-
-  /**
-   * Called when the transport requires user action to authenticate.
-   * The payload shape is defined entirely by the concrete transport adapter.
-   * For example, WWebJSTransport emits `{ type: 'qr', qrString: string }`.
-   */
-  onAuthRequest?(handler: (payload: TAuthPayload) => void): () => void;
-
-  onAuthReady?(handler: () => void): () => void;
-  onAuthFailure?(handler: (message: string) => void): () => void;
   sendText(to: string, text: string): Promise<void>;
   sendVoice(
     to: string,

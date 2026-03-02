@@ -3,13 +3,17 @@ import {
   FakeSTTProvider,
   FakeTTSProvider,
   FakeMessagingTransport,
-  FakeDatabaseBackend,
+  FakeCheckpointer,
+  FakeLedger,
+  FakeDomainStore,
   FakeFileStorage,
   FakeVectorStore,
   FakeLogger,
+  FakeReactiveUiProvider,
+  FakeEventBus,
 } from "@zupa/adapters";
 import {
-  type RuntimeEngineResources,
+  type RuntimeResourceSet,
   type User,
   type Session,
   type InboundMessage,
@@ -23,14 +27,17 @@ export {
   FakeSTTProvider,
   FakeTTSProvider,
   FakeMessagingTransport,
-  FakeDatabaseBackend,
+  FakeCheckpointer,
+  FakeLedger,
+  FakeDomainStore,
   FakeFileStorage,
   FakeVectorStore,
   FakeLogger,
+  FakeReactiveUiProvider,
+  FakeEventBus,
 };
 
 export const TEST_USER_FROM = "5511999999999@c.us";
-export const TEST_USER_ID = "+5511999999999";
 
 export const DEFAULT_USER: User = {
   id: "u1",
@@ -56,6 +63,7 @@ export const DEFAULT_INBOUND: InboundMessage = {
   messageId: "test-msg-001",
   from: "user123",
   body: "hello",
+  source: "transport",
 };
 
 export function createFakeRuntimeConfig(
@@ -101,9 +109,7 @@ export function createFakeLLMResponse(
   };
 }
 
-export function createFakeRuntimeDeps(): RuntimeEngineResources {
-  const database = new FakeDatabaseBackend();
-
+export function createFakeRuntimeDeps(): RuntimeResourceSet {
   return {
     transport: new FakeMessagingTransport(),
     llm: new FakeLLMProvider([
@@ -113,8 +119,10 @@ export function createFakeRuntimeDeps(): RuntimeEngineResources {
     tts: new FakeTTSProvider(),
     storage: new FakeFileStorage(),
     vectors: new FakeVectorStore(),
-    telemetry: { emit() { } },
-    database,
-    logger: new FakeLogger(),
+    bus: new FakeEventBus(),
+    checkpointer: new FakeCheckpointer(),
+    ledger: new FakeLedger(),
+    domainStore: new FakeDomainStore(),
+    reactiveUi: new FakeReactiveUiProvider(),
   };
 }

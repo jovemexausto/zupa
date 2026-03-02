@@ -3,17 +3,22 @@ import {
     LLMProvider,
     Logger,
     MessagingTransport,
-    DatabaseProvider,
     STTProvider,
     TTSProvider,
-    TelemetrySink,
-    VectorStore
+    VectorStore,
+    DashboardProvider,
+    ReactiveUiProvider,
+    EventBus,
+    Checkpointer,
+    Ledger,
+    DomainStore,
 } from '../ports';
 import { InboundMessage } from '../ports/transport';
 import { RuntimeConfig } from '../config/types';
 import { User } from '../entities/user';
 import { ActiveSession, Session } from '../entities/session';
 import { AgentLanguage } from '../entities/agent';
+import { RuntimeResource } from '../lifecycle';
 
 export type EngineNodeName =
     | 'turn_setup'
@@ -26,8 +31,8 @@ export type EngineNodeName =
     | 'llm_node'
     | 'tool_execution_node'
     | 'response_finalize'
-    | 'persistence_hooks'
-    | 'telemetry_emit';
+    | 'interactive_streaming_node'
+    | 'persistence_hooks';
 
 export type RouterNodeName =
     | 'identity_resolution'
@@ -38,10 +43,6 @@ export interface RuntimeContextMeta {
     startedAt: Date;
 }
 
-export interface RuntimeTelemetryContext {
-    nodeDurationsMs: Partial<Record<EngineNodeName | RouterNodeName, number>>;
-}
-
 export interface RuntimeEngineContext<T = unknown> {
     meta: RuntimeContextMeta;
     config: RuntimeConfig<T>;
@@ -49,9 +50,9 @@ export interface RuntimeEngineContext<T = unknown> {
     user?: User;
     session?: ActiveSession;
     transport: MessagingTransport;
-    resources: RuntimeEngineResources;
+    resources: RuntimeResourceSet;
     state: Record<string, unknown>;
-    telemetry: RuntimeTelemetryContext;
+    logger: Logger;
 }
 
 export interface RouterState {
@@ -60,16 +61,26 @@ export interface RouterState {
     inbound?: InboundMessage;
 }
 
-export interface RuntimeEngineResources {
+export interface RuntimeResourceSet {
     transport: MessagingTransport<unknown>;
     llm: LLMProvider;
     stt: STTProvider;
     tts: TTSProvider;
     storage: FileStorage;
     vectors: VectorStore;
-    database: DatabaseProvider;
-    telemetry: TelemetrySink;
-    logger: Logger;
+    bus: EventBus;
+
+    // Decoupled Persistence
+    checkpointer: Checkpointer;
+    ledger: Ledger;
+    domainStore: DomainStore;
+
+    /** Optional: streams system events to the built-in dashboard UI */
+    dashboard?: DashboardProvider;
+    /** Optional: WebSocket bridge for reactive UI clients (AG-UI / CopilotKit style) */
+    reactiveUi?: ReactiveUiProvider;
+    /** Optional: Autonomous logging sink */
+    logger?: RuntimeResource;
 }
 
 export interface AgentContext<T = unknown> {
@@ -78,7 +89,7 @@ export interface AgentContext<T = unknown> {
     inbound: InboundMessage;
     language: AgentLanguage;
     replyTarget: string;
-    resources: RuntimeEngineResources;
-    config: RuntimeConfig;
+    resources: RuntimeResourceSet;
+    config: RuntimeConfig<T>;
     endSession(): Promise<void>;
 }

@@ -1,7 +1,8 @@
 import {
     type LLMProvider,
     type LLMCompleteOptions,
-    type LLMResponse
+    type LLMResponse,
+    type LLMStreamChunk
 } from '@zupa/core';
 
 export class FakeLLMProvider implements LLMProvider {
@@ -45,6 +46,31 @@ export class FakeLLMProvider implements LLMProvider {
             };
         }
 
+        return response;
+    }
+
+    public async *stream(options: LLMCompleteOptions): AsyncGenerator<LLMStreamChunk, LLMResponse, unknown> {
+        const response = this.responses[this.callCount % this.responses.length];
+        if (!response) {
+            throw new Error('FakeLLMProvider: No response available');
+        }
+        this.callCount++;
+
+        const words = (response.content || '').split(' ');
+        for (let i = 0; i < words.length; i++) {
+            yield {
+                id: `chunk-${i}`,
+                content: words[i] + (i < words.length - 1 ? ' ' : '')
+            };
+        }
+
+        if (options.outputSchema && response.structured === null && response.content) {
+            return {
+                ...response,
+                content: null,
+                structured: { reply: response.content }
+            };
+        }
         return response;
     }
 }

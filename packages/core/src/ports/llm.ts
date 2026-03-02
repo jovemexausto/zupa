@@ -21,6 +21,18 @@ export interface LLMResponse {
   latencyMs: number;
 }
 
+export interface LLMStreamChunk {
+  id: string;
+  content: string;
+  toolCallDelta?: {
+    index: number;
+    id?: string | undefined;
+    name?: string | undefined;
+    arguments?: string | undefined;
+  } | undefined;
+}
+
 export interface LLMProvider extends RuntimeResource {
   complete(options: LLMCompleteOptions): Promise<LLMResponse>;
+  stream?(options: LLMCompleteOptions): AsyncGenerator<LLMStreamChunk, LLMResponse, unknown>;
 }

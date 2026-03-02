@@ -5,7 +5,7 @@ import {
     DEFAULT_INBOUND,
     createFakeLLMResponse
 } from '@zupa/testing';
-import { FakeDatabaseBackend, FakeLLMProvider, FakeMessagingTransport } from '@zupa/adapters';
+import { FakeDomainStore, FakeLLMProvider, FakeMessagingTransport } from '@zupa/adapters';
 import { AgentRuntime } from '../src/index';
 
 describe('event_dedup_gate', () => {
@@ -20,7 +20,7 @@ describe('event_dedup_gate', () => {
         await runtime.runInbound(DEFAULT_INBOUND);
 
         // The messageId should now exist in the dedup ledger
-        const db = deps.database as FakeDatabaseBackend;
+        const db = deps.domainStore as FakeDomainStore;
         expect(db.claimedInboundEvents.has(DEFAULT_INBOUND.messageId)).toBe(true);
 
         await runtime.close();
@@ -63,7 +63,7 @@ describe('event_dedup_gate', () => {
         await runtime.runInbound({ ...DEFAULT_INBOUND, messageId: 'msg-aaa' });
         await runtime.runInbound({ ...DEFAULT_INBOUND, messageId: 'msg-bbb' });
 
-        const db = deps.database as FakeDatabaseBackend;
+        const db = deps.domainStore as FakeDomainStore;
         expect(db.claimedInboundEvents.has('msg-aaa')).toBe(true);
         expect(db.claimedInboundEvents.has('msg-bbb')).toBe(true);
 

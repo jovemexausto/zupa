@@ -6,20 +6,19 @@ import {
   createFakeRuntimeConfig,
   createFakeLLMResponse,
   DEFAULT_INBOUND,
-  FakeDatabaseBackend,
+  FakeDomainStore,
   TEST_USER_FROM,
-  TEST_USER_ID,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 
 describe("Enhanced Modality Preferences", () => {
   it('should respect "text" preference regardless of input modality', async () => {
     const deps = createFakeRuntimeDeps();
-    const db = deps.database as FakeDatabaseBackend;
+    const db = deps.domainStore as FakeDomainStore;
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "text" },
     });
@@ -55,11 +54,11 @@ describe("Enhanced Modality Preferences", () => {
 
   it('should respect "voice" preference even with text input', async () => {
     const deps = createFakeRuntimeDeps();
-    const db = deps.database as FakeDatabaseBackend;
+    const db = deps.domainStore as FakeDomainStore;
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "voice" },
     });
@@ -134,11 +133,11 @@ describe("Enhanced Modality Preferences", () => {
 
   it('should handle "dynamic" mode with LLM structured signal', async () => {
     const deps = createFakeRuntimeDeps();
-    const db = deps.database as FakeDatabaseBackend;
+    const db = deps.domainStore as FakeDomainStore;
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "dynamic" },
     });
@@ -173,11 +172,11 @@ describe("Enhanced Modality Preferences", () => {
 
   it('should handle "dynamic" mode with keyword heuristic fallback', async () => {
     const deps = createFakeRuntimeDeps();
-    const db = deps.database as FakeDatabaseBackend;
+    const db = deps.domainStore as FakeDomainStore;
     const transport = deps.transport as FakeMessagingTransport;
 
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "dynamic" },
     });
@@ -208,12 +207,12 @@ describe("Enhanced Modality Preferences", () => {
 
   it('should respect agent-level "modality" enforcer over user preference', async () => {
     const deps = createFakeRuntimeDeps();
-    const db = deps.database as FakeDatabaseBackend;
+    const db = deps.domainStore as FakeDomainStore;
     const transport = deps.transport as FakeMessagingTransport;
 
     // User wants voice
     await db.createUser({
-      externalUserId: TEST_USER_ID,
+      externalUserId: TEST_USER_FROM,
       displayName: "User",
       preferences: { preferredReplyFormat: "voice" },
     });
@@ -245,7 +244,7 @@ describe("Enhanced Modality Preferences", () => {
 
   it("should support slash commands to toggle preference", async () => {
     const deps = createFakeRuntimeDeps();
-    const db = deps.database as FakeDatabaseBackend;
+    const db = deps.domainStore as FakeDomainStore;
 
     const runtime = new AgentRuntime({
       runtimeConfig: createFakeRuntimeConfig(),
@@ -263,7 +262,7 @@ describe("Enhanced Modality Preferences", () => {
     });
 
     // Find by externalUserId
-    let user = await db.findUser(TEST_USER_ID);
+    let user = await db.findUser(TEST_USER_FROM);
     expect(user!.preferences.preferredReplyFormat).toBe("voice");
 
     // Turn 2: Switch to dynamic
@@ -274,7 +273,7 @@ describe("Enhanced Modality Preferences", () => {
       body: "/dynamic",
     });
 
-    user = await db.findUser(TEST_USER_ID);
+    user = await db.findUser(TEST_USER_FROM);
     expect(user!.preferences.preferredReplyFormat).toBe("dynamic");
 
     await runtime.close();
