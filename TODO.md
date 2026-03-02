@@ -1,5 +1,3 @@
-- [ ] decide if we should move sessionEnded to withReply helper, instructions must live at zod's .description, and maybe we can check it internally instead of relying on the user to do it.
-
 - [ ] How to reverse proxy (@zupa/api/src/middleware.ts and @zupa/api/src/sse-broadcaster.ts) as a single streamlined API? thats zupa api. What are the trade-offs and what it brings to the table? does we have better alternatives?Does it makes sense or I'm confusing boundaries?
 
 - [ ] Fix the 'Unknown User' problem.

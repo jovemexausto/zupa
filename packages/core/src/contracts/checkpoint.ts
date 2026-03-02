@@ -12,8 +12,14 @@ export interface StateSnapshot<TChannelValues = Record<string, unknown>> {
 }
 
 export interface CheckpointSaver<TState = Record<string, unknown>> {
-  putCheckpoint(threadId: string, snapshot: StateSnapshot<TState>): Promise<void>;
+  putCheckpoint(
+    threadId: string,
+    snapshot: StateSnapshot<TState>,
+  ): Promise<void>;
   getCheckpoint(threadId: string): Promise<StateSnapshot<TState> | null>;
-  getCheckpointById(threadId: string, checkpointId: string): Promise<StateSnapshot<TState> | null>;
+  getCheckpointById(
+    threadId: string,
+    checkpointId: string,
+  ): Promise<StateSnapshot<TState> | null>;
   getCheckpointHistory(threadId: string): Promise<StateSnapshot<TState>[]>;
 }
