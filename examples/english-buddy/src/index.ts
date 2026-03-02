@@ -1,7 +1,16 @@
 import { z } from "zod";
-import { createAgent, withReply, WWebJSAuthPayload, WWebJSMessagingTransport } from "zupa";
+import {
+  createAgent,
+  withReply,
+  WWebJSAuthPayload,
+  WWebJSMessagingTransport,
+} from "zupa";
 
-import { scheduleReminder, sendPronunciationClip, sendVocabCard } from "./tools";
+import {
+  scheduleReminder,
+  sendPronunciationClip,
+  sendVocabCard,
+} from "./tools";
 import { getRecurringMistakes, getVocabularyHistory } from "./queries";
 //
 import { config } from "dotenv";
@@ -13,12 +22,17 @@ const CorrectionSchema = z.object({
   original: z.string(),
   corrected: z.string(),
   explanation: z.string(),
-  category: z.enum(["grammar", "vocabulary", "preposition", "article", "other"]),
+  category: z.enum([
+    "grammar",
+    "vocabulary",
+    "preposition",
+    "article",
+    "other",
+  ]),
 });
 
 const AgentReplySchema = withReply({
   correction: CorrectionSchema.nullable(),
-  sessionEnded: z.boolean(),
   vocabularyIntroduced: z.array(z.string()),
 });
 
@@ -35,7 +49,7 @@ const agent = createAgent({
     Words already introduced: {{ vocabularyHistory | join(', ') }}
     {% endif %}
 
-    Keep replies to 2-4 sentences. Set sessionEnded only on clear goodbyes.
+    Keep replies to 2-4 sentences.
   `,
   outputSchema: AgentReplySchema,
   tools: [scheduleReminder, sendVocabCard, sendPronunciationClip],
@@ -53,10 +67,6 @@ const agent = createAgent({
       correction: response.correction,
       vocabularyIntroduced: response.vocabularyIntroduced,
     });
-
-    if (response.sessionEnded) {
-      await ctx.endSession();
-    }
   },
   providers: {
     transport: new WWebJSMessagingTransport(),

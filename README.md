@@ -19,7 +19,7 @@ Building a toy chatbot is easy. Building a production-grade, multi-modal autonom
 
 **The hardest problem in autonomous AI is no longer the execution graph; it is the chaotic, stateful orchestration required to connect that graph to the real world.**
 
-While modern graph execution engines (like LangGraph) have solved the mathematical problem of *how* complex reasoning loops execute, they largely abandon the developer at the product layer. How do you handle real-time voice notes? How do you map a phone number to a session without blowing up the context window? How do you persist memory across deployments?
+While modern graph execution engines (like LangGraph) have solved the mathematical problem of _how_ complex reasoning loops execute, they largely abandon the developer at the product layer. How do you handle real-time voice notes? How do you map a phone number to a session without blowing up the context window? How do you persist memory across deployments?
 
 **Zupa is the answer.**
 
@@ -83,9 +83,7 @@ const agent = createAgent({
     if (response.vocabularyIntroduced.length > 0) {
       await db.saveVocabulary(ctx.session.id, response.vocabularyIntroduced);
     }
-    if (response.sessionEnded) {
-      await ctx.endSession();
-    }
+    // Note: sessionEnded is automatically handled by the framework when set to true
   },
 
   // Feature 4: Commands (e.g., WhatsApp /stats)
@@ -121,6 +119,7 @@ await agent.start();
 Zupa is not just a library; it is a production-grade agent engineering framework with strong opinions. Detailed design decisions are documented in our [Architecture ADRs](./docs/architecture/).
 
 ### Purity of Boundaries (Ports & Adapters)
+
 LLM providers deprecate models. Messaging platforms change APIs overnight. Zupa isolates every external dependency behind a strict Port so that your agent's reasoning code never rots when a vendor does.
 
 - **The Engine**: A mathematically pure DAG executor. It has zero knowledge of transport protocols, LLM providers, or database schemas. It only orchestrates atomic super-steps and checkpoints.
@@ -128,23 +127,28 @@ LLM providers deprecate models. Messaging platforms change APIs overnight. Zupa 
 - **The Adapters**: All external implementations (OpenAI, Groq, WhatsApp-Web.js, Postgres) are strictly isolated behind Ports. Swap an LLM provider or switch from WhatsApp to Slack without touching a single line of your agent reasoning code.
 
 ### The Router Pattern (Identity in the AI Era)
+
 A persistent problem in conversational agents is "Infinite Thread Syndrome." Mapping a user's phone number directly to a single LLM memory thread means the context window inevitably explodes, latency spikes, and costs skyrocket.
 
-Zupa solves this natively with **The Handshake Router Graph**: before the main agent runs, a lightning-fast, stateless graph resolves *Who* the user is and *Which* time-boxed session they belong to. The main agent then executes using this specific `sessionId` as its physical `threadId`, permanently decoupling the physical transport layer from the active conversational working memory.
+Zupa solves this natively with **The Handshake Router Graph**: before the main agent runs, a lightning-fast, stateless graph resolves _Who_ the user is and _Which_ time-boxed session they belong to. The main agent then executes using this specific `sessionId` as its physical `threadId`, permanently decoupling the physical transport layer from the active conversational working memory.
 
 ### Memory Duality (Checkpoints vs. Ledgers)
+
 Working memory and historical audit trails serve opposing purposes. Zupa handles both via the **Dual-Write Pattern**.
 
-- **Checkpoints (Execution State)**: Fast, compact, intentionally "forgetful." They hold only what the LLM needs *right now* to make the next decision. Pluggable into fast KVs like Redis.
+- **Checkpoints (Execution State)**: Fast, compact, intentionally "forgetful." They hold only what the LLM needs _right now_ to make the next decision. Pluggable into fast KVs like Redis.
 - **Ledgers (Audit History)**: Immutable, relational, infinite. Every tool call, token usage metric, modality shift, and decision is recorded here for analytics, compliance, and UI rendering. Pluggable into robust SQL databases.
 
 ### Empathy as a Technical Primitive (Native Modality)
+
 Voice is not an afterthought in Zupa; it is a first-class citizen. By setting `modality: 'auto'`, an agent replies in the exact same format it receives — the framework seamlessly handles the STT/TTS transcoding pipeline. Agents can also break the mirror when contextually optimal (e.g., sending a voice clip to correct a mispronunciation even if the user texted).
 
 ### Resilient Execution (The BSP Foundation)
+
 Under the hood, Zupa uses a discrete **Pregel-inspired Bulk Synchronous Parallel (BSP)** engine. If the server crashes mid-reasoning, the engine loads the last checkpoint and resumes exactly where it left off. State is separated into pure, immutable **Channels** with deterministic Reducers — no "Global God Object" that silently mutates.
 
 ### Deploy Anywhere (Zero Infrastructure Lock-In)
+
 Zupa has zero infrastructure opinions. The runtime is a single Node.js process. Checkpoints default to local SQLite. There is no mandatory cloud service, no proprietary queue, no container orchestrator requirement. A Zupa agent runs identically on a $5 VPS, a Docker container, a Raspberry Pi behind a home router, a serverless edge function, or any PaaS like Railway, Render, or Fly.io. **Your agent is yours to deploy wherever you want.**
 
 ---
