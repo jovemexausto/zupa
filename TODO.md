@@ -1,19 +1,3 @@
-- [ ] Implement Phase 2 of Production Readiness RFC: Error taxonomy — classify Transient vs Terminal errors, apply `retryIdempotent` to LLM/Database/Transport calls accordingly.
-
-- [ ] Implement Phase 2 of Production Readiness RFC: Circuit breaker per provider — fail fast during prolonged outages.
-
-- [ ] Implement Phase 3 of Production Readiness RFC: Plumb correlation IDs (`requestId`, `sessionId`, `userId`, `eventId`) through `RuntimeEngineContext` and all telemetry/ledger events.
-
-- [ ] Implement Phase 3 of Production Readiness RFC: Build Audit Ledger — immutable record of tool invocations, command dispatches, and `onResponse` events.
-
-- [ ] setup biome and configure to disallow 'as any' and unused imports + best practices.
-
-- [ ] seek for TODO on codebase and update root TODO.md with tasks / discussion and a bit of context
-
-- [ ] plan how to make horizontal scalability possible with multiple instances cordination (maybe using redis, or something else), etc. this also unlocks fault tolerance and recovery to be more robust. For wwebjs this will introduce a chanllange to handle multiple qrcodes, which leads us to other problemn: right now every agent ships with an ui/api (wip) but with multi instances we probably want/need a single UI/API instance for managing all replicas / agents. This also unlocks the multi qrcode problem. This is touch "Zupa Cloud" territory. Also, we're deciding to build upon wwebjs to gain velocity and make it easier to end users to run their own instances. This should be kubernetes ready and we should have also a 'control plane' deploy, which will be responsible for managing all replicas / agents with an amazing dashboard. We have a builtin dashboard, but in this case we need to provide a separate UI/API instance for managing multiple replicas / agents. Should builtin dashboard be disabled on this case? the control plane must be a single instance, right? How they connect?
-
-- [ ] add SLA to the project, we should define what is the expected SLA for the project and how we're going to measure it.
-
 - [ ] decide if we should move sessionEnded to withReply helper, instructions must live at zod's .description, and maybe we can check it internally instead of relying on the user to do it.
 
 - [ ] How to reverse proxy (@zupa/api/src/middleware.ts and @zupa/api/src/sse-broadcaster.ts) as a single streamlined API? thats zupa api. What are the trade-offs and what it brings to the table? does we have better alternatives?Does it makes sense or I'm confusing boundaries?
