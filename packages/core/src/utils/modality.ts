@@ -5,9 +5,9 @@ export const ModalitySchema = z
   .nullable()
   .describe(
     "Analyze the conversation and the user's latest message. " +
-      "If they ask for voice, audio, or a spoken response, return 'voice'. " +
-      "If they ask for text, return 'text'. " +
-      "If there is no clear signal or preference, return null.",
+    "If they ask for voice, audio, or a spoken response, return 'voice'. " +
+    "If they ask for text, return 'text'. " +
+    "If there is no clear signal or preference, return null.",
   );
 
 export const ReplySchema = z.object({

@@ -9,7 +9,7 @@ config.yaml
 litellm.config.yaml
 examples/english-buddy/.wwebjs_auth_docker/
 examples/english-buddy/data/
-tasks/
+tasks/*
 .worktrees/
 .turbo
 .DS_Store
