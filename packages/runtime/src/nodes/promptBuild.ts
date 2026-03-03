@@ -48,11 +48,13 @@ export const promptBuildNode = defineNode<RuntimeState, RuntimeEngineContext>(as
   };
 
   const resolvedTemplate = typeof template === "function" ? await template(agentContext) : template;
+  const resolvedContext = config.context ? await config.context(agentContext) : {};
 
   const prompt = nunjucks.renderString(resolvedTemplate, {
     user: state.user,
     session: state.session,
     state: state,
+    ...(resolvedContext ?? {}),
   });
 
   let finalPrompt = applyLengthPreference(prompt, state.user.preferences);

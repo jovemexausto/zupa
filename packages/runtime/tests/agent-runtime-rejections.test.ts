@@ -1,9 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
     createFakeRuntimeDeps,
     createFakeRuntimeConfig,
     FakeMessagingTransport,
+    FakeLLMProvider,
     DEFAULT_INBOUND,
+    createFakeLLMResponse,
 } from "@zupa/testing";
 import { AgentRuntime } from "../src/index";
 import { ReducerEventBus } from "../src/bus/ReducerEventBus";
@@ -94,5 +96,37 @@ describe("AgentRuntime Rejections", () => {
 
         await runtime.close();
         await bus.stop();
+    });
+
+    it("sends fallback reply once when inbound fails before outbound send", async () => {
+        const deps = createFakeRuntimeDeps();
+        const llm = deps.llm as FakeLLMProvider;
+        llm.setResponses([
+            createFakeLLMResponse({
+                content: "this should never be sent",
+                structured: { reply: "this should never be sent" },
+            }),
+        ]);
+        llm.complete = async () => {
+            throw new Error("LLM is down");
+        };
+
+        const runtime = new AgentRuntime({
+            runtimeConfig: createFakeRuntimeConfig({
+                fallbackReply: "Temporary issue. Please try again soon.",
+            }),
+            runtimeResources: deps,
+        });
+
+        await runtime.start();
+        await runtime.runInbound({ ...DEFAULT_INBOUND, messageId: "fallback-pre-send-1" });
+
+        const transport = deps.transport as FakeMessagingTransport;
+        const sent = transport.getSentMessages();
+        const fallbackMessages = sent.filter((m) => m.text === "Temporary issue. Please try again soon.");
+        expect(fallbackMessages).toHaveLength(1);
+        expect(sent.some((m) => m.text === "this should never be sent")).toBe(false);
+
+        await runtime.close();
     });
 });

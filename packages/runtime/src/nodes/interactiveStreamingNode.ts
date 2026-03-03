@@ -145,18 +145,10 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
       }
     }
 
-    // Call user-provided callbacks if any
-    if (config.onResponse) {
-      try {
-        await config.onResponse(finalLlmResponse, agentContext);
-      } catch (err) {
-        logger.error({ err }, "Error in onResponse callback");
-      }
-    }
-
     // Fallback if the user prefers voice even though it was a UI channel
     const prefersVoice = config.preferredVoiceReply === true || state.inputModality === "voice";
     let outputModality: "text" | "voice" = "text";
+    let replyContent: string | undefined;
 
     if (prefersVoice && finalLlmResponse.content) {
       const result = await finalizeResponse({
@@ -183,6 +175,17 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
         },
       });
       outputModality = result.outputModality;
+      replyContent = finalLlmResponse.content;
+      resources.bus.emit({
+        channel: "runtime",
+        name: "response:sent",
+        payload: {
+          requestId: context.meta.requestId,
+          messageId: context.inbound.messageId,
+          to: state.replyTarget,
+          outputModality,
+        },
+      });
     } else if (finalLlmResponse.content) {
       // Technically for a UI channel we've ALREADY streamed the text to them.
       // We might not need to `transport.sendMessage` at all if `ui_channel` implies no transport send,
@@ -192,6 +195,17 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
         type: "text",
         body: finalLlmResponse.content,
       });
+      replyContent = finalLlmResponse.content;
+      resources.bus.emit({
+        channel: "runtime",
+        name: "response:sent",
+        payload: {
+          requestId: context.meta.requestId,
+          messageId: context.inbound.messageId,
+          to: state.replyTarget,
+          outputModality: "text",
+        },
+      });
     }
 
     return {
@@ -199,6 +213,7 @@ export const interactiveStreamingNode = defineNode<RuntimeState, RuntimeEngineCo
         llmResponse: finalLlmResponse,
         toolResults: allToolResults.length > 0 ? allToolResults : undefined,
         outputModality,
+        replyContent,
       },
       nextTasks: ["persistence_hooks"],
     };

@@ -146,13 +146,6 @@ export const responseFinalizeNode = defineNode<
       ? structuredRecord.reply
       : undefined);
 
-  if (structured !== undefined && structured !== null && config.onResponse) {
-    await (config.onResponse as (s: unknown, ctx: unknown) => Promise<void>)(
-      structured,
-      agentContext,
-    );
-  }
-
   // Check if sessionEnded is true in the structured response and end the session
   if (
     structured !== undefined &&
@@ -168,6 +161,7 @@ export const responseFinalizeNode = defineNode<
 
   // 2. Finalize messaging if we have a reply and necessary context
   let outputModality: "text" | "voice" = "text";
+  let replyContent: string | undefined;
   if (replyText) {
     if (replyTarget && user && session) {
       // 2. Decide output modality
@@ -253,6 +247,17 @@ export const responseFinalizeNode = defineNode<
         },
       });
       outputModality = result.outputModality;
+      replyContent = replyText;
+      resources.bus.emit({
+        channel: "runtime",
+        name: "response:sent",
+        payload: {
+          requestId: context.meta.requestId,
+          messageId: context.inbound.messageId,
+          to: replyTarget,
+          outputModality,
+        },
+      });
     }
   }
 
@@ -268,7 +273,7 @@ export const responseFinalizeNode = defineNode<
   );
 
   return {
-    stateDiff: { outputModality, llmResponse, history: nextHistory },
+    stateDiff: { outputModality, llmResponse, history: nextHistory, replyContent },
     nextTasks: ["persistence_hooks"],
   };
 });

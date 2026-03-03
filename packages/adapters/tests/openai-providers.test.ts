@@ -13,16 +13,6 @@ describe("openai providers", () => {
         {
           message: {
             content: '{"reply":"hello"}',
-            tool_calls: [
-              {
-                id: "call_1",
-                type: "function",
-                function: {
-                  name: "save_note",
-                  arguments: '{"text":"remember this"}',
-                },
-              },
-            ],
           },
         },
       ],
@@ -45,9 +35,7 @@ describe("openai providers", () => {
     expect(create).toHaveBeenCalledTimes(1);
     expect(result.content).toBeNull();
     expect(result.structured).toEqual({ reply: "hello" });
-    expect(result.toolCalls).toEqual([
-      { id: "call_1", name: "save_note", arguments: { text: "remember this" } },
-    ]);
+    expect(result.toolCalls).toEqual([]);
     expect(result.tokensUsed).toEqual({ promptTokens: 12, completionTokens: 5 });
     expect(result.model).toBe("gpt-4o-mini");
     expect(result.latencyMs).toBeGreaterThanOrEqual(0);
@@ -139,6 +127,63 @@ describe("openai providers", () => {
 
     expect(create).toHaveBeenCalledTimes(1);
     expect(result.structured).toEqual({ reply: "hello", modality: null });
+  });
+
+  it("does not parse structured schema on tool-call turns with null content", async () => {
+    const create = vi.fn(async (_input: unknown) => ({
+      model: "gpt-4o-mini",
+      usage: { prompt_tokens: 8, completion_tokens: 3 },
+      choices: [
+        {
+          message: {
+            content: null,
+            tool_calls: [
+              {
+                id: "call_tool_1",
+                type: "function",
+                function: {
+                  name: "list_menu",
+                  arguments: "{}",
+                },
+              },
+            ],
+          },
+        },
+      ],
+    }));
+
+    const provider = new OpenAILLMProvider({
+      apiKey: "sk-test",
+      model: "gpt-4o-mini",
+      client: {
+        chat: { completions: { create } },
+      } as unknown as OpenAI,
+    });
+
+    const schema = z.object({
+      reply: z.string(),
+      modality: z.enum(["text", "voice"]).nullable(),
+      sessionEnded: z.boolean(),
+    });
+
+    const result = await provider.complete({
+      systemPrompt: "tool turn",
+      messages: [{ role: "user", content: "show me menu" }],
+      outputSchema: schema,
+      tools: [
+        {
+          name: "list_menu",
+          description: "List menu items",
+          parameters: z.object({}),
+          handler: async () => "ok",
+        },
+      ],
+    });
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(result.structured).toBeNull();
+    expect(result.toolCalls).toEqual([{ id: "call_tool_1", name: "list_menu", arguments: {} }]);
+    expect(result.content).toBeNull();
   });
 
   it("transcribes with whisper and normalizes language", async () => {

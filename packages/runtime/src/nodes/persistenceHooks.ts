@@ -12,11 +12,13 @@ import { type RuntimeState } from "./index";
  */
 export const persistenceHooksNode = defineNode<RuntimeState, RuntimeEngineContext>(
   async (context) => {
-    const { resources, state } = context;
+    const { resources, state, config } = context;
     const session = state.session;
     const user = state.user;
+    const structured = state.llmResponse?.structured;
 
     if (session && user && state.outputModality && (state.replyContent || state.llmResponse)) {
+      // TODO: why this is needed ? current session's messages live on checkpoint.
       await resources.domainStore.incrementSessionMessageCount(session.id);
 
       const contentText =
@@ -31,6 +33,55 @@ export const persistenceHooksNode = defineNode<RuntimeState, RuntimeEngineContex
         tokensUsed: state.llmResponse?.tokensUsed || { promptTokens: 0, completionTokens: 0 },
         latencyMs: state.llmResponse?.latencyMs || 0,
       });
+
+      resources.bus.emit({
+        channel: "runtime",
+        name: "response:persisted",
+        payload: {
+          requestId: context.meta.requestId,
+          messageId: context.inbound.messageId,
+          sessionId: session.id,
+          userId: user.id,
+          outputModality: state.outputModality,
+        },
+      });
+    }
+
+    if (session && user && structured !== undefined && structured !== null && config.onResponse) {
+      const agentContext = {
+        user,
+        session,
+        inbound: context.inbound,
+        language: config.language,
+        replyTarget: state.replyTarget || context.inbound.from,
+        resources,
+        config,
+        endSession: async () => {
+          await resources.domainStore.endSession(
+            session.id,
+            `Session ended at ${new Date().toISOString()}`,
+          );
+        },
+      };
+
+      try {
+        await (config.onResponse as (s: unknown, ctx: unknown) => Promise<void>)(
+          structured,
+          agentContext,
+        );
+      } catch (err) {
+        context.logger.error({ err }, "Error in onResponse callback");
+        resources.bus.emit({
+          channel: "runtime",
+          name: "response:failed",
+          payload: {
+            requestId: context.meta.requestId,
+            messageId: context.inbound.messageId,
+            stage: "onResponse",
+            error: err instanceof Error ? err.message : String(err),
+          },
+        });
+      }
     }
 
     return {

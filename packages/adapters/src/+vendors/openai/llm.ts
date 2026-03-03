@@ -118,16 +118,17 @@ export class OpenAILLMProvider implements LLMProvider {
     const choice = response.choices[0]?.message;
 
     const content = choice?.content ?? "";
+    const toolCalls = fromOpenAIToolCalls(choice?.tool_calls);
     let structured: unknown | null = null;
 
-    if (options.outputSchema) {
+    if (options.outputSchema && content && toolCalls.length === 0) {
       structured = options.outputSchema.parse(JSON.parse(content || "{}"));
     }
 
     return {
       content: options.outputSchema ? null : content,
       structured,
-      toolCalls: fromOpenAIToolCalls(choice?.tool_calls),
+      toolCalls,
       tokensUsed: {
         promptTokens: response.usage?.prompt_tokens ?? 0,
         completionTokens: response.usage?.completion_tokens ?? 0,

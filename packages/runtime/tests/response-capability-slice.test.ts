@@ -35,6 +35,35 @@ describe("response capability slice", () => {
     await runtime.close();
   });
 
+  it("still delivers reply when onResponse throws in buffered mode", async () => {
+    const deps = createFakeRuntimeDeps();
+    const runtime = new AgentRuntime({
+      runtimeConfig: createFakeRuntimeConfig({
+        onResponse: async () => {
+          throw new Error("onResponse failed");
+        },
+      }),
+      runtimeResources: deps,
+    });
+
+    const llm = deps.llm as FakeLLMProvider;
+    llm.setResponses([
+      createFakeLLMResponse({
+        content: "Buffered reply should still be delivered",
+        structured: { reply: "Buffered reply should still be delivered" },
+      }),
+    ]);
+
+    await runtime.start();
+    await runtime.runInbound({ ...DEFAULT_INBOUND, messageId: "resp-onresponse-throw-1" });
+
+    const transport = deps.transport as FakeMessagingTransport;
+    const sent = transport.getSentMessages();
+    expect(sent.some((m) => m.text === "Buffered reply should still be delivered")).toBe(true);
+
+    await runtime.close();
+  });
+
   it("streams tokens to reactive UI when strategy is streaming and source is ui_channel", async () => {
     const deps = createFakeRuntimeDeps();
     const reactiveUi = deps.reactiveUi as FakeReactiveUiProvider;

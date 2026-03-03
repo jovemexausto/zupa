@@ -8,6 +8,9 @@
     "dev": "tsx src/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "e2e:interactive": "tsx scripts/e2e-interactive.ts",
+    "e2e:fake": "ZUPA_E2E_MODE=fake tsx scripts/e2e-interactive.ts",
+    "e2e:real": "ZUPA_E2E_MODE=real tsx scripts/e2e-interactive.ts",
     "test": "echo 'No tests for assistente-hamburgueria'"
   },
   "engines": {
