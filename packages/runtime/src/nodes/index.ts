@@ -58,6 +58,7 @@ export interface RuntimeState<TAgentState extends Record<string, JsonValue> = KV
   toolResults?: Array<{ toolCallId: string; result: string }> | undefined;
   inputModality?: "text" | "voice" | undefined;
   outputModality?: "text" | "voice" | undefined;
+  replyContent?: string | undefined;
 }
 
 /** Handler type for the Pregel executor – returns a NodeResult. */

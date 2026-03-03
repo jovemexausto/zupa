@@ -277,7 +277,40 @@ export class AgentRuntime<T = unknown> {
           inbound,
         },
       });
-      throw error;
+
+      const fallbackReply =
+        this.runtimeConfig.fallbackReply?.trim() ||
+        "Sorry, I hit an unexpected issue. Please try again in a moment.";
+
+      let fallbackSent = false;
+      try {
+        const replyTarget =
+          typeof context.state.replyTarget === "string" ? context.state.replyTarget : inbound.from;
+        await this.runtimeResources.transport.sendMessage({
+          to: replyTarget,
+          type: "text",
+          body: fallbackReply,
+        });
+        fallbackSent = true;
+      } catch (fallbackError) {
+        logger.error(
+          { error: String(fallbackError), inbound },
+          "Failed to send fallback reply after inbound failure",
+        );
+      }
+
+      this.runtimeResources.bus.emit({
+        channel: "runtime",
+        name: "response:failed",
+        payload: {
+          requestId,
+          messageId: inbound.messageId,
+          from: inbound.from,
+          stage: "runInbound",
+          fallbackSent,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
     }
 
     return context;

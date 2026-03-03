@@ -153,6 +153,19 @@ Zupa has zero infrastructure opinions. The runtime is a single Node.js process. 
 
 ---
 
+## Response Lifecycle Reliability
+
+- `onResponse` now runs as a post-send/post-persist side effect hook (it does not block delivery).
+- Runtime emits lifecycle events for debugging/observability:
+  - `runtime:response:sent`
+  - `runtime:response:persisted`
+  - `runtime:response:failed`
+- `fallbackReply` is used on inbound failures before successful outbound delivery. If unset, a default safe error message is sent.
+
+For practical validation, use the interactive E2E harness in [`examples/assistente-hamburgueria/README.md`](./examples/assistente-hamburgueria/README.md).
+
+---
+
 ## Roadmap
 
 Zupa is evolving rapidly. View the full [ROADMAP.md](./ROADMAP.md) for a detailed breakdown, including Distributed Persistence, Multi-instance QR Management, and Advanced HITL handoffs.

@@ -19,6 +19,7 @@ export const turnSetupNode = defineNode<RuntimeState, RuntimeEngineContext>(asyn
     toolResults: undefined,
     inputModality: undefined,
     outputModality: undefined,
+    replyContent: undefined,
   };
 
   return {
