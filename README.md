@@ -1,31 +1,38 @@
-# ● Zupa
-
-### The Batteries-Included TypeScript Framework for Resilient Agentic Conversations
+![Zupa](./banner.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![NPM Version](https://img.shields.io/npm/v/zupa.svg)](https://www.npmjs.com/package/zupa)
 
-Zupa is a full-stack, transport-agnostic framework designed for building production-grade conversational AI agents. While it is built to run on any messaging platform, it targets **WhatsApp** as its primary first-class citizen to deliver immediate, high-impact value out of the box.
+Zupa é um framework open source para construir agentes conversacionais multimodais com foco real em runtime, transporte, memória e operação.
 
-Because Zupa is a self-contained Node.js process with zero managed-service dependencies, **it deploys anywhere** — a $5 VPS, a Docker container, a Raspberry Pi, or a serverless edge function. Your agent is yours.
+Em vez de acoplar o agente ao canal, ao provider ou a uma stack de infra específica, Zupa separa as camadas críticas da conversa para que o comportamento do agente sobreviva a trocas de canal, falhas de processo e evolução de produto.
 
-> 🚨 **Early Stage Project**: Zupa is in active, early development. We are building the foundation for the next generation of durable AI agents. We are actively looking for early adopters, feedback, and contributors to help shape the future of the framework!
+## Tese
 
----
+Hoje existe muita infra para gerar texto e pouca infra para sustentar conversas de verdade.
 
-## Stop Writing Plumbing. Start Writing Reasoning.
+O problema difícil não é mais chamar modelo.
 
-Building a toy chatbot is easy. Building a production-grade, multi-modal autonomous agent that survives server crashes, handles complex human handovers, and scales horizontally is incredibly hard.
+O problema difícil é orquestrar identidade, sessão, memória, ferramentas, áudio, retries, checkpoints e transporte sem transformar o produto em um emaranhado de callbacks, webhooks e estados inconsistentes.
 
-**The hardest problem in autonomous AI is no longer the execution graph; it is the chaotic, stateful orchestration required to connect that graph to the real world.**
+Zupa existe para resolver essa camada.
 
-While modern graph execution engines (like LangGraph) have solved the mathematical problem of _how_ complex reasoning loops execute, they largely abandon the developer at the product layer. How do you handle real-time voice notes? How do you map a phone number to a session without blowing up the context window? How do you persist memory across deployments?
+## Primitivas de produção
 
-**Zupa is the answer.**
+- runtime transport-agnostic, com WhatsApp como caso de uso de primeira classe
+- multimodalidade nativa: texto, STT, TTS e mirroring de voz
+- router handshake para desacoplar identidade física de thread conversacional
+- dual-write entre working memory e ledger de auditoria
+- executor BSP/Pregel com checkpoint e retomada resiliente
+- timeouts, retries, deduplicação e controle de sessão no runtime
+- ports and adapters para trocar provider sem apodrecer o domínio
+- streaming e UI reativa quando o canal permitir
 
-A full-stack **"batteries-included" orchestrator** that wraps a robust execution engine inside an opinionated product framework so you can focus on what matters: the agent's actual behavior.
+## O que isso permite
 
----
+- trocar de canal sem reescrever o agente
+- evoluir de WhatsApp bootstrap para API oficial sem refazer o núcleo
+- manter memória curta para inferência e histórico longo para produto e auditoria
+- operar a conversa como sistema, não como script
 
 ## Quick Start
 
@@ -33,155 +40,118 @@ A full-stack **"batteries-included" orchestrator** that wraps a robust execution
 npm install zupa zod
 ```
 
-### Create your first Agent (Sam, the English Buddy)
+Defina `OPENAI_API_KEY` e suba um agente com transporte WhatsApp:
 
-```typescript
+```ts
 import { z } from "zod";
-import { createAgent, withReply, WWebJSMessagingTransport } from "zupa";
+import {
+  createAgent,
+  defineTool,
+  withReply,
+  WWebJSMessagingTransport,
+} from "zupa";
 
-// 1. Define your Response Schema
-const SamReplySchema = withReply({
-  correction: z.string().nullable(),
-  vocabularyIntroduced: z.array(z.string()),
+const PlanejarAula = defineTool({
+  name: "planejar_aula",
+  description: "Gera um esboço curto de plano de aula",
+  parameters: z.object({
+    tema: z.string(),
+    ano: z.string(),
+  }),
+  handler: async ({ tema, ano }) => {
+    return [
+      `Tema: ${tema}`,
+      `Ano: ${ano}`,
+      "Objetivo: ativar repertório e praticar o conceito em sala.",
+      "Estrutura: abertura, atividade guiada e fechamento.",
+    ].join("\n");
+  },
 });
 
-// 2. Define a Custom Tool
-const sendPronunciationClip = {
-  name: "sendPronunciationClip",
-  description: "Send a realistic audio pronunciation for a difficult word",
-  schema: z.object({
-    word: z.string().describe('The vocabulary word (e.g. "thorough")'),
-    languageCode: z.string().describe('The language code (e.g. "en-US")'),
-  }),
-  handler: async (args, ctx) => {
-    const audioUrl = await tts.synthesize(args.word, args.languageCode);
-    await ctx.reply({ media: audioUrl, modality: "voice" });
-  },
-};
+const Resposta = withReply({
+  proximoPasso: z.string().nullable(),
+});
 
-// 3. Build the Agent
 const agent = createAgent({
-  // Native Nunjucks templating
-  prompt: `
-    You are Sam, a friendly English tutor chatting with {{ user.displayName }}.
-    {% if vocabularyHistory.length %}
-    Words already introduced: {{ vocabularyHistory | join(', ') }}
-    {% endif %}
-  `,
-  outputSchema: SamReplySchema,
-
-  // Feature 1: Dynamic Context (RAG/DB lookups per message)
-  context: async (ctx) => ({
-    vocabularyHistory: await db.getVocabulary(ctx.session.id),
-  }),
-
-  // Feature 2: Tool Calling
-  tools: [sendPronunciationClip],
-
-  // Feature 3: Transactional Hooks (Dual memory architecture)
-  onResponse: async (response, ctx) => {
-    if (response.vocabularyIntroduced.length > 0) {
-      await db.saveVocabulary(ctx.session.id, response.vocabularyIntroduced);
-    }
-    // Note: sessionEnded is automatically handled by the framework when set to true
-  },
-
-  // Feature 4: Commands (e.g., WhatsApp /stats)
-  commands: {
-    stats: {
-      description: "Check progress",
-      handler: async (ctx) => {
-        await ctx.reply("📈 You've learned 14 new words this week!");
-      },
-    },
-  },
-
-  // Feature 5: Native Modality Mirroring
-  // 'auto' manages STT/TTS dynamically. It defaults to mirroring the user (Audio -> Audio),
-  // but allows the agent's reasoning to actively choose an output format when necessary.
+  language: "pt",
   modality: "auto",
+  prompt: `
+    Você é uma assistente pedagógica objetiva e calorosa.
+    Fale com clareza, em tom de WhatsApp, e use ferramentas quando isso
+    produzir uma resposta melhor do que improvisar.
+  `,
+  outputSchema: Resposta,
+  tools: [PlanejarAula],
+  context: async (ctx) => ({
+    nome: ctx.user.displayName,
+  }),
+  onResponse: async (response, ctx) => {
+    if (response.proximoPasso) {
+      await ctx.resources.transport.sendMessage({
+        to: ctx.replyTarget,
+        type: "text",
+        body: `Próximo passo sugerido: ${response.proximoPasso}`,
+      });
+    }
+  },
   providers: {
-    transport: new WWebJSMessagingTransport(), // WhatsApp ready!
+    transport: new WWebJSMessagingTransport(),
   },
 });
 
-// 4. Handle Auth (Terminal QR Code)
-agent.on("auth:request", ({ qrString }) => console.log("Scan me:", qrString));
-agent.on("auth:ready", () => console.log("Sam is online!"));
+agent.on("auth:request", ({ qrString }) => {
+  console.log("Escaneie o QR:", qrString);
+});
+
+agent.on("auth:ready", () => {
+  console.log("Agente online.");
+});
 
 await agent.start();
 ```
 
----
+## Como pensar a arquitetura
 
-## Architecture
+- `@zupa/core`: contratos, entidades e ports
+- `@zupa/engine`: executor BSP/Pregel e modelo de checkpoint
+- `@zupa/runtime`: runtime conversacional, roteamento e ciclo de vida
+- `@zupa/adapters`: integrações concretas, como OpenAI e `whatsapp-web.js`
+- `zupa`: API pública para criar e subir agentes
 
-Zupa is not just a library; it is a production-grade agent engineering framework with strong opinions. Detailed design decisions are documented in our [Architecture ADRs](./docs/architecture/).
+## Modelo operacional
 
-### Purity of Boundaries (Ports & Adapters)
+Zupa roda como um processo Node.js autocontido.
 
-LLM providers deprecate models. Messaging platforms change APIs overnight. Zupa isolates every external dependency behind a strict Port so that your agent's reasoning code never rots when a vendor does.
+Sem serviço gerenciado obrigatório.
 
-- **The Engine**: A mathematically pure DAG executor. It has zero knowledge of transport protocols, LLM providers, or database schemas. It only orchestrates atomic super-steps and checkpoints.
-- **The Runtime**: The domain-aware bridge. It translates real-world inputs (WhatsApp messages, audio blobs) into structured Graph inputs and manages the lifecycle of the agent.
-- **The Adapters**: All external implementations (OpenAI, Groq, WhatsApp-Web.js, Postgres) are strictly isolated behind Ports. Swap an LLM provider or switch from WhatsApp to Slack without touching a single line of your agent reasoning code.
+Sem lock-in de fila, cloud ou workflow engine externo.
 
-### The Router Pattern (Identity in the AI Era)
+O mesmo agente pode rodar localmente, em container, VPS ou plataforma cloud, preservando a mesma estrutura de runtime.
 
-A persistent problem in conversational agents is "Infinite Thread Syndrome." Mapping a user's phone number directly to a single LLM memory thread means the context window inevitably explodes, latency spikes, and costs skyrocket.
+## Status
 
-Zupa solves this natively with **The Handshake Router Graph**: before the main agent runs, a lightning-fast, stateless graph resolves _Who_ the user is and _Which_ time-boxed session they belong to. The main agent then executes using this specific `sessionId` as its physical `threadId`, permanently decoupling the physical transport layer from the active conversational working memory.
+A fundação principal já está estabelecida: engine, runtime, multimodalidade, tool calling, sessão e transporte desacoplado.
 
-### Memory Duality (Checkpoints vs. Ledgers)
-
-Working memory and historical audit trails serve opposing purposes. Zupa handles both via the **Dual-Write Pattern**.
-
-- **Checkpoints (Execution State)**: Fast, compact, intentionally "forgetful." They hold only what the LLM needs _right now_ to make the next decision. Pluggable into fast KVs like Redis.
-- **Ledgers (Audit History)**: Immutable, relational, infinite. Every tool call, token usage metric, modality shift, and decision is recorded here for analytics, compliance, and UI rendering. Pluggable into robust SQL databases.
-
-### Empathy as a Technical Primitive (Native Modality)
-
-Voice is not an afterthought in Zupa; it is a first-class citizen. By setting `modality: 'auto'`, an agent replies in the exact same format it receives — the framework seamlessly handles the STT/TTS transcoding pipeline. Agents can also break the mirror when contextually optimal (e.g., sending a voice clip to correct a mispronunciation even if the user texted).
-
-### Resilient Execution (The BSP Foundation)
-
-Under the hood, Zupa uses a discrete **Pregel-inspired Bulk Synchronous Parallel (BSP)** engine. If the server crashes mid-reasoning, the engine loads the last checkpoint and resumes exactly where it left off. State is separated into pure, immutable **Channels** with deterministic Reducers — no "Global God Object" that silently mutates.
-
-### Deploy Anywhere (Zero Infrastructure Lock-In)
-
-Zupa has zero infrastructure opinions. The runtime is a single Node.js process. Checkpoints default to local SQLite. There is no mandatory cloud service, no proprietary queue, no container orchestrator requirement. A Zupa agent runs identically on a $5 VPS, a Docker container, a Raspberry Pi behind a home router, a serverless edge function, or any PaaS like Railway, Render, or Fly.io. **Your agent is yours to deploy wherever you want.**
-
----
-
-## Response Lifecycle Reliability
-
-- `onResponse` now runs as a post-send/post-persist side effect hook (it does not block delivery).
-- Runtime emits lifecycle events for debugging/observability:
-  - `runtime:response:sent`
-  - `runtime:response:persisted`
-  - `runtime:response:failed`
-- `fallbackReply` is used on inbound failures before successful outbound delivery. If unset, a default safe error message is sent.
-
-For practical validation, use the interactive E2E harness in [`examples/assistente-hamburgueria/README.md`](./examples/assistente-hamburgueria/README.md).
-
----
+Os próximos ciclos estão concentrados em distribuição, observabilidade, HITL e operação multi-instância.
 
 ## Roadmap
 
-Zupa is evolving rapidly. View the full [ROADMAP.md](./ROADMAP.md) for a detailed breakdown, including Distributed Persistence, Multi-instance QR Management, and Advanced HITL handoffs.
+- persistência distribuída
+- outbox durável
+- observabilidade e auditoria mais fortes
+- adapters de transporte adicionais
+- handoff humano nativo
 
----
+Veja `ROADMAP.md`.
 
-## Join the Rebellion
+## Contribuir
 
-We are actively looking for developers who want to push the boundaries of conversational AI. Whether it's adding a new Transport Adapter (Telegram, Slack) or improving the core execution engine, your PRs are deeply welcome.
+Se você quer ajudar a construir agentes realmente prontos para o mundo real, leia `CONTRIBUTING.md`.
 
-Read our [Contributing Guidelines](./CONTRIBUTING.md) to get your local environment set up within minutes.
+PRs são bem-vindos.
 
----
+## Aviso
 
-## Legal Disclaimer
+Zupa é um projeto open source independente.
 
-Zupa is an independent open-source project and is **not** affiliated with, authorized, maintained, sponsored, or endorsed by WhatsApp, Meta, or any of its affiliates or subsidiaries. It provides initial bootstrap velocity via `whatsapp-web.js` but does not use official Meta APIs by default.
-
-_Where agents meet the real world._
+Não é afiliado ao WhatsApp, Meta ou Turn.io.
